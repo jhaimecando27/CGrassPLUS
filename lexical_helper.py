@@ -25,6 +25,7 @@ def skip_word(char_index, line, tmp_wrd):
         char_index += 1
     return char_index, tmp_wrd
 
+
 class Errors:
     class Unknown:
         def delim(
@@ -55,10 +56,14 @@ class Errors:
                 + ":"
                 + str(col_num)
                 + ": "
-                + '"' + word + '"'
+                + '"'
+                + word
+                + '"'
                 + ' : Expecting "#" symbol before '
-                + '"' + word + '"',
-                "UNKNOWN IDENTIFIER"
+                + '"'
+                + word
+                + '"',
+                "UNKNOWN IDENTIFIER",
             )
 
     class InvalidRange:

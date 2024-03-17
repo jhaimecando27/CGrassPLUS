@@ -1145,7 +1145,11 @@ def tokenize(input_string):
                         # Finish whole word if error
                         errors.append(
                             error_unknown.delim(
-                                line_number, char_index, tmp_word, line[char_index], rd.DELIM19
+                                line_number,
+                                char_index,
+                                tmp_word,
+                                line[char_index],
+                                rd.DELIM19,
                             )
                         )
                         char_index = skip(char_index, line)
@@ -1154,7 +1158,11 @@ def tokenize(input_string):
                     # Finish whole word if error
                     errors.append(
                         error_unknown.delim(
-                            line_number, char_index, tmp_word, line[char_index], rd.DELIM5
+                            line_number,
+                            char_index,
+                            tmp_word,
+                            line[char_index],
+                            rd.DELIM5,
                         )
                     )
                     char_index = skip(char_index, line)
@@ -1177,7 +1185,11 @@ def tokenize(input_string):
                         # Finish whole word if error
                         errors.append(
                             error_unknown.delim(
-                                line_number, char_index, tmp_word, line[char_index], rd.DELIM19
+                                line_number,
+                                char_index,
+                                tmp_word,
+                                line[char_index],
+                                rd.DELIM19,
                             )
                         )
                         char_index = skip(char_index, line)
@@ -1186,7 +1198,11 @@ def tokenize(input_string):
                     # Finish whole word if error
                     errors.append(
                         error_unknown.delim(
-                            line_number, char_index, tmp_word, line[char_index], rd.DELIM19
+                            line_number,
+                            char_index,
+                            tmp_word,
+                            line[char_index],
+                            rd.DELIM19,
                         )
                     )
                     char_index = skip(char_index, line)
@@ -1211,7 +1227,15 @@ def tokenize(input_string):
 
                         for x in range(50):
                             if line[char_index] == "\n":
-                                errors.append(error_unknown.delim(line_number, char_index, tmp_word, line[char_index], rd.DELIMID))
+                                errors.append(
+                                    error_unknown.delim(
+                                        line_number,
+                                        char_index,
+                                        tmp_word,
+                                        line[char_index],
+                                        rd.DELIMID,
+                                    )
+                                )
                                 char_index += skip(char_index, line)
                                 break
 
@@ -1227,14 +1251,26 @@ def tokenize(input_string):
                             continue
                         else:
                             # Finish whole word if error
-                            errors.append(error_unknown.delim(line_number, char_index, tmp_word, line[char_index], rd.DELIM25))
+                            errors.append(
+                                error_unknown.delim(
+                                    line_number,
+                                    char_index,
+                                    tmp_word,
+                                    line[char_index],
+                                    rd.DELIM25,
+                                )
+                            )
                             char_index = skip(char_index, line)
                             continue
                     else:
                         # Finish whole word if error
                         errors.append(
                             error_unknown.delim(
-                                line_number, char_index, tmp_word, line[char_index], rd.DELIMID
+                                line_number,
+                                char_index,
+                                tmp_word,
+                                line[char_index],
+                                rd.DELIMID,
                             )
                         )
                         char_index = skip(char_index, line)
@@ -1255,7 +1291,11 @@ def tokenize(input_string):
                             # Finish whole word if error
                             errors.append(
                                 error_unknown.delim(
-                                    line_number, char_index, tmp_word, line[char_index], rd.DELIM13
+                                    line_number,
+                                    char_index,
+                                    tmp_word,
+                                    line[char_index],
+                                    rd.DELIM13,
                                 )
                             )
                             char_index = skip(char_index, line)
@@ -1271,7 +1311,15 @@ def tokenize(input_string):
 
                             for x in range(50):
                                 if line[char_index] == "\n":
-                                    errors.append(error_unknown.delim(line_number, char_index, tmp_word, line[char_index], rd.DELIMi))
+                                    errors.append(
+                                        error_unknown.delim(
+                                            line_number,
+                                            char_index,
+                                            tmp_word,
+                                            line[char_index],
+                                            rd.DELIMi,
+                                        )
+                                    )
                                     char_index += skip(char_index, line)
                                     break
 
@@ -1287,14 +1335,26 @@ def tokenize(input_string):
                                 continue
                             else:
                                 # Finish whole word if error
-                                errors.append(error_unknown.delim(line_number, char_index, tmp_word, line[char_index], rd.DELIM25))
+                                errors.append(
+                                    error_unknown.delim(
+                                        line_number,
+                                        char_index,
+                                        tmp_word,
+                                        line[char_index],
+                                        rd.DELIM25,
+                                    )
+                                )
                                 char_index = skip(char_index, line)
                                 continue
                         else:
                             # Finish whole word if error
                             errors.append(
                                 error_unknown.delim(
-                                    line_number, char_index, tmp_word, line[char_index], rd.DELIMID
+                                    line_number,
+                                    char_index,
+                                    tmp_word,
+                                    line[char_index],
+                                    rd.DELIMID,
                                 )
                             )
                             char_index = skip(char_index, line)
@@ -1309,7 +1369,11 @@ def tokenize(input_string):
                         # Finish whole word if error
                         errors.append(
                             error_unknown.delim(
-                                line_number, char_index, tmp_word, line[char_index], rd.DELIM13
+                                line_number,
+                                char_index,
+                                tmp_word,
+                                line[char_index],
+                                rd.DELIM13,
                             )
                         )
                         char_index = skip(char_index, line)
@@ -1318,7 +1382,11 @@ def tokenize(input_string):
                     # Finish whole word if error
                     errors.append(
                         error_unknown.delim(
-                            line_number, char_index, tmp_word, line[char_index], rd.DELIM13
+                            line_number,
+                            char_index,
+                            tmp_word,
+                            line[char_index],
+                            rd.DELIM13,
                         )
                     )
                     char_index = skip(char_index, line)
@@ -1347,7 +1415,11 @@ def tokenize(input_string):
                         # Finish whole word if error
                         errors.append(
                             error_unknown.delim(
-                                line_number, char_index, tmp_word, line[char_index], rd.DELIM13
+                                line_number,
+                                char_index,
+                                tmp_word,
+                                line[char_index],
+                                rd.DELIM13,
                             )
                         )
                         char_index = skip(char_index, line)
@@ -1362,7 +1434,11 @@ def tokenize(input_string):
                         # Finish whole word if error
                         errors.append(
                             error_unknown.delim(
-                                line_number, char_index, tmp_word, line[char_index], rd.DELIM13
+                                line_number,
+                                char_index,
+                                tmp_word,
+                                line[char_index],
+                                rd.DELIM13,
                             )
                         )
                         char_index = skip(char_index, line)
@@ -1371,7 +1447,11 @@ def tokenize(input_string):
                     # Finish whole word if error
                     errors.append(
                         error_unknown.delim(
-                            line_number, char_index, tmp_word, line[char_index], rd.DELIM13
+                            line_number,
+                            char_index,
+                            tmp_word,
+                            line[char_index],
+                            rd.DELIM13,
                         )
                     )
                     char_index = skip(char_index, line)
@@ -1394,7 +1474,11 @@ def tokenize(input_string):
                         # Finish whole word if error
                         errors.append(
                             error_unknown.delim(
-                                line_number, char_index, tmp_word, line[char_index], rd.DELIM13
+                                line_number,
+                                char_index,
+                                tmp_word,
+                                line[char_index],
+                                rd.DELIM13,
                             )
                         )
                         char_index = skip(char_index, line)
@@ -1403,7 +1487,11 @@ def tokenize(input_string):
                     # Finish whole word if error
                     errors.append(
                         error_unknown.delim(
-                            line_number, char_index, tmp_word, line[char_index], rd.DELIM13
+                            line_number,
+                            char_index,
+                            tmp_word,
+                            line[char_index],
+                            rd.DELIM13,
                         )
                     )
                     char_index = skip(char_index, line)
@@ -1423,7 +1511,11 @@ def tokenize(input_string):
                         # Finish whole word if error
                         errors.append(
                             error_unknown.delim(
-                                line_number, char_index, tmp_word, line[char_index], rd.DELIM5
+                                line_number,
+                                char_index,
+                                tmp_word,
+                                line[char_index],
+                                rd.DELIM5,
                             )
                         )
                         char_index = skip(char_index, line)
@@ -1432,7 +1524,11 @@ def tokenize(input_string):
                     # Finish whole word if error
                     errors.append(
                         error_unknown.delim(
-                            line_number, char_index, tmp_word, line[char_index], rd.DELIM5
+                            line_number,
+                            char_index,
+                            tmp_word,
+                            line[char_index],
+                            rd.DELIM5,
                         )
                     )
                     char_index = skip(char_index, line)
@@ -1452,7 +1548,11 @@ def tokenize(input_string):
                         # Finish whole word if error
                         errors.append(
                             error_unknown.delim(
-                                line_number, char_index, tmp_word, line[char_index], rd.DELIM13
+                                line_number,
+                                char_index,
+                                tmp_word,
+                                line[char_index],
+                                rd.DELIM13,
                             )
                         )
                         char_index = skip(char_index, line)
@@ -1464,7 +1564,11 @@ def tokenize(input_string):
                     # Finish whole word if error
                     errors.append(
                         error_unknown.delim(
-                            line_number, char_index, tmp_word, line[char_index], rd.DELIM22
+                            line_number,
+                            char_index,
+                            tmp_word,
+                            line[char_index],
+                            rd.DELIM22,
                         )
                     )
                     char_index = skip(char_index, line)
@@ -1484,7 +1588,11 @@ def tokenize(input_string):
                         # Finish whole word if error
                         errors.append(
                             error_unknown.delim(
-                                line_number, char_index, tmp_word, line[char_index], rd.DELIM22
+                                line_number,
+                                char_index,
+                                tmp_word,
+                                line[char_index],
+                                rd.DELIM22,
                             )
                         )
                         char_index = skip(char_index, line)
@@ -1503,7 +1611,11 @@ def tokenize(input_string):
                             # Finish whole word if error
                             errors.append(
                                 error_unknown.delim(
-                                    line_number, char_index, tmp_word, line[char_index], rd.DELIM14
+                                    line_number,
+                                    char_index,
+                                    tmp_word,
+                                    line[char_index],
+                                    rd.DELIM14,
                                 )
                             )
                             char_index = skip(char_index, line)
@@ -1512,7 +1624,11 @@ def tokenize(input_string):
                         # Finish whole word if error
                         errors.append(
                             error_unknown.delim(
-                                line_number, char_index, tmp_word, line[char_index], rd.DELIM14
+                                line_number,
+                                char_index,
+                                tmp_word,
+                                line[char_index],
+                                rd.DELIM14,
                             )
                         )
                         char_index = skip(char_index, line)
@@ -1524,7 +1640,11 @@ def tokenize(input_string):
                     # Finish whole word if error
                     errors.append(
                         error_unknown.delim(
-                            line_number, char_index, tmp_word, line[char_index], rd.DELIM22
+                            line_number,
+                            char_index,
+                            tmp_word,
+                            line[char_index],
+                            rd.DELIM22,
                         )
                     )
                     char_index = skip(char_index, line)
@@ -1541,7 +1661,11 @@ def tokenize(input_string):
                     # Finish whole word if error
                     errors.append(
                         error_unknown.delim(
-                            line_number, char_index, tmp_word, line[char_index], rd.DELIM6
+                            line_number,
+                            char_index,
+                            tmp_word,
+                            line[char_index],
+                            rd.DELIM6,
                         )
                     )
                     char_index = skip(char_index, line)
@@ -1558,7 +1682,11 @@ def tokenize(input_string):
                     # Finish whole word if error
                     errors.append(
                         error_unknown.delim(
-                            line_number, char_index, tmp_word, line[char_index], rd.DELIM6
+                            line_number,
+                            char_index,
+                            tmp_word,
+                            line[char_index],
+                            rd.DELIM6,
                         )
                     )
                     char_index = skip(char_index, line)
@@ -1575,7 +1703,11 @@ def tokenize(input_string):
                     # Finish whole word if error
                     errors.append(
                         error_unknown.delim(
-                            line_number, char_index, tmp_word, line[char_index], rd.DELIM23
+                            line_number,
+                            char_index,
+                            tmp_word,
+                            line[char_index],
+                            rd.DELIM23,
                         )
                     )
                     char_index = skip(char_index, line)
@@ -1592,7 +1724,11 @@ def tokenize(input_string):
                     # Finish whole word if error
                     errors.append(
                         error_unknown.delim(
-                            line_number, char_index, tmp_word, line[char_index], rd.DELIM12
+                            line_number,
+                            char_index,
+                            tmp_word,
+                            line[char_index],
+                            rd.DELIM12,
                         )
                     )
                     char_index = skip(char_index, line)
@@ -1609,7 +1745,11 @@ def tokenize(input_string):
                     # Finish whole word if error
                     errors.append(
                         error_unknown.delim(
-                            line_number, char_index, tmp_word, line[char_index], rd.DELIM18
+                            line_number,
+                            char_index,
+                            tmp_word,
+                            line[char_index],
+                            rd.DELIM18,
                         )
                     )
                     char_index = skip(char_index, line)
@@ -1626,7 +1766,11 @@ def tokenize(input_string):
                     # Finish whole word if error
                     errors.append(
                         error_unknown.delim(
-                            line_number, char_index, tmp_word, line[char_index], rd.DELIM17
+                            line_number,
+                            char_index,
+                            tmp_word,
+                            line[char_index],
+                            rd.DELIM17,
                         )
                     )
                     char_index = skip(char_index, line)
@@ -1643,7 +1787,11 @@ def tokenize(input_string):
                     # Finish whole word if error
                     errors.append(
                         error_unknown.delim(
-                            line_number, char_index, tmp_word, line[char_index], rd.DELIM7
+                            line_number,
+                            char_index,
+                            tmp_word,
+                            line[char_index],
+                            rd.DELIM7,
                         )
                     )
                     char_index = skip(char_index, line)
@@ -1660,7 +1808,11 @@ def tokenize(input_string):
                     # Finish whole word if error
                     errors.append(
                         error_unknown.delim(
-                            line_number, char_index, tmp_word, line[char_index], rd.DELIM15
+                            line_number,
+                            char_index,
+                            tmp_word,
+                            line[char_index],
+                            rd.DELIM15,
                         )
                     )
                     char_index = skip(char_index, line)
@@ -1677,7 +1829,11 @@ def tokenize(input_string):
                     # Finish whole word if error
                     errors.append(
                         error_unknown.delim(
-                            line_number, char_index, tmp_word, line[char_index], rd.DELIM28
+                            line_number,
+                            char_index,
+                            tmp_word,
+                            line[char_index],
+                            rd.DELIM28,
                         )
                     )
                     char_index = skip(char_index, line)
@@ -1694,7 +1850,11 @@ def tokenize(input_string):
                     # Finish whole word if error
                     errors.append(
                         error_unknown.delim(
-                            line_number, char_index, tmp_word, line[char_index], rd.DELIM16
+                            line_number,
+                            char_index,
+                            tmp_word,
+                            line[char_index],
+                            rd.DELIM16,
                         )
                     )
                     char_index = skip(char_index, line)
@@ -1712,7 +1872,15 @@ def tokenize(input_string):
 
                     for x in range(50):
                         if line[char_index] == "\n":
-                            errors.append(error_unknown.delim(line_number, char_index, tmp_word, line[char_index], rd.DELIMID))
+                            errors.append(
+                                error_unknown.delim(
+                                    line_number,
+                                    char_index,
+                                    tmp_word,
+                                    line[char_index],
+                                    rd.DELIMID,
+                                )
+                            )
                             char_index += skip(char_index, line)
                             break
 
@@ -1727,14 +1895,26 @@ def tokenize(input_string):
                         continue
                     else:
                         # Finish whole word if error
-                        errors.append(error_unknown.delim(line_number, char_index, tmp_word, line[char_index], rd.DELIMi))
+                        errors.append(
+                            error_unknown.delim(
+                                line_number,
+                                char_index,
+                                tmp_word,
+                                line[char_index],
+                                rd.DELIMi,
+                            )
+                        )
                         char_index = skip(char_index, line)
                         continue
                 else:
                     # Finish whole word if error
                     errors.append(
                         error_unknown.delim(
-                            line_number, char_index, tmp_word, line[char_index], rd.DELIM20
+                            line_number,
+                            char_index,
+                            tmp_word,
+                            line[char_index],
+                            rd.DELIM20,
                         )
                     )
                     char_index = skip(char_index, line)
@@ -1751,7 +1931,11 @@ def tokenize(input_string):
                     # Finish whole word if error
                     errors.append(
                         error_unknown.delim(
-                            line_number, char_index, tmp_word, line[char_index], rd.DELIM20
+                            line_number,
+                            char_index,
+                            tmp_word,
+                            line[char_index],
+                            rd.DELIM20,
                         )
                     )
                     char_index = skip(char_index, line)
@@ -1774,7 +1958,11 @@ def tokenize(input_string):
                         # Finish whole word if error
                         errors.append(
                             error_unknown.delim(
-                                line_number, char_index, tmp_word, line[char_index], rd.DELIM8
+                                line_number,
+                                char_index,
+                                tmp_word,
+                                line[char_index],
+                                rd.DELIM8,
                             )
                         )
                         char_index = skip(char_index, line)
@@ -1789,7 +1977,11 @@ def tokenize(input_string):
                         # Finish whole word if error
                         errors.append(
                             error_unknown.delim(
-                                line_number, char_index, tmp_word, line[char_index], rd.DELIM8
+                                line_number,
+                                char_index,
+                                tmp_word,
+                                line[char_index],
+                                rd.DELIM8,
                             )
                         )
                         char_index = skip(char_index, line)
@@ -1804,7 +1996,11 @@ def tokenize(input_string):
                         # Finish whole word if error
                         errors.append(
                             error_unknown.delim(
-                                line_number, char_index, tmp_word, line[char_index], rd.DELIM8
+                                line_number,
+                                char_index,
+                                tmp_word,
+                                line[char_index],
+                                rd.DELIM8,
                             )
                         )
                         char_index = skip(char_index, line)
@@ -1819,7 +2015,11 @@ def tokenize(input_string):
                         # Finish whole word if error
                         errors.append(
                             error_unknown.delim(
-                                line_number, char_index, tmp_word, line[char_index], rd.DELIM8
+                                line_number,
+                                char_index,
+                                tmp_word,
+                                line[char_index],
+                                rd.DELIM8,
                             )
                         )
                         char_index = skip(char_index, line)
@@ -1834,7 +2034,11 @@ def tokenize(input_string):
                         # Finish whole word if error
                         errors.append(
                             error_unknown.delim(
-                                line_number, char_index, tmp_word, line[char_index], rd.DELIM21
+                                line_number,
+                                char_index,
+                                tmp_word,
+                                line[char_index],
+                                rd.DELIM21,
                             )
                         )
                         char_index = skip(char_index, line)
@@ -1853,7 +2057,11 @@ def tokenize(input_string):
                     if x == 5:
                         if line[char_index].isdigit():
                             tmp_word += line[char_index]
-                            errors.append(error_invalid_range.tint(char_index, line_number, tmp_word))
+                            errors.append(
+                                error_invalid_range.tint(
+                                    char_index, line_number, tmp_word
+                                )
+                            )
                             char_index = skip(char_index, line)
                             continue
                         elif line[char_index] in rd.DELIMtf:
@@ -1875,7 +2083,11 @@ def tokenize(input_string):
                         if x == 5:
                             if line[char_index].isdigit():
                                 tmp_word += line[char_index]
-                                errors.append(error_invalid_range.flora(char_index, line_number, tmp_word))
+                                errors.append(
+                                    error_invalid_range.flora(
+                                        char_index, line_number, tmp_word
+                                    )
+                                )
                                 char_index = skip(char_index, line)
                                 continue
                             elif line[char_index] in rd.DELIMtf:
@@ -1883,7 +2095,15 @@ def tokenize(input_string):
                                 continue
 
                 if line[char_index] not in rd.DELIMtf:
-                    errors.append(error_unknown.id(char_index, line_number, tmp_word, line[char_index], rd.DELIMtf))
+                    errors.append(
+                        error_unknown.id(
+                            char_index,
+                            line_number,
+                            tmp_word,
+                            line[char_index],
+                            rd.DELIMtf,
+                        )
+                    )
                     char_index = skip(char_index, line)
                     continue
                 continue
@@ -1895,20 +2115,28 @@ def tokenize(input_string):
                 if line[char_index] in rd.ASCII:
                     while True:
                         if line[char_index] == "\n":
-                            errors.append(error_unknown.delim(char_index, line_number, tmp_word, line[char_index], ["\""]))
+                            errors.append(
+                                error_unknown.delim(
+                                    char_index,
+                                    line_number,
+                                    tmp_word,
+                                    line[char_index],
+                                    ['"'],
+                                )
+                            )
                             char_index = skip(char_index, line)
                             break
 
                         tmp_word += line[char_index]
                         char_index += 1
 
-                        if line[char_index - 1] == '\\':
+                        if line[char_index - 1] == "\\":
                             tmp_esc = "\\"
-                            if line[char_index] == 'n':
+                            if line[char_index] == "n":
                                 tmp_esc = "n"
                                 char_index += 1
                                 tokens.append((rd.STR_LIT, tmp_esc))
-                            elif line[char_index] == '\\':
+                            elif line[char_index] == "\\":
                                 tmp_esc = "\\"
                                 char_index += 1
                                 tokens.append((rd.STR_LIT, tmp_esc))
@@ -1916,11 +2144,11 @@ def tokenize(input_string):
                                 tmp_esc = '"'
                                 char_index += 1
                                 tokens.append((rd.STR_LIT, tmp_esc))
-                            elif line[char_index] == 't':
+                            elif line[char_index] == "t":
                                 tmp_esc = "t"
                                 char_index += 1
                                 tokens.append((rd.STR_LIT, tmp_esc))
-                            elif line[char_index] == '\'':
+                            elif line[char_index] == "'":
                                 tmp_esc = "\\'"
                                 char_index += 1
                                 tokens.append((rd.STR_LIT, tmp_esc))
@@ -1933,8 +2161,15 @@ def tokenize(input_string):
                                 break
                             else:
                                 # Finish whole word if error
-                                errors.append(error_unknown.delim(
-                                    char_index, line_number, tmp_word, line[char_index], rd.DELIMtf))
+                                errors.append(
+                                    error_unknown.delim(
+                                        char_index,
+                                        line_number,
+                                        tmp_word,
+                                        line[char_index],
+                                        rd.DELIMtf,
+                                    )
+                                )
                                 char_index = skip(char_index, line)
                                 break
                     continue
@@ -1944,7 +2179,15 @@ def tokenize(input_string):
                 char_index += 1
                 if line[char_index].isascii():
                     if line[char_index] == "\n":
-                        errors.append(error_unknown.delim(char_index, line_number, tmp_word, line[char_index], ["\""]))
+                        errors.append(
+                            error_unknown.delim(
+                                char_index,
+                                line_number,
+                                tmp_word,
+                                line[char_index],
+                                ['"'],
+                            )
+                        )
                         char_index = skip(char_index, line)
                         continue
                     if line[char_index].isascii():
@@ -1958,17 +2201,40 @@ def tokenize(input_string):
                             continue
                         else:
                             # Finish whole word if error
-                            errors.append(error_unknown.delim(
-                                char_index, line_number, tmp_word, line[char_index], rd.DELIMtf))
+                            errors.append(
+                                error_unknown.delim(
+                                    char_index,
+                                    line_number,
+                                    tmp_word,
+                                    line[char_index],
+                                    rd.DELIMtf,
+                                )
+                            )
                             char_index = skip(char_index, line)
                             continue
                     else:
-                        errors.append(error_unknown.delim(char_index, line_number, tmp_word, line[char_index], ["'"]))
+                        errors.append(
+                            error_unknown.delim(
+                                char_index,
+                                line_number,
+                                tmp_word,
+                                line[char_index],
+                                ["'"],
+                            )
+                        )
                         char_index = skip(char_index, line)
                         continue
 
                 if line[char_index] not in rd.DELIMtf:
-                    errors.append(error_unknown.delim(char_index, line_number, tmp_word, line[char_index], rd.DELIMtf))
+                    errors.append(
+                        error_unknown.delim(
+                            char_index,
+                            line_number,
+                            tmp_word,
+                            line[char_index],
+                            rd.DELIMtf,
+                        )
+                    )
                     char_index = skip(char_index, line)
                     continue
                 continue
