@@ -1,5 +1,5 @@
 import tkinter as tk
-from test import is_lexical_analysis
+from lexical_analyzer import is_lexical_valid
 
 # REF(TextLineNumbers, CustomText): https://stackoverflow.com/questions/16369470/tkinter-adding-line-number-to-text-widget
 
@@ -57,12 +57,11 @@ class _CustomText(tk.Text):
         return result
 
 
-class _CodeEditorFrame(tk.Frame):
+class CodeEditorFrame(tk.Frame):
     def __init__(self, *args, **kwargs):
         tk.Frame.__init__(self, *args, **kwargs)
         self.text = _CustomText(self, wrap="none")
-        self.vsb = tk.Scrollbar(self, orient="vertical",
-                                command=self.text.yview)
+        self.vsb = tk.Scrollbar(self, orient="vertical", command=self.text.yview)
         self.text.configure(yscrollcommand=self.vsb.set)
         self.text.tag_configure("bigfont", font=("Helvetica", "24", "bold"))
         self.linenumbers = _TextLineNumbers(self, width=30)
@@ -78,13 +77,24 @@ class _CodeEditorFrame(tk.Frame):
     def _on_change(self, event):
         self.linenumbers.redraw()
 
+    def get_text(self):
+        return self.text.get("1.0", "end-1c").splitlines(True)
+
 
 class _HeadersFrame(tk.Frame):
 
-    def __init__(self, *args, output_instance=None, token_instance=None, **kwargs):
+    def __init__(
+        self,
+        *args,
+        output_instance=None,
+        token_instance=None,
+        code_editor_instance=None,
+        **kwargs,
+    ):
         tk.Frame.__init__(self, *args, **kwargs)
         self.output_instance = output_instance
         self.token_instance = token_instance
+        self.code_editor_instance = code_editor_instance
 
         self.lexBtn = tk.Button(
             self,
@@ -101,18 +111,24 @@ class _HeadersFrame(tk.Frame):
         self.stageLbl.pack(side="left", padx=100, pady=5)
 
     def _analyze(self):
+        """Analyze the input code"""
+        self.output_instance.clear_output()
+        self.token_instance.clear_tokens()
+
         self.stageLbl.configure(text="Compiler Stage: Lexical Analysis")
-        if is_lexical_analysis(self.output_instance, self.token_instance):
-            self.output_instance.set_output(
-                "LexicalAnalyser: No Error Found.\n")
+        if is_lexical_valid(
+            self.output_instance,
+            self.token_instance,
+            self.code_editor_instance.get_text(),
+        ):
+            pass
 
 
 class OutputFrame(tk.Frame):
     def __init__(self, *args, **kwargs):
         tk.Frame.__init__(self, *args, **kwargs)
 
-        self.outputLabel = tk.Label(
-            self, text="Ouput", font=("Arial", 14, "bold"))
+        self.outputLabel = tk.Label(self, text="Ouput", font=("Arial", 14, "bold"))
         self.outputLabel.pack(anchor="w")
 
         self.outputText = tk.Text(
@@ -126,10 +142,15 @@ class OutputFrame(tk.Frame):
         self.outputText.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
     def set_output(self, output: str):
-        """ Set the output text in the Output Frame """
+        """Set the output text in the Output Frame"""
+        self.outputText.configure(state="normal")
+        self.outputText.insert(tk.END, output)
+        self.outputText.configure(state="disabled")
+
+    def clear_output(self):
+        """Clear the output text in the Output Frame"""
         self.outputText.configure(state="normal")
         self.outputText.delete("1.0", tk.END)
-        self.outputText.insert(tk.END, output)
         self.outputText.configure(state="disabled")
 
 
@@ -153,14 +174,21 @@ class TokenTableFrame(tk.Frame):
         )
         self.tokenText.pack(fill=tk.Y, expand=True, padx=5, pady=5)
 
-    def set_token(self, output):
-        """ Set the token text in the Token Frame """
+    def set_tokens(self, output):
+        """Set the token text in the Token Frame"""
         self.tokenText.configure(state="normal")
-        self.tokenText.delete("1.0", tk.END)
 
         for token in output:
+            if token[1] == "<newline>":
+                continue
             self.tokenText.insert(tk.END, f"{token[0]}\t\t:    {token[1]}\n")
 
+        self.tokenText.configure(state="disabled")
+
+    def clear_tokens(self):
+        """Clear the token text in the Token Frame"""
+        self.tokenText.configure(state="normal")
+        self.tokenText.delete("1.0", tk.END)
         self.tokenText.configure(state="disabled")
 
 
@@ -170,9 +198,12 @@ class _MainFrame(tk.Frame):
 
         self.token = TokenTableFrame(self)
         self.output = OutputFrame(self)
-        self.codeEditor = _CodeEditorFrame(self)
+        self.codeEditor = CodeEditorFrame(self)
         self.headers = _HeadersFrame(
-            self, output_instance=self.output, token_instance=self.token
+            self,
+            output_instance=self.output,
+            token_instance=self.token,
+            code_editor_instance=self.codeEditor,
         )
 
         # Grid layout

@@ -1,50 +1,54 @@
 # Regular Definitions:
-zero = "0"
-dig = [chr(i) for i in range(49, 58)]
-let = [chr(i) for i in range(97, 123)] + [chr(i) for i in range(65, 91)]
-num = dig + [zero]
-newline = ["\n"]
-diglet = dig + let
-id = let + num + ["_", "-"]
-ht = ["#"]
-space = [" "]
-ascii = [chr(i) for i in range(128)]
-
+ZERO = "0"
+DIG = [chr(i) for i in range(49, 58)]
+LET = [chr(i) for i in range(97, 123)] + [chr(i) for i in range(65, 91)]
+NUM = DIG + [ZERO]
+NEWLINE = ["\n"]
+DIGLET = DIG + LET
+DELIMID = LET + NUM + ["_", "-"]
+HT = ["#"]
+SPC = [" "]
+ASCII = [chr(i) for i in range(128)]
 
 # Delimiters
-delimi = space + ["=", ";", ")", "(", ","]
-delimtf = newline + space + ["+", "-", "*", "/", "%",
-                             ";", ")", "]", "}", "<", ">", "!", "=", ",", ":"]
-delims = ["\"",]
-delimc = ["'"]
-delimb = space + ["=", "<", ">", "!", ";", "]", ")"]
-delim1 = [";", " "]
-delim2 = ["\n", ' ']
-delim3 = [' ', "("]
-delim4 = [" "]
-delim5 = num + space + ht + ["(", "["]
-delim6 = let + num + space + newline + ht + \
-    ["(", "[", "{", "\"", "\'", ")", "]"]
-delim7 = newline + dig + space + ht + ["\"", "\'", "(", "[", "{"]
-delim8 = let + num + ht + space + ["\"", "["]
-delim9 = space + newline
-delim10 = [";", ' ',  "\n", ","]
-delim11 = [";", "+", " ", ",", ")", "}", "]"]
-delim12 = space + ["=", ";", ")", "}", ","]
-delim13 = dig + space + ["("]
-delim14 = ascii
-delim15 = space + dig + let + newline + ["\"", ")", "]"]
-delim16 = let + ht + ["\n", " ", ")"]
-delim17 = newline + space + ["=", "-", "/", "*", "+", "]",
-                             ")", "}", ",", ";", "\'", "(", "."]
-delim18 = [";", ",", "]", "),", "}", "."]
-delim19 = num + space + ht + ["("]
-delim20 = let
-delim21 = space + [":", "("]
-delim22 = num + [" ", "(", "#"]
-delim23 = space + newline + ["\"", "}", "("] + dig
-delim24 = space + ["("]
-delim25 = newline + space + [")", ","]
-delim26 = newline + space + [")"]
-delim27 = space + num + ht + [",", "_", "[", ")", ":"]
-delim28 = let + ht
+DELIMi = SPC + ["=", ";", ")", "(", ","]
+DELIMtf = NEWLINE + SPC + ["+", "-", "*", "/", "%", ";", ")", "]", "}", "<", ">", "!", "=", ",", ":"]
+DELIMs = ["\"",]
+DELIMc = ["'"]
+DELIMb = SPC + ["=", "<", ">", "!", ";", "]", ")"]
+DELIM1 = [";", " "]
+DELIM2 = ["\n", ' ']
+DELIM3 = [' ', "("]
+DELIM4 = [" "]
+DELIM5 = NUM + SPC + HT + ["(", "["]
+DELIM6 = LET + NUM + SPC + NEWLINE + HT + ["(", "[", "{", "\"", "\'", ")", "]"]
+DELIM7 = NEWLINE + DIG + SPC + HT + ["\"", "\'", "(", "[", "{"]
+DELIM8 = LET + NUM + HT + SPC + ["\"", "["]
+DELIM9 = SPC + NEWLINE
+DELIM10 = [";", ' ',  "\n", ","]
+DELIM11 = [";", "+", " ", ",", ")", "}", "]"]
+DELIM12 = SPC + ["=", ";", ")", "}", ","]
+DELIM13 = DIG + SPC + ["("]
+DELIM14 = ASCII
+DELIM15 = SPC + DIG + LET + NEWLINE + ["\"", ")", "]"]
+DELIM16 = LET + HT + ["\n", " ", ")"]
+DELIM17 = NEWLINE + SPC + ["=", "-", "/", "*", "+", "]", ")", "}", ",", ";", "\'", "(", "."]
+DELIM18 = [";", ",", "]", "),", "}", "."]
+DELIM19 = NUM + SPC + HT + ["("]
+DELIM20 = LET
+DELIM21 = SPC + [":", "("]
+DELIM22 = NUM + [" ", "(", "#"]
+DELIM23 = SPC + NEWLINE + ["\"", "}", "("] + DIG
+DELIM24 = SPC + ["("]
+DELIM25 = NEWLINE + SPC + [")", ","]
+DELIM26 = NEWLINE + SPC + [")"]
+DELIM27 = SPC + NUM + HT + [",", "_", "[", ")", ":"]
+DELIM28 = LET + HT
+
+RW = "Reserved Word"
+RS = "Reserved Symbol"
+TINT_LIT = "Tint Literal"
+FLORA_LIT = "Flora Literal"
+STR_LIT = "String Literal"
+CHR_LIT = "Chard Literal"
+ID = "Identifier"
