@@ -9,9 +9,10 @@ DELIMID = LET + NUM + ["_", "-"]
 HT = ["#"]
 SPC = [" "]
 ASCII = [chr(i) for i in range(128)]
+ARITH = ["+", "-", "*", "/", "%"]
 
 # Delimiters
-DELIMi = SPC + ["=", ";", ")", "(", ","]
+DELIMi = ARITH + SPC + ["=", ";", ")", "(", ",", ]
 DELIMtf = NEWLINE + SPC + ["+", "-", "*", "/", "%", ";", ")", "]", "}", "<", ">", "!", "=", ",", ":"]
 DELIMs = ["\"",]
 DELIMc = ["'"]
@@ -27,10 +28,10 @@ DELIM8 = LET + NUM + HT + SPC + ["\"", "["]
 DELIM9 = SPC + NEWLINE
 DELIM10 = [";", ' ',  "\n", ","]
 DELIM11 = [";", "+", " ", ",", ")", "}", "]"]
-DELIM12 = SPC + ["=", ";", ")", "}", ","]
+DELIM12 = NEWLINE + SPC + ["=", ";", ")", "}", ",", "]"]
 DELIM13 = DIG + SPC + ["("]
 DELIM14 = ASCII
-DELIM15 = SPC + DIG + LET + NEWLINE + ["\"", ")", "]"]
+DELIM15 = SPC + DIG + LET + NEWLINE + ["\"", ")", "]", "["]
 DELIM16 = LET + HT + ["\n", " ", ")"]
 DELIM17 = NEWLINE + SPC + ["=", "-", "/", "*", "+", "]", ")", "}", ",", ";", "\'", "(", "."]
 DELIM18 = [";", ",", "]", "),", "}", "."]
@@ -52,3 +53,4 @@ FLORA_LIT = "Flora Literal"
 STR_LIT = "String Literal"
 CHR_LIT = "Chard Literal"
 ID = "Identifier"
+BL = "Bloom Literal"

@@ -3,7 +3,7 @@ import redef as rd
 
 
 def is_lexical_valid(output_instance, token_instance, input_string):
-    tokens, errors = tokenize(input_string)
+    output, errors = tokenize(input_string)
 
     if errors:
         for error in errors:
@@ -12,9 +12,9 @@ def is_lexical_valid(output_instance, token_instance, input_string):
         return False
 
     output_instance.set_output("LexicalAnalyser: No Errors Found.\n")
-    token_instance.set_tokens(tokens)
+    token_instance.set_output(output)
 
-    return True
+    return True, output
 
 
 def tokenize(input_string):
@@ -31,7 +31,7 @@ def tokenize(input_string):
     for line in input_string:
         char_index = 0
 
-        if line[-1] != "\n":
+        if line[char_index] != "\n":
             line += "\n"
 
         while char_index < len(line):
@@ -59,6 +59,9 @@ def tokenize(input_string):
 
             if line[char_index] == " ":
                 tokens.append((rd.RS, "<space>"))
+                char_index += 1
+                continue
+            elif line[char_index] == "\t":
                 char_index += 1
                 continue
 
@@ -107,6 +110,7 @@ def tokenize(input_string):
                         if line[char_index] == "e":
                             char_index += 1
                             tmp_word += "e"
+                            print(line[char_index])
                             if line[char_index] in rd.DELIM1:
                                 tokens.append((rd.RW, tmp_word))
                                 continue
@@ -349,7 +353,7 @@ def tokenize(input_string):
                                 char_index += 1
                                 tmp_word += "e"
                                 if line[char_index] in rd.DELIM3:
-                                    tokens.append((rd.RW, tmp_word))
+                                    tokens.append((rd.BL, tmp_word))
                                     continue
                                 else:
                                     # Finish whole word if error
@@ -1013,7 +1017,7 @@ def tokenize(input_string):
                             char_index += 1
                             tmp_word += "e"
                             if line[char_index] in rd.DELIMb:
-                                tokens.append((rd.RW, tmp_word))
+                                tokens.append((rd.BL, tmp_word))
                                 continue
                             else:
                                 # Finish whole word if error
@@ -1834,6 +1838,27 @@ def tokenize(input_string):
                             tmp_word,
                             line[char_index],
                             rd.DELIM28,
+                        )
+                    )
+                    char_index = skip(char_index, line)
+                    continue
+
+            # _ delim21
+            elif line[char_index] == "_":
+                char_index += 1
+                tmp_word = "_"
+                if line[char_index] in rd.DELIM21:
+                    tokens.append((rd.RS, tmp_word))
+                    continue
+                else:
+                    # Finish whole word if error
+                    errors.append(
+                        error_unknown.delim(
+                            line_number,
+                            char_index,
+                            tmp_word,
+                            line[char_index],
+                            rd.DELIM21,
                         )
                     )
                     char_index = skip(char_index, line)

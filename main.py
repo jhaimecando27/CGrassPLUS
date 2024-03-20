@@ -1,5 +1,6 @@
 import tkinter as tk
 from lexical_analyzer import is_lexical_valid
+from syntax_analyzer import is_syntax_valid
 
 # REF(TextLineNumbers, CustomText): https://stackoverflow.com/questions/16369470/tkinter-adding-line-number-to-text-widget
 
@@ -113,15 +114,31 @@ class _HeadersFrame(tk.Frame):
     def _analyze(self):
         """Analyze the input code"""
         self.output_instance.clear_output()
-        self.token_instance.clear_tokens()
+        self.token_instance.clear_output()
 
         self.stageLbl.configure(text="Compiler Stage: Lexical Analysis")
-        if is_lexical_valid(
-            self.output_instance,
-            self.token_instance,
-            self.code_editor_instance.get_text(),
-        ):
-            pass
+
+        try:
+            is_valid, lexer_output = is_lexical_valid(
+                self.output_instance,
+                self.token_instance,
+                self.code_editor_instance.get_text(),
+            )
+
+        except TypeError:
+            is_valid = is_lexical_valid(
+                self.output_instance,
+                self.token_instance,
+                self.code_editor_instance.get_text(),
+            )
+
+        if is_valid:
+            self.stageLbl.configure(text="Compiler Stage: Syntax Analysis")
+            if is_syntax_valid(
+                self.output_instance,
+                lexer_output,
+            ):
+                pass
 
 
 class OutputFrame(tk.Frame):
@@ -174,7 +191,7 @@ class TokenTableFrame(tk.Frame):
         )
         self.tokenText.pack(fill=tk.Y, expand=True, padx=5, pady=5)
 
-    def set_tokens(self, output):
+    def set_output(self, output):
         """Set the token text in the Token Frame"""
         self.tokenText.configure(state="normal")
 
@@ -185,7 +202,7 @@ class TokenTableFrame(tk.Frame):
 
         self.tokenText.configure(state="disabled")
 
-    def clear_tokens(self):
+    def clear_output(self):
         """Clear the token text in the Token Frame"""
         self.tokenText.configure(state="normal")
         self.tokenText.delete("1.0", tk.END)
