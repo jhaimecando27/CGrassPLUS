@@ -57,7 +57,7 @@ def _is_match(_continue: bool, expected: str) -> bool:
             return True
 
         elif "EPSILON" in g.FIRST_SET[expected]:
-            print(f"Skipping {expected}")
+            print(f"Skipping {expected} : {lexemes[index]}")
             return False
 
     if tokens[index] == expected:
@@ -71,7 +71,7 @@ def _is_match(_continue: bool, expected: str) -> bool:
         print(f"Skipping {expected}")
         return False
 
-    print(f"Syntax Error: {expected} not found")
+    print(f"Syntax Error: {expected} not found : {expected}")
     errors.append((lexemes[index], f"Syntax Error: {expected} not found"))
     return False
 
@@ -1196,7 +1196,7 @@ def _more_sqnc() -> None:
     if _is_match(True, ","):
         index += 1
 
-        if _is_match(False, "#"):
+        if _is_match(True, "#"):
             index += 2
 
         if _is_match(True, "<sqnc-value>"):
@@ -1430,13 +1430,12 @@ def _next_sqnc() -> None:
     if _is_match(True, ","):
         index += 1
 
-        if _is_match(True, "<sequence>"):
+        if _is_match(False, "<sequence>"):
             _sequence()
 
         return
 
     # 135: EPSILON
-    _get_error("<next_sqnc>")
     return
 
 
@@ -2751,19 +2750,47 @@ def _filter_2D_state() -> None:
     global index
 
     # 235
-    if _is_match(True, "<constant>"):
-        _constant()
+    if _is_match(True, "<constant>") or _is_match(True, "<insert-variable>"):
+        if _is_match(True, "<constant>"):
+            _constant()
 
-        if _is_match(True, "<insert-variable"):
+        if _is_match(True, "<insert-variable>"):
             _insert_variable()
 
         if _is_match(False, ";"):
             index += 1
 
-        if _is_match(True, "<filter-2D-state"):
+        if _is_match(True, "<filter-2D-state>"):
             _filter_2D_state()
 
         return
+    # 238
+    elif _is_match(True, "#") or (_is_match(True, "#") and _is_match(True, "<assignment-op")):
+        index += 2
+
+        if _is_match(True, "<insert-func>"):
+            _insert_func()
+
+        if _is_match(True, "<indexing>"):
+            _indexing()
+
+        if _is_match(True, "<more-id>"):
+            _more_id()
+
+        if _is_match(False, "<assignment-op>"):
+            _assignment_op()
+
+        if _is_match(True, "<all-type-value>"):
+            _all_type_value()
+
+        if _is_match(False, ";"):
+            index += 1
+
+        if _is_match(True, "<filter-2D-state>"):
+            _filter_2D_state()
+
+        return
+
 
     # 236
     elif _is_match(True, "<i/o-statement>"):
@@ -2808,33 +2835,6 @@ def _filter_2D_state() -> None:
             _2D_else()
 
         if _is_match(True, "<filter-2D-state"):
-            _filter_2D_state()
-
-        return
-
-    # 238
-    elif _is_match(True, "#"):
-        index += 2
-
-        if _is_match(True, "<insert-func>"):
-            _insert_func()
-
-        if _is_match(True, "<indexing>"):
-            _indexing()
-
-        if _is_match(True, "<more-id>"):
-            _more_id()
-
-        if _is_match(True, "<assignment-op>"):
-            _assignment_op()
-
-        if _is_match(True, "<all-type-value>"):
-            _all_type_value()
-
-        if _is_match(False, ";"):
-            index += 1
-
-        if _is_match(True, "<filter-2D-state>"):
             _filter_2D_state()
 
         return
