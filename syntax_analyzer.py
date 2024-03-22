@@ -2314,7 +2314,29 @@ def _iterative() -> None:
 
         return
 
-    # 202: EPSILON
+    # 202
+    elif _is_match(True, "willow"):
+        index += 1
+
+        if _is_match(False, "("):
+            index += 1
+
+        if _is_match(True, "<bloom>"):
+            _bloom()
+
+        if _is_match(False, ")"):
+            index += 1
+
+        if _is_match(False, "("):
+            index += 1
+
+        if _is_match(True, "<2D-statement>"):
+            _2D_statement()
+
+        if _is_match(False, ")"):
+            index += 1
+
+        return
     return
 
 
@@ -2872,8 +2894,29 @@ def _2D_iterative() -> None:
 
         return
 
-    # 244: EPSILON
-    _get_error("<2D-iterative>")
+    # 244
+    elif _is_match(True, "willow"):
+        index += 1
+
+        if _is_match(False, "("):
+            index += 1
+
+        if _is_match(True, "<bloom>"):
+            _bloom()
+
+        if _is_match(False, ")"):
+            index += 1
+
+        if _is_match(False, "("):
+            index += 1
+
+        if _is_match(True, "<3D-statement>"):
+            _3D_statement()
+
+        if _is_match(False, ")"):
+            index += 1
+
+        return
     return
 
 
@@ -3278,7 +3321,6 @@ def _3D_iterative() -> None:
 
         return
 
-    _get_error("<3D-iterative>")
     return
 
 
