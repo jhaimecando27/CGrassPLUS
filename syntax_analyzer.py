@@ -2073,10 +2073,12 @@ def _eleaf() -> None:
         if _is_match(False, ";"):
             index += 1
 
+        if _is_match(True, "<eleaf>"):
+            _eleaf()
+
         return
 
     # 186: EPSILON
-    _get_error("<eleaf>")
     return
 
 
