@@ -2842,7 +2842,7 @@ def _filter_2D_state() -> None:
         return
 
     # 239
-    elif _is_match(True, "<2D-itertive>"):
+    elif _is_match(True, "<2D-iterative>"):
         if _is_match(True, "<2D-iterative>"):
             _2D_iterative()
 
@@ -2942,10 +2942,16 @@ def _insert_2D_fern() -> None:
         if _is_match(False, ";"):
             index += 1
 
+        if _is_match(True, "<bloom>"):
+            _bloom()
+
+        if _is_match(False, ";"):
+            index += 1
+
         if _is_match(False, "#"):
             index += 2
 
-        if _is_match(True, "<assignment-op>"):
+        if _is_match(False, "<assignment-op>"):
             _assignment_op()
 
         if _is_match(True, "<flora>"):
