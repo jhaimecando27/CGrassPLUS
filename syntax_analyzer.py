@@ -453,7 +453,6 @@ def _tint() -> None:
              or lexemes[index + 2] not in g.FIRST_SET["<operator>"]
         )
     ):
-        print("passed")
         _tint_literals()
         return
 
@@ -566,7 +565,6 @@ def _flora() -> None:
         _arithmetic()
         return
 
-    _get_error("<tint>")
     return
 
 
@@ -638,12 +636,11 @@ def _flora_literals() -> None:
         return
 
     # 42
-    elif _is_match(True, "<tint-literals>"):
-        _tint_literals()
+    elif _is_match(True, "<tint>"):
+        _tint()
 
         return
 
-    _get_error("<flora-literals>")
     return
 
 
