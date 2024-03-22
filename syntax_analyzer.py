@@ -185,7 +185,7 @@ def _statement() -> None:
         if _is_match(True, "<filter-statement>"):
             _filter_statement()
 
-        if lexemes[index] not in g.FIRST_SET["<statement>"]:
+        if not _is_match(False, "<statement>"):
             break
         continue
 
@@ -371,7 +371,7 @@ def _insert_variable() -> None:
             index += 2
 
         # <string-value>
-        if _is_match(True, "<string-value>"):
+        if _is_match(False, "<string-value>"):
             _string_value()
 
         # <more-string>
@@ -729,7 +729,7 @@ def _chard() -> None:
         index += 1
 
         if _is_match(False, "("):
-            index += 1
+            index += 2
 
         if _is_match(False, "#"):
             index += 2
@@ -814,7 +814,6 @@ def _string() -> None:
 
         return
 
-    _get_error("<string>")
     return
 
 
@@ -2617,7 +2616,7 @@ def _2D_statement() -> None:
         elif _is_match(True, "<filter-2D-state>"):
             _filter_2D_state()
 
-        if lexemes[index] not in g.FIRST_SET["<2D-statement>"]:
+        elif _is_match(True, "<2D-statement>"):
             break
         continue
 
@@ -2880,7 +2879,6 @@ def _filter_2D_state() -> None:
         return
 
     # 242: EPSILON
-    _get_error("<filter-2D-state>")
     return
 
 
