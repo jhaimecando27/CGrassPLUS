@@ -1,6 +1,5 @@
 import redef as rd
 import grammar as g
-from syntax_helper import Token
 
 errors = []
 line_number = 1
