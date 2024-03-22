@@ -3979,7 +3979,7 @@ def _function() -> None:
             index += 2
 
         if _is_match(False, "("):
-            index += 2
+            index += 1
 
         if _is_match(True, "<undefined-param>"):
             _undefined_param()
