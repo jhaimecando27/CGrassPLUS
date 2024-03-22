@@ -4151,7 +4151,7 @@ def _parameter() -> None:
     global index
 
     # 319
-    if _is_match(True, "<undefined-param>"):
+    if _is_match(True, "<undefined-param>") and lexemes[index + 1] == "*#":
         _undefined_param()
         return
 
