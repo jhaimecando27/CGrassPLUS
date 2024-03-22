@@ -24,7 +24,7 @@ def is_syntax_valid(output_instance: object, lexer_output: object) -> bool:
     if errors:
         for error in errors:
             output_instance.set_output(
-                f"SyntaxAnalyser: Line {line_number} :  {error[1]} : {error[0]}\n"
+                f"SyntaxAnalyser: Line {line_number} :  {error[1]} \"{error[0]}\"\n"
             )
         output_instance.set_output("SyntaxAnalyser: Error Found.\n")
         errors.clear()
@@ -59,6 +59,10 @@ def _is_match(_continue: bool, expected: str) -> bool:
         elif "EPSILON" in g.FIRST_SET[expected]:
             print(f"Skipping {expected} : {lexemes[index]}")
             return False
+
+        print(f"Syntax Error: {expected} not found : {expected}")
+        errors.append((lexemes[index], f"Syntax Error: Expecting {g.FIRST_SET[expected]} but found "))
+        return False
 
     if tokens[index] == expected:
         print(f"Matched {lexemes[index]} with {expected}")
