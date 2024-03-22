@@ -1248,7 +1248,7 @@ def _sqnc() -> None:
         if _is_match(True, "<sequence>"):
             _sequence()
 
-        if _is_match(True, "<close>"):
+        if _is_match(False, "<close>"):
             _close()
 
         return
@@ -1362,7 +1362,7 @@ def _sequence() -> None:
     if _is_match(True, "<common-data>"):
         _common_data()
 
-        if _is_match(True, "<next_sqnc>"):
+        if _is_match(True, "<next-sqnc>"):
             _next_sqnc()
 
         return
