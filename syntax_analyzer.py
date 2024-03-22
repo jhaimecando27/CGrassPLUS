@@ -448,8 +448,12 @@ def _tint() -> None:
     # 28
     if (
         _is_match(True, "<tint-literals>")
-        and lexemes[index + 1] not in g.FIRST_SET["<operator>"]
+        and not (
+             lexemes[index + 1] not in g.FIRST_SET["<operator>"]
+             or lexemes[index + 2] not in g.FIRST_SET["<operator>"]
+        )
     ):
+        print("passed")
         _tint_literals()
         return
 
@@ -574,10 +578,10 @@ def _arithmetic() -> None:
     if _is_match(True, "<numerics>"):
         _numerics()
 
-        if _is_match(True, "<operate-numbers>"):
-            _operate_numbers()
+        if _is_match(True, "<operate-number>"):
+            _operate_number()
 
-            return
+        return
 
     elif _is_match(True, "("):
         index += 1
@@ -595,8 +599,9 @@ def _arithmetic() -> None:
             index += 1
 
         if _is_match(True, "<operate-numbers>"):
-            _operate_numbers()
-            return
+            _operate_number()
+
+        return
 
     _get_error("<arithmetic>")
     return
@@ -643,7 +648,7 @@ def _flora_literals() -> None:
 
 
 # 43-44
-def _operate_numbers() -> None:
+def _operate_number() -> None:
     global index
 
     # 43
@@ -678,7 +683,6 @@ def _numerics() -> None:
         _flora_literals()
         return
 
-    _get_error("<numerics>")
     return
 
 
