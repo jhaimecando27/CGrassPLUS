@@ -555,7 +555,10 @@ def _flora() -> None:
     # 36
     if (
         _is_match(True, "<flora-literals>")
-        and lexemes[index + 1] not in g.FIRST_SET["<operator>"]
+        and not (
+             lexemes[index + 1] not in g.FIRST_SET["<operator>"]
+             or lexemes[index + 2] not in g.FIRST_SET["<operator>"]
+        )
     ):
         _flora_literals()
         return
@@ -636,8 +639,8 @@ def _flora_literals() -> None:
         return
 
     # 42
-    elif _is_match(True, "<tint>"):
-        _tint()
+    elif _is_match(True, "<tint-literals>"):
+        _tint_literals()
 
         return
 
