@@ -422,7 +422,6 @@ def _insert_variable() -> None:
 
         return
 
-    _get_error("<more-sqnc>")
     return
 
 
@@ -469,7 +468,6 @@ def _tint() -> None:
         _arithmetic()
         return
 
-    _get_error("<tint>")
     return
 
 
@@ -536,7 +534,6 @@ def _tint_literals() -> None:
 
         return
 
-    _get_error("<tint-literals>")
     return
 
 
@@ -612,7 +609,6 @@ def _arithmetic() -> None:
 
         return
 
-    _get_error("<arithmetic>")
     return
 
 
@@ -753,7 +749,6 @@ def _chard() -> None:
 
         return
 
-    _get_error("<chard>")
     return
 
 
@@ -895,7 +890,6 @@ def _bloom() -> None:
 
         return
 
-    _get_error("<bloom>")
     return
 
 
@@ -959,7 +953,6 @@ def _bloom_literals() -> None:
         index += 1
         return
 
-    _get_error("<bloom-literals>")
     return
 
 
@@ -1060,7 +1053,6 @@ def _insert_index() -> None:
         index += 1
         return
 
-    _get_error("<insert-index>")
     return
 
 
@@ -1324,7 +1316,6 @@ def _sqnc() -> None:
 
         return
 
-    _get_error("<sqnc-type>")
     return
 
 
@@ -1396,7 +1387,6 @@ def _sequence() -> None:
 
         return
 
-    _get_error("<sequence>")
     return
 
 
@@ -1429,7 +1419,6 @@ def _common_data() -> None:
         _bloom()
         return
 
-    _get_error("<common-data>")
     return
 
 
@@ -1484,7 +1473,6 @@ def _2D_sqnc() -> None:
 
         return
 
-    _get_error("<2D-sqnc>")
     return
 
 
@@ -1502,7 +1490,6 @@ def _next_2D_sqnc() -> None:
         return
 
     # 139: EPSILON
-    _get_error("<next_2D_sqnc>")
     return
 
 
@@ -1523,7 +1510,6 @@ def _next_3D_sqnc() -> None:
         return
 
     # 141: EPSILON
-    _get_error("<next_3D_sqnc>")
     return
 
 
@@ -1541,7 +1527,6 @@ def _start_end_step() -> None:
         return
 
     # 143: EPSILON
-    _get_error("<start-end-step>")
     return
 
 
@@ -1570,7 +1555,6 @@ def _insert_start() -> None:
 
         return
 
-    _get_error("<insert-start>")
     return
 
 
@@ -1592,7 +1576,6 @@ def _close_start() -> None:
 
         return
 
-    _get_error("<close-start>")
     return
 
 
@@ -1624,7 +1607,6 @@ def _close_end() -> None:
 
         return
 
-    _get_error("<close-end>")
     return
 
 
@@ -1676,7 +1658,6 @@ def _2D_start_end_step() -> None:
         return
 
     # ]] 153: EPSILON
-    _get_error("<2D-start-end-step>")
     return
 
 
@@ -1704,7 +1685,6 @@ def _2D_insert_start() -> None:
 
         return
 
-    _get_error("<2D-insert-start>")
     return
 
 
@@ -1726,7 +1706,6 @@ def _2D_close_start() -> None:
 
         return
 
-    _get_error("<2D-close-start>")
     return
 
 
@@ -1758,7 +1737,6 @@ def _2D_close_end() -> None:
 
         return
 
-    _get_error("<2D-close-end>")
     return
 
 
@@ -1810,7 +1788,6 @@ def _3D_start_end_step() -> None:
         return
 
     # 163: EPSILON
-    _get_error("<3D-start-end-step>")
     return
 
 
@@ -1839,7 +1816,6 @@ def _3D_insert_start() -> None:
 
         return
 
-    _get_error("<3D-insert-start>")
     return
 
 
@@ -1861,7 +1837,6 @@ def _3D_close_start() -> None:
 
         return
 
-    _get_error("<3D-close-start>")
     return
 
 
@@ -1886,7 +1861,6 @@ def _3D_close_end() -> None:
 
         return
 
-    _get_error("<3D-close-end>")
     return
 
 
@@ -1947,7 +1921,6 @@ def _all_type_value() -> None:
 
         return
 
-    _get_error("<all-type-value>")
     return
 
 
@@ -2044,7 +2017,6 @@ def _insert_inpetal() -> None:
 
         return
 
-    _get_error("<insert-inpetal>")
     return
 
 
@@ -2125,7 +2097,6 @@ def _2D_eleaf() -> None:
         return
 
     # 186: EPSILON
-    _get_error("<eleaf>")
     return
 
 
@@ -2161,7 +2132,6 @@ def _3D_eleaf() -> None:
         return
 
     # 186: EPSILON
-    _get_error("<eleaf>")
     return
 
 
@@ -2197,7 +2167,6 @@ def _final_eleaf() -> None:
         return
 
     # 192: EPSILON
-    _get_error("<eleaf>")
     return
 
 
@@ -2224,7 +2193,6 @@ def _else() -> None:
         return
 
     # 194: EPSILON
-    _get_error("<else>")
     return
 
 
@@ -2251,7 +2219,6 @@ def _2D_else() -> None:
         return
 
     # 196: EPSILON
-    _get_error("<2D-else>")
     return
 
 
@@ -2278,7 +2245,6 @@ def _3D_else() -> None:
         return
 
     # 198: EPSILON
-    _get_error("<3D-else>")
     return
 
 
@@ -2305,7 +2271,6 @@ def _final_else() -> None:
         return
 
     # 200: EPSILON
-    _get_error("<final-else>")
     return
 
 
@@ -2434,7 +2399,6 @@ def _insert_fern() -> None:
 
         return
 
-    _get_error("<insert-fern>")
     return
 
 
@@ -2462,7 +2426,6 @@ def _more_value() -> None:
         return
 
     # 214: EPSILON
-    _get_error("<more-value>")
     return
 
 
@@ -2479,7 +2442,6 @@ def _final_value() -> None:
         return
 
     # 216: EPSILON
-    _get_error("<final-value>")
     return
 
 
@@ -2518,7 +2480,6 @@ def _use_tree() -> None:
         return
 
     # 218: EPSILON
-    _get_error("<use-tree>")
     return
 
 
@@ -2550,7 +2511,6 @@ def _check_branch() -> None:
 
         return
 
-    _get_error("<check-branch>")
     return
 
 
@@ -2588,7 +2548,6 @@ def _insert_branch() -> None:
 
         return
 
-    _get_error("<insert-branch>")
     return
 
 
@@ -2606,7 +2565,6 @@ def _more_branch() -> None:
         return
 
     # 224: EPSILON
-    _get_error("<more-branch>")
     return
 
 
@@ -2698,7 +2656,6 @@ def _check_2D_branch() -> None:
 
         return
 
-    _get_error("<check-2D-branch>")
     return
 
 
@@ -2736,7 +2693,6 @@ def _insert_2D_branch() -> None:
 
         return
 
-    _get_error("<insert-2D-branch>")
     return
 
 
@@ -2754,7 +2710,6 @@ def _more_2D_branch() -> None:
         return
 
     # 234: EPSILON
-    _get_error("<more-2D-branch>")
     return
 
 
@@ -3014,7 +2969,6 @@ def _insert_2D_fern() -> None:
 
         return
 
-    _get_error("<insert-2D-fern>")
     return
 
 
@@ -3075,7 +3029,6 @@ def _use_3D_tree() -> None:
         return
 
     # 250: EPSILON
-    _get_error("<use-3D-tree>")
     return
 
 
@@ -3107,7 +3060,6 @@ def _check_3D_branch() -> None:
 
         return
 
-    _get_error("<check-3D-branch>")
     return
 
 
@@ -3145,7 +3097,6 @@ def _insert_3D_branch() -> None:
 
         return
 
-    _get_error("<insert-3D-branch>")
     return
 
 
@@ -3163,7 +3114,6 @@ def _more_3D_branch() -> None:
         return
 
     # 256: EPSILON
-    _get_error("<more-3D-branch>")
     return
 
 
@@ -3295,7 +3245,6 @@ def _filter_3D_state() -> None:
         return
 
     # 264: EPSILON
-    _get_error("<filter-3D-state>")
     return
 
 
@@ -3424,7 +3373,6 @@ def _insert_3D_fern() -> None:
 
         return
 
-    _get_error("<insert-3D-fern>")
     return
 
 
@@ -3447,7 +3395,6 @@ def _final_statement() -> None:
         return
 
     # 270: EPSILON
-    _get_error("<final-statement>")
     return
 
 
@@ -3486,7 +3433,6 @@ def _use_final_tree() -> None:
         return
 
     # 272: EPSILON
-    _get_error("<use-final-tree>")
     return
 
 
@@ -3518,7 +3464,6 @@ def _check_final_branch() -> None:
 
         return
 
-    _get_error("<check-final-branch>")
     return
 
 
@@ -3556,7 +3501,6 @@ def _insert_final_branch() -> None:
 
         return
 
-    _get_error("<insert-final-branch>")
     return
 
 
@@ -3574,7 +3518,6 @@ def _more_final_branch() -> None:
         return
 
     # 278: EPSILON
-    _get_error("<more-final-branch>")
     return
 
 
@@ -3827,7 +3770,6 @@ def _insert_kwargs() -> None:
 
         return
 
-    _get_error("<insert-kwargs>")
     return
 
 
@@ -3845,7 +3787,6 @@ def _more_kwargs() -> None:
         return
 
     # 298: EPSILON
-    _get_error("<more**kwargs>")
     return
 
 
@@ -3900,7 +3841,6 @@ def _2D_argument() -> None:
 
         return
 
-    _get_error("<2D-argument>")
     return
 
 
@@ -3918,7 +3858,6 @@ def _add_2D_argument() -> None:
         return
 
     # 304: EPSILON
-    _get_error("<add-2D-argument>")
     return
 
 
@@ -3939,7 +3878,6 @@ def _add_3D_argument() -> None:
         return
 
     # 306: EPSILON
-    _get_error("<add-3D-argument>")
     return
 
 
@@ -3977,7 +3915,6 @@ def _check_func() -> None:
 
         return
 
-    _get_error("<check-func>")
     return
 
 
@@ -4084,7 +4021,6 @@ def _add_at() -> None:
         return
 
     # 313: EPSILON
-    _get_error("<add-at>")
     return
 
 
@@ -4148,7 +4084,6 @@ def _common_variable() -> None:
             _bloom_value()
         return
 
-    _get_error("<common-variable>")
     return
 
 
@@ -4204,7 +4139,6 @@ def _parameter() -> None:
         return
 
     # 323: EPSILON
-    _get_error("<parameter>")
     return
 
 
@@ -4223,7 +4157,6 @@ def _undefined_param() -> None:
             _add_kwargs()
 
     # 325: EPSILON
-    _get_error("<undefined-param>")
     return
 
 
@@ -4241,7 +4174,6 @@ def _add_kwargs() -> None:
         return
 
     # 327: EPSILON
-    _get_error("<add-kwargs>")
     return
 
 
@@ -4259,7 +4191,6 @@ def _next_parameter() -> None:
         return
 
     # 329: EPSILON
-    _get_error("<next-parameter>")
     return
 
 
@@ -4314,7 +4245,6 @@ def _2D_parameter() -> None:
 
         return
 
-    _get_error("<2D-parameter>")
     return
 
 
@@ -4332,7 +4262,6 @@ def _next_2D_param() -> None:
         return
 
     # 335: EPSILON
-    _get_error("<next-2D-param>")
     return
 
 
@@ -4369,7 +4298,6 @@ def _3D_parameter() -> None:
 
         return
 
-    _get_error("<3D-parameter>")
     return
 
 
@@ -4387,5 +4315,4 @@ def _next_3D_param() -> None:
         return
 
     # 340: EPSILON
-    _get_error("<next-3D-param>")
     return
