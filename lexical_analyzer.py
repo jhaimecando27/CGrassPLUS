@@ -31,7 +31,7 @@ def tokenize(input_string):
     for line in input_string:
         char_index = 0
 
-        if line[char_index] != "\n":
+        if line[-1] != "\n":
             line += "\n"
 
         while char_index < len(line):
@@ -1892,8 +1892,6 @@ def tokenize(input_string):
                 if line[char_index] in rd.DELIM20:
                     tokens.append((rd.RS, tmp_word))
                     tmp_word = ""
-                    tmp_word += line[char_index]
-                    char_index += 1
 
                     for x in range(50):
                         if line[char_index] == "\n":
@@ -1906,7 +1904,6 @@ def tokenize(input_string):
                                     rd.DELIMID,
                                 )
                             )
-                            char_index += skip(char_index, line)
                             break
 
                         if line[char_index] in rd.DELIMID:
