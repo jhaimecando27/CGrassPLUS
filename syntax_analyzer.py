@@ -1245,7 +1245,7 @@ def _sqnc() -> None:
     if _is_match(True, "<open>"):
         _open()
 
-        if _is_match(True, "<dirt>"):
+        if _is_match(True, "<dirt>") and lexemes[index + 1] == ":":
             _dirt()
 
         if _is_match(True, "<sequence>"):
@@ -1373,7 +1373,7 @@ def _sequence() -> None:
     elif _is_match(True, "<open>"):
         _open()
 
-        if _is_match(True, "<dirt>"):
+        if _is_match(True, "<dirt>") and lexemes[index + 1] == ":":
             _dirt()
 
         if _is_match(True, "<2D-sqnc>"):
@@ -1456,7 +1456,7 @@ def _2D_sqnc() -> None:
     elif _is_match(True, "<open>"):
         _open()
 
-        if _is_match(True, "<dirt>"):
+        if _is_match(True, "<dirt>") and lexemes[index + 1] == ":":
             _dirt()
 
         if _is_match(True, "<common-data>"):
