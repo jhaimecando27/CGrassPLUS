@@ -614,7 +614,7 @@ def _arithmetic() -> None:
         if _is_match(False, ")"):
             index += 1
 
-        if _is_match(True, "<operate-numbers>"):
+        if _is_match(True, "<operate-number>"):
             _operate_number()
 
         return
@@ -2380,7 +2380,7 @@ def _insert_fern() -> None:
         return
 
     # 204
-    elif _is_match(True, "<all-type-value"):
+    elif _is_match(True, "<all-type-value>"):
         _all_type_value()
 
         if _is_match(True, "<more-value>"):
@@ -2952,7 +2952,7 @@ def _insert_2D_fern() -> None:
         return
 
     # 246
-    elif _is_match(True, "<all-type-value"):
+    elif _is_match(True, "<all-type-value>"):
         _all_type_value()
 
         if _is_match(True, "<more-value>"):
@@ -3358,7 +3358,7 @@ def _insert_3D_fern() -> None:
         return
 
     # 268
-    elif _is_match(True, "<all-type-value"):
+    elif _is_match(True, "<all-type-value>"):
         _all_type_value()
 
         if _is_match(True, "<more-value>"):
