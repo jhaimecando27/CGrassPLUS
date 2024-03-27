@@ -1,15 +1,17 @@
 import redef as rd
 import grammar as g
 
-errors = []
-line_number = 1
-index = 0
-tokens = []
-lexemes = []
+errors: list[list[str]] = []
+line_number: int = 1
+index: int = 0
+tokens: list[str] = []
+lexemes: list[str] = []
+output: object = None
 
 
 def is_syntax_valid(output_instance: object, lexer_output: object) -> bool:
-    global index, errors, line_number, tokens, lexemes
+    global index, errors, line_number, tokens, lexemes, output
+    output = output_instance
 
     avoid = ["<space>", "<--", "-->", "?"]
     lexer_output = [x for x in lexer_output if x[1] not in avoid]
@@ -38,7 +40,7 @@ def is_syntax_valid(output_instance: object, lexer_output: object) -> bool:
 
 
 def _is_match(_continue: bool, expected: str) -> bool:
-    global index, lexemes, tokens, errors, line_number
+    global index, lexemes, tokens, errors, line_number, output
 
     if errors:
         return False
@@ -54,14 +56,17 @@ def _is_match(_continue: bool, expected: str) -> bool:
             or tokens[index] in g.FIRST_SET[expected]
         ):
             print(f"Matched {lexemes[index]} with {expected}")
+            output.set_output(f"Matched {lexemes[index]} with {expected}\n")
             return True
 
         elif "EPSILON" in g.FIRST_SET[expected]:
             print(f"Skipping {expected} : {lexemes[index]}")
+            output.set_output(f"Skipping {expected} : {lexemes[index]}\n")
             return False
 
         if _continue:
             print(f"Skipping {expected}")
+            output.set_output(f"Skipping {expected}\n")
             return False
 
         print(f"Syntax Error: {expected} not found : {expected}")
@@ -70,13 +75,16 @@ def _is_match(_continue: bool, expected: str) -> bool:
 
     if tokens[index] == expected:
         print(f"Matched {lexemes[index]} with {expected}")
+        output.set_output(f"Matched {lexemes[index]} with {expected}\n")
         return True
     elif lexemes[index] == expected:
         print(f"Matched {lexemes[index]} with {expected}")
+        output.set_output(f"Matched {lexemes[index]} with {expected}\n")
         return True
 
     if _continue:
         print(f"Skipping {expected}")
+        output.set_output(f"Skipping {expected}\n")
         return False
 
     print(f"Syntax Error: Expecting {expected} : But found {lexemes[index]}")
