@@ -2155,25 +2155,20 @@ def tokenize(input_string):
                         if line[char_index - 1] == "\\":
                             tmp_esc = "\\"
                             if line[char_index] == "n":
-                                tmp_esc = "n"
+                                tmp_esc += "n"
                                 char_index += 1
-                                tokens.append((rd.STR_LIT, tmp_esc))
                             elif line[char_index] == "\\":
-                                tmp_esc = "\\"
+                                tmp_esc += "\\"
                                 char_index += 1
-                                tokens.append((rd.STR_LIT, tmp_esc))
                             elif line[char_index] == '"':
-                                tmp_esc = '"'
+                                tmp_esc += '"'
                                 char_index += 1
-                                tokens.append((rd.STR_LIT, tmp_esc))
                             elif line[char_index] == "t":
-                                tmp_esc = "t"
+                                tmp_esc += "t"
                                 char_index += 1
-                                tokens.append((rd.STR_LIT, tmp_esc))
                             elif line[char_index] == "'":
-                                tmp_esc = "\\'"
+                                tmp_esc += "\\'"
                                 char_index += 1
-                                tokens.append((rd.STR_LIT, tmp_esc))
 
                         if line[char_index] == '"':
                             tmp_word += line[char_index]
