@@ -1369,7 +1369,7 @@ def _sequence() -> None:
     global index
 
     # 127
-    if _is_match(True, "<common-data>"):
+    if _is_match(True, "<common-data>") and lexemes[index + 1] != ":":
         _common_data()
 
         if _is_match(True, "<next-sqnc>"):
