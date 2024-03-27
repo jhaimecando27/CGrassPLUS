@@ -36,6 +36,7 @@ def is_syntax_valid(output_instance: object, lexer_output: object) -> bool:
 
     output_instance.set_output("SyntaxAnalyser: No Errors Found.\n")
     index = 0
+    line_number = 1
     return True
 
 
