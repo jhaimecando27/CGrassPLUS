@@ -21,6 +21,7 @@ DELIMi = (
         ")",
         "(",
         ",",
+        "[",
     ]
 )
 DELIMtf = (
@@ -35,10 +36,10 @@ DELIMc = ["'"]
 DELIMb = SPC + ["=", "<", ">", "!", ";", "]", ")"]
 DELIM1 = [";", " "]
 DELIM2 = ["\n", " "]
-DELIM3 = [" ", "("]
+DELIM3 = [" ", "(", "]"]
 DELIM4 = [" "]
 DELIM5 = NUM + SPC + HT + ["(", "["]
-DELIM6 = LET + NUM + SPC + NEWLINE + HT + ["(", "[", "{", '"', "'", ")", "]"]
+DELIM6 = LET + NUM + SPC + NEWLINE + HT + ["(", "[", "{", '"', "'", ")", "]", ":"]
 DELIM7 = NEWLINE + DIG + SPC + HT + ['"', "'", "(", "[", "{"]
 DELIM8 = LET + NUM + HT + SPC + ['"', "["]
 DELIM9 = SPC + NEWLINE
