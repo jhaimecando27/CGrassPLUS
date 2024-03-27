@@ -467,7 +467,7 @@ def _tint() -> None:
     # 28
     if (
         _is_match(True, "<tint-literals>")
-        and not (
+        and (
              lexemes[index + 1] not in g.FIRST_SET["<operator>"]
              or lexemes[index + 2] not in g.FIRST_SET["<operator>"]
         )
