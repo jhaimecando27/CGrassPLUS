@@ -172,6 +172,7 @@ def _global() -> None:
         index += 1
 
     if _is_match(True, "<global>"):
+        index += 1
         _global()
 
     # 3: EPSILON
