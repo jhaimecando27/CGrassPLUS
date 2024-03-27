@@ -194,14 +194,16 @@ def _statement() -> None:
     # Note: Have _2D_statement() & _3D_statement(), modifying this method need
     # to be done to both _2D_statement() and _3D_statement() methods
 
+    avoid = [")", ";"]
+
     while True:
-        if _is_match(True, "<use-tree>"):
+        if _is_match(True, "<use-tree>") and lexemes[index] == "tree":
             _use_tree()
 
         if _is_match(True, "<filter-statement>"):
             _filter_statement()
 
-        if not _is_match(False, "<statement>"):
+        if not _is_match(False, "<statement>") or lexemes[index] in avoid:
             break
         continue
 
@@ -2582,15 +2584,17 @@ def _2D_statement() -> None:
     # Note: Have _statement() & _3D_statement(), modifying this method need to
     # be done to both _statement() and _3D_statement() methods
 
+    avoid = [")", ";"]
+
     # 225
     while True:
-        if _is_match(True, "<use-2D-tree>"):
+        if _is_match(True, "<use-2D-tree>") and lexemes[index] == "tree":
             _use_2D_tree()
 
         elif _is_match(True, "<filter-2D-state>"):
             _filter_2D_state()
 
-        elif _is_match(True, "<2D-statement>"):
+        elif not _is_match(False, "<2D-statement>") or lexemes[index] in avoid:
             break
         continue
 
@@ -2986,15 +2990,17 @@ def _3D_statement() -> None:
     # Note: Have _statement() & _2D_statement(), modifying this method need to
     # be done to both _statement() and 2D_statement() methods
 
+    avoid = [")", ";"]
+
     # 247
     while True:
-        if _is_match(True, "<use-3D-tree>"):
+        if _is_match(True, "<use-3D-tree>") and lexemes[index] == "tree":
             _use_3D_tree()
 
         if _is_match(True, "<filter-3D-state>"):
             _filter_3D_state()
 
-        if lexemes[index] not in g.FIRST_SET["<3D-statement>"]:
+        if lexemes[index] not in g.FIRST_SET["<3D-statement>"] or lexemes[index] in avoid:
             break
         continue
 
