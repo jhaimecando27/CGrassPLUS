@@ -93,19 +93,30 @@ def _is_match(_continue: bool, expected: str) -> bool:
     return False
 
 
-def _check_word(expected: str) -> True:
+def _find_future(expected: str) -> True:
     global index, lexemes
-    words: list[str] = lexemes[index:]
 
-    for word in words:
-        print(word)
-        if word == "<newline>":
-            break
+    if g.FIRST_SET.get(expected) is not None:
+        avoid: list[str] = g.FIRST_SET[expected]
 
-        if word == expected:
-            return True
+        for word in lexemes[index:]:
+            if word == "<newline>":
+                return False
 
-    return False
+            if word in avoid:
+                break
+
+    else:
+        words: list[str] = lexemes[index:]
+
+        for word in words:
+            if word == "<newline>":
+                return False
+
+            if word == expected:
+                break
+
+    return True
 
 
 def _get_error(expected: str) -> None:
@@ -233,7 +244,7 @@ def _filter_statement() -> None:
     global index
 
     # 8
-    if (_is_match(True, "<constant>") or _is_match(True, "<insert-variable>")) and not _check_word("inpetal"):
+    if (_is_match(True, "<constant>") or _is_match(True, "<insert-variable>")) and not _find_future("inpetal"):
         _constant()
 
         if _is_match(True, "<insert-variable>"):
@@ -247,7 +258,7 @@ def _filter_statement() -> None:
         return
 
     # 11
-    elif _is_match(True, "#") and not _check_word("inpetal"):
+    elif _is_match(True, "#") and _find_future("inpetal"):
         index += 2
 
         if _is_match(True, "<check-func>"):
@@ -477,13 +488,7 @@ def _tint() -> None:
     global index
 
     # 28
-    if (
-        _is_match(True, "<tint-literals>")
-        and (
-             lexemes[index + 1] not in g.FIRST_SET["<operator>"]
-             or lexemes[index + 2] not in g.FIRST_SET["<operator>"]
-        )
-    ):
+    if _is_match(True, "<tint>") and not _find_future("<operator>"):
         _tint_literals()
         return
 
