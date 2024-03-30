@@ -233,7 +233,7 @@ def _filter_statement() -> None:
     global index
 
     # 8
-    if _is_match(True, "<constant>") or _is_match(True, "<insert-variable>"):
+    if (_is_match(True, "<constant>") or _is_match(True, "<insert-variable>")) and not _check_word("inpetal"):
         _constant()
 
         if _is_match(True, "<insert-variable>"):
