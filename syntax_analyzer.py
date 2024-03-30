@@ -284,9 +284,6 @@ def _filter_statement() -> None:
         if _is_match(True, "<check-func>"):
             _check_func()
 
-        if _is_match(True, "<check-func>"):
-            _check_func()
-
         if _is_match(False, ";"):
             index += 1
 
