@@ -93,6 +93,21 @@ def _is_match(_continue: bool, expected: str) -> bool:
     return False
 
 
+def _check_word(expected: str) -> True:
+    global index, lexemes
+    words: list[str] = lexemes[index:]
+
+    for word in words:
+        print(word)
+        if word == "<newline>":
+            break
+
+        if word == expected:
+            return True
+
+    return False
+
+
 def _get_error(expected: str) -> None:
     global index, lexemes, errors
 
@@ -231,6 +246,20 @@ def _filter_statement() -> None:
             _filter_statement()
         return
 
+    # 11
+    elif _is_match(True, "#") and not _check_word("inpetal"):
+        index += 2
+
+        if _is_match(True, "<check-func>"):
+            _check_func()
+
+        if _is_match(False, ";"):
+            index += 1
+
+        if _is_match(True, "<filter-statement>"):
+            _filter_statement()
+        return
+
     # 9
     elif _is_match(True, "<i/o-statement>"):
         _i_o_statement()
@@ -272,20 +301,6 @@ def _filter_statement() -> None:
 
         if _is_match(True, "<else>"):
             _else()
-
-        if _is_match(True, "<filter-statement>"):
-            _filter_statement()
-        return
-
-    # 11
-    elif _is_match(True, "#"):
-        index += 2
-
-        if _is_match(True, "<check-func>"):
-            _check_func()
-
-        if _is_match(False, ";"):
-            index += 1
 
         if _is_match(True, "<filter-statement>"):
             _filter_statement()
@@ -1941,7 +1956,7 @@ def _i_o_statement() -> None:
     if _is_match(True, "<insert-inpetal>"):
         _insert_inpetal()
 
-        if _is_match(True, "inpetal"):
+        if _is_match(False, "inpetal"):
             index += 1
 
         if _is_match(False, "("):
@@ -3903,7 +3918,7 @@ def _check_func() -> None:
         index += 1
 
         if _is_match(True, "<argument>"):
-            _argument
+            _argument()
 
         if _is_match(False, ")"):
             index += 1
