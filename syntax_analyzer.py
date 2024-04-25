@@ -1,5 +1,5 @@
-import redef as rd
 import grammar as g
+from var import add_parse_tree_node, parse_tree_root
 
 errors: list[list[str]] = []
 line_number: int = 1
@@ -17,8 +17,6 @@ def is_syntax_valid(output_instance: object, lexer_output: object) -> bool:
     lexer_output = [x for x in lexer_output if x[1] not in avoid]
 
     lexer_output.append(("EOF", "EOF"))
-
-    print(lexer_output)
 
     tokens, lexemes = zip(*lexer_output)
     _check_syntax()
@@ -40,7 +38,7 @@ def is_syntax_valid(output_instance: object, lexer_output: object) -> bool:
     return True
 
 
-def _is_match(_continue: bool, expected: str) -> bool:
+def _is_match(_continue: bool, expected: str, node: classmethod = None) -> bool:
     global index, lexemes, tokens, errors, line_number, output
 
     if errors:
@@ -51,23 +49,24 @@ def _is_match(_continue: bool, expected: str) -> bool:
         line_number += 1
         index += 1
 
-    if g.FIRST_SET.get(expected) is not None and g.FOLLOW_SET.get(expected) is not None:
+    if g.FIRST_SET.get(expected) is not None or g.FOLLOW_SET.get(expected) is not None:
+        print(f"Checking {lexemes[index]} with {expected}")
         if (
             lexemes[index] in g.FIRST_SET[expected]
             or tokens[index] in g.FIRST_SET[expected]
         ):
             print(f"Matched {lexemes[index]} with {expected}")
-            output.set_output(f"Matched {lexemes[index]} with {expected}\n")
+            # output.set_output(f"Matched {lexemes[index]} with {expected}\n")
             return True
 
         elif "EPSILON" in g.FIRST_SET[expected]:
             print(f"Skipping {expected} : {lexemes[index]}")
-            output.set_output(f"Skipping {expected} : {lexemes[index]}\n")
+            # output.set_output(f"Skipping {expected} : {lexemes[index]}\n")
             return False
 
         if _continue:
             print(f"Skipping {expected}")
-            output.set_output(f"Skipping {expected}\n")
+            # output.set_output(f"Skipping {expected}\n")
             return False
 
         print(f"Syntax Error: {expected} not found : {expected}")
@@ -76,16 +75,18 @@ def _is_match(_continue: bool, expected: str) -> bool:
 
     if tokens[index] == expected:
         print(f"Matched {lexemes[index]} with {expected}")
-        output.set_output(f"Matched {lexemes[index]} with {expected}\n")
+        # output.set_output(f"Matched {lexemes[index]} with {expected}\n")
+        add_parse_tree_node(node, expected)
         return True
     elif lexemes[index] == expected:
         print(f"Matched {lexemes[index]} with {expected}")
-        output.set_output(f"Matched {lexemes[index]} with {expected}\n")
+        # output.set_output(f"Matched {lexemes[index]} with {expected}\n")
+        add_parse_tree_node(node, expected)
         return True
 
     if _continue:
         print(f"Skipping {expected}")
-        output.set_output(f"Skipping {expected}\n")
+        # output.set_output(f"Skipping {expected}\n")
         return False
 
     print(f"Syntax Error: Expecting {expected} : But found {lexemes[index]}")
@@ -138,78 +139,86 @@ def _get_error(expected: str) -> None:
 
 # 1: program
 def _check_syntax() -> None:
+    node = parse_tree_root
     global index
 
-    if _is_match(False, "seed"):
+    if _is_match(False, "seed", node):
         index += 1
 
     # 2
     if _is_match(True, "<global>"):
-        index += 1
-        _global()
+        global_node = add_parse_tree_node(node, "<global>")
+        _global(global_node, node)
 
     # ----- GARDEN: START ----- #
 
-    if _is_match(False, "garden"):
+    if _is_match(False, "garden", node):
         index += 1
 
-    if _is_match(False, "("):
+    if _is_match(False, "(", node):
         index += 1
 
-    if _is_match(False, ")"):
+    if _is_match(False, ")", node):
         index += 1
 
-    if _is_match(False, "("):
+    if _is_match(False, "(", node):
         index += 1
 
     if _is_match(True, "<statement>"):
-        _statement()
+        statement_node = add_parse_tree_node(node, "<statement>")
+        _statement(statement_node, node)
 
-    if _is_match(False, ")"):
+    if _is_match(False, ")", node):
         index += 1
 
-    if _is_match(False, ";"):
+    if _is_match(False, ";", node):
         index += 1
 
     # ----- GARDEN: END ----- #
 
     if _is_match(True, "<function>"):
-        _function()
+        function_node = add_parse_tree_node(node, "<function>")
+        _function(function_node, node)
 
-    if _is_match(False, "plant"):
+    if _is_match(False, "plant", node):
         index += 1
 
     return
 
 
 # 2
-def _global() -> None:
+def _global(node: classmethod, prev_node: classmethod) -> None:
     global index
+
+    add_parse_tree_node(node, lexemes[index])
+    index += 1
 
     # 4
     if _is_match(True, "<constant>"):
-        _constant()
+        constant_node = add_parse_tree_node(node, "<constant>")
+        _constant(constant_node, node)
 
     # 16-21
     if _is_match(True, "<insert-variable>"):
-        _insert_variable()
+        insert_variable_node = add_parse_tree_node(node, "<insert-variable>")
+        _insert_variable(insert_variable_node, node)
 
-    if _is_match(False, ";"):
+    if _is_match(False, ";", node):
         index += 1
 
     if _is_match(True, "<global>"):
-        index += 1
-        _global()
+        global_node = add_parse_tree_node(prev_node, "<global>")
+        _global(global_node, prev_node)
 
     # 3: EPSILON
     return
 
 
 # 4
-def _constant() -> None:
+def _constant(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    if _is_match(True, "hard"):
+    if _is_match(True, "hard", node):
         index += 1
 
     # 5: EPSILON
@@ -217,133 +226,162 @@ def _constant() -> None:
 
 
 # 6
-def _statement() -> None:
+def _statement(node: classmethod, prev_node: classmethod) -> None:
     global index
     # Note: Have _2D_statement() & _3D_statement(), modifying this method need
     # to be done to both _2D_statement() and _3D_statement() methods
 
     avoid = [")", ";"]
 
-    while True:
-        if _is_match(True, "<use-tree>") and lexemes[index] == "tree":
-            _use_tree()
+    if _is_match(True, "<use-tree>") and lexemes[index] == "tree":
+        new_node = add_parse_tree_node(node, "<use-tree>")
+        _use_tree(new_node, node)
 
-        if _is_match(True, "<filter-statement>"):
-            _filter_statement()
+    if _is_match(True, "<filter-statement>"):
+        new_node = add_parse_tree_node(node, "<filter-statement>")
+        _filter_statement(new_node, node)
 
-        if not _is_match(False, "<statement>") or lexemes[index] in avoid:
-            break
-        continue
-
-    # 7: EPSILON
     return
 
 
 # 8-15
-def _filter_statement() -> None:
+def _filter_statement(node: classmethod, prev_node: classmethod) -> None:
     global index
 
     # 8
     if (_is_match(True, "<constant>") or _is_match(True, "<insert-variable>")) and not _find_future("inpetal"):
-        _constant()
+
+        if _is_match(True, "<constant>"):
+            new_node = add_parse_tree_node(node, "<constant>")
+            _constant(new_node, node)
 
         if _is_match(True, "<insert-variable>"):
-            _insert_variable()
+            new_node = add_parse_tree_node(node, "<insert-variable>")
+            _insert_variable(new_node, node)
 
-        if _is_match(False, ";"):
+        if _is_match(False, ";", node):
             index += 1
 
         if _is_match(True, "<filter-statement>"):
-            _filter_statement()
+            new_node = add_parse_tree_node(prev_node, "<filter-statement>")
+            _filter_statement(new_node, prev_node)
         return
 
     # 11
-    elif _is_match(True, "#") and _find_future("inpetal"):
+    elif _is_match(True, "#") and lexemes[index + 2] == "(":
         index += 2
 
         if _is_match(True, "<check-func>"):
-            _check_func()
+            new_node = add_parse_tree_node(node, "<check-func>")
+            _check_func(new_node, node)
 
-        if _is_match(False, ";"):
+        if _is_match(False, ";", node):
             index += 1
 
         if _is_match(True, "<filter-statement>"):
-            _filter_statement()
+            new_node = add_parse_tree_node(prev_node, "<filter-statement>")
+            _filter_statement(new_node, node)
         return
 
     # 9
-    elif _is_match(True, "<i/o-statement>"):
-        _i_o_statement()
+    elif _is_match(True, "<i/o-statement>") and (_find_future("inpetal") or _find_future("mint")):
 
-        if _is_match(False, ";"):
+        if _is_match(True, "<i/o-statement>"):
+            new_node = add_parse_tree_node(node, "<i/o-statement>")
+            _i_o_statement(new_node, node)
+
+        if _is_match(False, ";", node):
             index += 1
 
         if _is_match(True, "<filter-statement>"):
-            _filter_statement()
+            new_node = add_parse_tree_node(prev_node, "<filter-statement>")
+            _filter_statement(new_node, node)
         return
 
     # 10
-    elif _is_match(True, "leaf"):
+    elif _is_match(True, "leaf", node):
         index += 1
 
-        if _is_match(False, "("):
+        if _is_match(False, "(", node):
             index += 1
 
         if _is_match(True, "<bloom>"):
-            _bloom()
+            new_node = add_parse_tree_node(node, "<bloom>")
+            _bloom(new_node, node)
 
-        if _is_match(False, ")"):
+        if _is_match(False, ")", node):
             index += 1
 
-        if _is_match(False, "("):
+        if _is_match(False, "(", node):
             index += 1
 
         if _is_match(True, "<filter-statement>"):
-            _filter_statement()
+            new_node = add_parse_tree_node(prev_node, "<filter-statement>")
+            _filter_statement(new_node, node)
 
-        if _is_match(False, ")"):
+        if _is_match(False, ")", node):
             index += 1
 
-        if _is_match(False, ";"):
+        if _is_match(False, ";", node):
             index += 1
 
         if _is_match(True, "<eleaf>"):
-            _eleaf()
+            new_node = add_parse_tree_node(node, "<eleaf>")
+            _eleaf(new_node, node)
 
         if _is_match(True, "<else>"):
-            _else()
+            new_node = add_parse_tree_node(node, "<else>")
+            _else(new_node, node)
 
         if _is_match(True, "<filter-statement>"):
-            _filter_statement()
+            new_node = add_parse_tree_node(prev_node, "<filter-statement>")
+            _filter_statement(new_node, node)
+        return
+
+    # 11
+    elif _is_match(True, "<assignment>"):
+
+        new_node = add_parse_tree_node(node, "<assignment>")
+        _assignment(new_node, node)
+
+        if _is_match(False, ";", node):
+            index += 1
+
+        if _is_match(True, "<filter-statement>"):
+            new_node = add_parse_tree_node(prev_node, "<filter-statement>")
+            _filter_statement(new_node, node)
         return
 
     # 12
     elif _is_match(True, "<iterative>"):
-        _iterative()
+        new_node = add_parse_tree_node(node, "<iterative>")
+        _iterative(new_node, node)
 
-        if _is_match(False, ";"):
+        if _is_match(False, ";", node):
             index += 1
 
         if _is_match(True, "<filter-statement>"):
-            _filter_statement()
+            new_node = add_parse_tree_node(prev_node, "<filter-statement>")
+            _filter_statement(new_node, node)
         return
 
     # 13
-    elif _is_match(True, "clear"):
+    elif _is_match(True, "clear", node):
         index += 1
 
-        if _is_match(False, ";"):
+        if _is_match(False, ";", node):
             index += 1
 
         if _is_match(True, "<filter-statement>"):
-            _filter_statement()
+            new_node = add_parse_tree_node(prev_node, "<filter-statement>")
+            _filter_statement(new_node, node)
         return
 
     # 14
-    elif _is_match(True, "break"):
+    elif _is_match(True, "break", node):
         index += 1
 
-        if _is_match(False, ";"):
+        if _is_match(False, ";", node):
             index += 1
         return
 
@@ -352,108 +390,125 @@ def _filter_statement() -> None:
 
 
 # 16-21
-def _insert_variable() -> None:
+def _insert_variable(node: classmethod, prev_node: classmethod) -> None:
     global index
 
     # 16: tint
-    if _is_match(True, "tint"):
+    if _is_match(True, "tint", node):
         index += 1
 
-        if _is_match(False, "#"):
+        if _is_match(False, "#", node):
+            add_parse_tree_node(node, lexemes[index + 1])
             index += 2
 
         # <tint-value>
         if _is_match(True, "<tint-value>"):
-            _tint_value()
+            new_node = add_parse_tree_node(node, "<tint-value>")
+            _tint_value(new_node, node)
 
         # <more-tint>
         if _is_match(True, "<more-tint>"):
-            _more_tint()
+            new_node = add_parse_tree_node(node, "<more-tint>")
+            _more_tint(new_node, node)
 
         return
 
     # 17: flora
-    elif _is_match(True, "flora"):
+    elif _is_match(True, "flora", node):
         index += 1
 
-        if _is_match(False, "#"):
+        if _is_match(False, "#", node):
+            add_parse_tree_node(node, lexemes[index + 1])
             index += 2
 
         # <flora-value>
         if _is_match(True, "<flora-value>"):
-            _flora_value()
+            new_node = add_parse_tree_node(node, "<flora-value>")
+            _flora_value(new_node, node)
 
         # <more-flora>
         if _is_match(True, "<more-flora>"):
-            _more_flora()
+            new_node = add_parse_tree_node(node, "<more-flora>")
+            _more_flora(new_node, node)
 
         return
 
     # 18: chard
-    elif _is_match(True, "chard"):
+    elif _is_match(True, "chard", node):
         index += 1
 
-        if _is_match(False, "#"):
+        if _is_match(False, "#", node):
+            add_parse_tree_node(node, lexemes[index + 1])
             index += 2
 
         # <chard-value>
         if _is_match(True, "<chard-value>"):
-            _chard_value()
+            new_node = add_parse_tree_node(node, "<chard-value>")
+            _chard_value(new_node, node)
 
         # <more-chard>
         if _is_match(True, "<more-chard>"):
-            _more_chard()
+            new_node = add_parse_tree_node(node, "<more-chard>")
+            _more_chard(new_node, node)
 
         return
 
     # 19: string
-    elif _is_match(True, "string"):
+    elif _is_match(True, "string", node):
         index += 1
 
-        if _is_match(False, "#"):
+        if _is_match(False, "#", node):
+            add_parse_tree_node(node, lexemes[index + 1])
             index += 2
 
         # <string-value>
         if _is_match(False, "<string-value>"):
-            _string_value()
+            new_node = add_parse_tree_node(node, "<string-value>")
+            _string_value(new_node, node)
 
         # <more-string>
         if _is_match(True, "<more-string>"):
-            _more_string()
+            new_node = add_parse_tree_node(node, "<more-string>")
+            _more_string(new_node, node)
 
         return
 
     # 20: bloom
-    elif _is_match(True, "bloom"):
+    elif _is_match(True, "bloom", node):
         index += 1
 
-        if _is_match(False, "#"):
+        if _is_match(False, "#", node):
             index += 2
 
         # <bloom-value>
         if _is_match(True, "<bloom-value>"):
-            _bloom_value()
+            new_node = add_parse_tree_node(node, "<bloom-value>")
+            _bloom_value(new_node, node)
 
         # <more-bloom>
         if _is_match(True, "<more-bloom>"):
-            _more_bloom()
+            new_node = add_parse_tree_node(node, "<more-bloom>")
+            _more_bloom(new_node, node)
 
         return
 
     # 21: sqnc
     elif _is_match(True, "<sqnc-type>"):
-        _sqnc_type()
+        new_node = add_parse_tree_node(node, "<sqnc-type>")
+        _sqnc_type(new_node, node)
 
-        if _is_match(False, "#"):
+        if _is_match(False, "#", node):
             index += 2
 
         # <sqnc-value>
         if _is_match(True, "<sqnc-value>"):
-            _sqnc_value()
+            new_node = add_parse_tree_node(node, "<sqnc-value>")
+            _sqnc_value(new_node, node)
 
         # <more-sqnc>
         if _is_match(True, "<more-sqnc>"):
-            _more_sqnc()
+            new_node = add_parse_tree_node(node, "<more-sqnc>")
+            _more_sqnc(new_node, node)
 
         return
 
@@ -461,646 +516,783 @@ def _insert_variable() -> None:
 
 
 # 22-25
-def _sqnc_type() -> None:
+def _sqnc_type(node: classmethod, prev_node: classmethod) -> None:
     global index
-    index += 1
+    if _is_match(True, "florist", node):
+        index += 1
+    elif _is_match(True, "tulip", node):
+        index += 1
+    elif _is_match(True, "dirt", node):
+        index += 1
+    elif _is_match(True, "stem", node):
+        index += 1
     return
 
 
 # 26-27
-def _tint_value() -> None:
+def _tint_value(node: classmethod, prev_node: classmethod) -> None:
     global index
 
     # 26
-    if _is_match(True, "="):
+    if _is_match(True, "=", node):
         index += 1
 
-        if _is_match(True, "<tint>"):
-            _tint()
+        if _is_match(False, "<tint>"):
+            new_node = add_parse_tree_node(node, "<tint>")
+            _tint(new_node, node)
             return
 
     # 27: EPSILON
     return
 
 
-# 28-29
-def _tint() -> None:
+# 28-30
+def _tint(node: classmethod, prev_node: classmethod) -> None:
     global index
 
     # 28
-    if _is_match(True, "<tint>") and not _find_future("<operator>"):
-        _tint_literals()
+    if _is_match(True, "<tint-literals>"):
+        new_node = add_parse_tree_node(node, "<tint-literals>")
+        _tint_literals(new_node, node)
         return
 
     # 29
-    elif _is_match(True, "<arithmetic>"):
-        _arithmetic()
+    elif lexemes[index] == "tint" and lexemes[index + 1] == "(":
+        # )
+        if _is_match(False, "tint", node):
+            index += 1
+
+        if _is_match(False, "(", node):
+            index += 1
+
+        if _is_match(True, "<all-type-value>"):
+            new_node = add_parse_tree_node(node, "<all-type-value>")
+            _all_type_value(new_node, node)
+
+        if _is_match(")", node):
+            index += 1
+
+    # 30
+    elif _is_match(True, "<arithmetic>") and _find_future("<operator>"):
+        new_node = add_parse_tree_node(node, "<arithmetic>")
+        _arithmetic(new_node, node)
         return
 
+    # error not found
+    errors.append((lexemes[index], f"Syntax Error: Expecting {g.FIRST_SET['<tint>']}"))
     return
 
 
-# 30-33
-def _tint_literals() -> None:
+# 31-34
+def _tint_literals(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 30
-    if _is_match(True, "Tint Literal"):
-        index += 1
-        return
-
     # 31
-    elif _is_match(True, "#"):
-        index += 2
-
-        if _is_match(True, "<insert-func>"):
-            _insert_func()
-
-        if _is_match(True, "<indexing>"):
-            _indexing()
-
+    if _is_match(True, "Tint Literal", node):
+        index += 1
         return
 
     # 32
-    elif _is_match(True, "lent"):
-        index += 1
-
-        if _is_match(False, "("):
-            index += 1
-
-        if _is_match(False, "#"):
-            index += 2
+    elif _is_match(True, "#", node):
+        add_parse_tree_node(node, lexemes[index + 1])
+        index += 2
 
         if _is_match(True, "<insert-func>"):
-            _insert_func()
+            new_node = add_parse_tree_node(node, "<insert-func>")
+            _insert_func(new_node, node)
 
         if _is_match(True, "<indexing>"):
-            _indexing()
-
-        if _is_match(False, ")"):
-            index += 1
+            new_node = add_parse_tree_node(node, "<indexing>")
+            _indexing(new_node, node)
 
         return
 
     # 33
-    elif _is_match(True, "tint"):
+    elif _is_match(True, "lent", node):
         index += 1
 
-        if _is_match(False, "("):
+        if _is_match(False, "(", node):
             index += 1
 
-        if _is_match(False, "#"):
+        if _is_match(False, "#", node):
+            add_parse_tree_node(node, lexemes[index + 1])
             index += 2
 
         if _is_match(True, "<insert-func>"):
-            _insert_func()
+            new_node = add_parse_tree_node(node, "<insert-func>")
+            _insert_func(new_node, node)
 
         if _is_match(True, "<indexing>"):
-            _indexing()
+            new_node = add_parse_tree_node(node, "<indexing>")
+            _indexing(new_node, node)
 
-        if _is_match(False, ")"):
+        if _is_match(False, ")", node):
             index += 1
 
         return
-
-    return
-
-
-# 34-35
-def _flora_value() -> None:
-    global index
 
     # 34
-    if _is_match(True, "="):
+    elif _is_match(True, "<supply-dirt>"):
+        new_node = add_parse_tree_node(node, "<supply-dirt>")
+        _supply_dirt(new_node, node)
         index += 1
 
-        if _is_match(True, "<flora>"):
-            _flora()
-            return
-
-    # 35: EPSILON
-    return
-
-
-# 36-37
-def _flora() -> None:
-    global index
-
-    # 36
-    if (
-        _is_match(True, "<flora-literals>")
-        and not (
-             lexemes[index + 1] not in g.FIRST_SET["<operator>"]
-             or lexemes[index + 2] not in g.FIRST_SET["<operator>"]
-        )
-    ):
-        _flora_literals()
-        return
-
-    # 29
-    elif _is_match(True, "<arithmetic>"):
-        _arithmetic()
-        return
-
-    return
-
-
-# 38-39
-def _arithmetic() -> None:
-    global index
-
-    # 38
-    if _is_match(True, "<numerics>"):
-        _numerics()
-
-        if _is_match(True, "<operate-number>"):
-            _operate_number()
-
-        return
-
-    elif _is_match(True, "("):
-        index += 1
-
-        if _is_match(True, "<numerics>"):
-            _numerics()
-
-        if _is_match(True, "<operator>"):
-            _operator()
-
-        if _is_match(True, "<arithmetic>"):
-            _arithmetic()
-
-        if _is_match(False, ")"):
+        if _is_match(False, "(", node):
             index += 1
 
-        if _is_match(True, "<operate-number>"):
-            _operate_number()
+        if _is_match(False, "#", node):
+            add_parse_tree_node(node, lexemes[index + 1])
+            index += 2
+
+        if _is_match(True, "<insert-func>"):
+            new_node = add_parse_tree_node(node, "<insert-func>")
+            _insert_func(new_node, node)
+
+        if _is_match(True, "<indexing>"):
+            new_node = add_parse_tree_node(node, "<indexing>")
+            _indexing(new_node, node)
+
+        if _is_match(False, ")", node):
+            index += 1
 
         return
 
     return
 
 
-# 40-42
-def _flora_literals() -> None:
+# 35-36
+def _flora_value(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    # 35
+    if _is_match(True, "=", node):
+        index += 1
+
+        if _is_match(False, "<flora>"):
+            new_node = add_parse_tree_node(node, "<flora>")
+            _flora(new_node, node)
+            return
+
+    # 36: EPSILON
+    return
+
+
+# 37-39
+def _flora(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    # 37
+    if (
+        _is_match(True, "<flora-literals>")
+        and not _find_future("<operator>")
+    ):
+        new_node = add_parse_tree_node(node, "<flora-literals>")
+        _flora_literals(new_node, node)
+        return
+
+    # 38
+    elif lexemes[index] == "flora" and lexemes[index + 1] == "(":
+        # )
+        if _is_match(False, "flora", node):
+            index += 1
+
+        if _is_match(False, "(", node):
+            index += 1
+
+        if _is_match(False, "<all-type-value>"):
+            new_node = add_parse_tree_node(node, "<all-type-value>")
+            _all_type_value(new_node, node)
+
+        if _is_match(False, ")", node):
+            index += 1
+
+    # 39
+    elif _is_match(True, "<arithmetic>"):
+        new_node = add_parse_tree_node(node, "<arithmetic>")
+        _arithmetic(new_node, node)
+        return
+
+    errors.append((lexemes[index], f"Syntax Error: Expecting {g.FIRST_SET['<flora>']}"))
+    return
+
+
+# 40-41
+def _arithmetic(node: classmethod, prev_node: classmethod) -> None:
     global index
 
     # 40
-    if _is_match(True, "Flora Literal"):
-        index += 1
+    if _is_match(True, "<flora>"):
+        new_node = add_parse_tree_node(node, "<flora>")
+        _flora(new_node, node)
+
+        if _is_match(True, "<operate-number>"):
+            new_node = add_parse_tree_node(node, "<operate-number>")
+            _operate_number(new_node, node)
+
         return
 
     # 41
-    elif _is_match(True, "flora"):
+    elif _is_match(True, "(", node):
         index += 1
 
-        if _is_match(False, "("):
-            index += 1
+        if _is_match(True, "<flora>"):
+            new_node = add_parse_tree_node(node, "<flora>")
+            _flora(new_node, node)
 
-        if _is_match(False, "#"):
-            index += 2
-
-        if _is_match(True, "<insert-func>"):
-            _insert_func()
-
-        if _is_match(True, "<indexing>"):
-            _indexing()
-
-        if _is_match(False, ")"):
-            index += 1
-
-        return
-
-    # 42
-    elif _is_match(True, "<tint-literals>"):
-        _tint_literals()
-
-        return
-
-    return
-
-
-# 43-44
-def _operate_number() -> None:
-    global index
-
-    # 43
-    if _is_match(True, "<operator>"):
-        _operator()
+        if _is_match(True, "<operator>"):
+            new_node = add_parse_tree_node(node, "<operator>")
+            _operator(new_node, node)
 
         if _is_match(True, "<arithmetic>"):
-            _arithmetic()
+            new_node = add_parse_tree_node(node, "<arithmetic>")
+            _arithmetic(new_node, node)
 
-    # 44: EPSILON
-    return
+        if _is_match(False, ")", node):
+            index += 1
 
+        if _is_match(True, "<operate-number>"):
+            new_node = add_parse_tree_node(node, "<operate-number>")
+            _operate_number(new_node, node)
 
-# 45-51
-def _operator() -> None:
-    global index
-    index += 1
-    return
-
-
-# 52-53
-def _numerics() -> None:
-    global index
-
-    # 52
-    if _is_match(True, "<tint-literals>"):
-        _tint_literals()
         return
+
+    return
+
+
+# 42-43
+def _flora_literals(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    # 42
+    if _is_match(True, "Flora Literal", node):
+        index += 1
+        return
+
+    # 43
+    elif _is_match(True, "<tint-literals>"):
+        new_node = add_parse_tree_node(node, "<tint-literals>")
+        _tint_literals(new_node, node)
+
+        return
+
+    return
+
+
+# 44-45
+def _operate_number(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    # 44
+    if _is_match(True, "<operator>"):
+        new_node = add_parse_tree_node(node, "<operator>")
+        _operator(new_node, node)
+
+        if _is_match(True, "<arithmetic>"):
+            new_node = add_parse_tree_node(node, "<arithmetic>")
+            _arithmetic(new_node, node)
+
+    # 45: EPSILON
+    return
+
+
+# 46-52
+def _operator(node: classmethod, prev_node: classmethod) -> None:
+    global index
+    if _is_match(True, lexemes[index], node):
+        index += 1
+    return
+
+
+# 53-54
+def _chard_value(node: classmethod, prev_node: classmethod) -> None:
+    global index
 
     # 53
-    elif _is_match(True, "<flora-literals>"):
-        _flora_literals()
-        return
-
-    return
-
-
-# 54-55
-def _chard_value() -> None:
-    global index
-
-    # 54
-    if _is_match(True, "="):
+    if _is_match(True, "=", node):
         index += 1
 
-        if _is_match(True, "<chard>"):
-            _chard()
+        if _is_match(False, "<chard>"):
+            new_node = add_parse_tree_node(node, "<chard>")
+            _chard(new_node, node)
             return
 
-    # 55: EPSILON
+    # 54: EPSILON
     return
 
 
-# 56-58
-def _chard() -> None:
+# 55-56
+def _chard(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 56
-    if _is_match(True, "Chard Literal"):
-        index += 1
+    # 55
+    if _is_match(True, "<chard-literals>"):
+        new_node = add_parse_tree_node(node, "<chard-literals>")
+        _chard_literals(new_node, node)
 
         return
 
+    # 56
+    elif _is_match(True, "chard", node):
+        index += 1
+
+        if _is_match(False, "(", node):
+            index += 2
+
+        if _is_match(True, "<all-type-value>"):
+            new_node = add_parse_tree_node(node, "<all-type-value>")
+            _all_type_value(new_node, node)
+
+        if _is_match(False, ")", node):
+            index += 1
+
+        return
+
+    errors.append((lexemes[index], f"Syntax Error: Expecting {g.FIRST_SET['<chard>']}"))
+    return
+
+
+# 57-59
+def _chard_literals(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
     # 57
-    elif _is_match(True, "#"):
+    if _is_match(True, "Chard Literal", node):
+        index += 1
+
+    # 58
+    elif _is_match(True, "#", node):
         index += 2
 
         if _is_match(True, "<insert-func>"):
-            _insert_func()
+            new_node = add_parse_tree_node(node, "<insert-func>")
+            _insert_func(new_node, node)
 
         if _is_match(True, "<indexing>"):
-            _indexing()
+            new_node = add_parse_tree_node(node, "<indexing>")
+            _indexing(new_node, node)
 
-        return
+    # 59
+    elif _is_match(True, "<supply-dirt>"):
+        new_node = add_parse_tree_node(node, "<supply-dirt>")
+        _supply_dirt(new_node, node)
 
-    # 58
-    elif _is_match(True, "chard"):
-        index += 1
+        if _is_match(False, "(", node):
+            index += 1
 
-        if _is_match(False, "("):
-            index += 2
-
-        if _is_match(False, "#"):
+        if _is_match(False, "#", node):
             index += 2
 
         if _is_match(True, "<insert-func>"):
-            _insert_func()
+            new_node = add_parse_tree_node(node, "<insert-func>")
+            _insert_func(new_node, node)
 
         if _is_match(True, "<indexing>"):
-            _indexing()
+            new_node = add_parse_tree_node(node, "<indexing>")
+            _indexing(new_node, node)
 
-        if _is_match(False, ")"):
+        if _is_match(False, ")", node):
             index += 1
 
-        return
 
-    return
-
-
-# 59-60
-def _string_value() -> None:
+# 60-61
+def _string_value(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 59
-    if _is_match(True, "="):
+    # 60
+    if _is_match(True, "=", node):
         index += 1
 
-        if _is_match(True, "<string>"):
-            _string()
+        if _is_match(False, "<string>"):
+            new_node = add_parse_tree_node(node, "<string>")
+            _string(new_node, node)
             return
 
-    # 60: EPSILON
+    # 61: EPSILON
     return
 
 
-# 61-63
-def _string() -> None:
+# 62-63
+def _string(node: classmethod, prev_node: classmethod) -> None:
     global index
 
     # 61
-    if _is_match(True, "String Literal"):
-        index += 1
+    if _is_match(True, "<string-literals>"):
+        new_node = add_parse_tree_node(node, "<string-literals>")
+        _string_literals(new_node, node)
 
-        return
-
-    # 62
-    elif _is_match(True, "#"):
-        index += 2
-
-        if _is_match(True, "<insert-func>"):
-            _insert_func()
-
-        if _is_match(True, "<indexing>"):
-            _indexing()
-
-        if _is_match(True, "<start-end-step>"):
-            _start_end_step()
+        if _is_match(True, "<concatenate>"):
+            new_node = add_parse_tree_node(node, "<concatenate>")
+            _concatenate(new_node, node)
 
         return
 
     # 63
-    elif _is_match(True, "string"):
+    elif _is_match(True, "string", node):
         index += 1
 
-        if _is_match(False, "("):
+        if _is_match(False, "(", node):
+            # )
             index += 1
 
-        if _is_match(False, "#"):
-            index += 2
+        if _is_match(True, "<string-literals>"):
+            new_node = add_parse_tree_node(node, "<string-literals>")
+            _string_literals(new_node, node)
 
-        if _is_match(True, "<insert-func>"):
-            _insert_func()
-
-        if _is_match(True, "<indexing>"):
-            _indexing()
-
-        if _is_match(True, "<start-end-step>"):
-            _start_end_step()
-
-        if _is_match(False, ")"):
+        if _is_match(False, ")", node):
             index += 1
+
+        if _is_match(True, "<concatenate>"):
+            new_node = add_parse_tree_node(node, "<concatenate>")
+            _concatenate(new_node, node)
 
         return
 
+    errors.append((lexemes[index], f"Syntax Error: Expecting {g.FIRST_SET['<string>']}"))
     return
 
 
-# 64-65
-def _concatenate() -> None:
+# 64-66
+def _string_literals(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    # 64
+    if _is_match(True, "String Literal", node):
+        index += 1
+
+    # 65
+    if _is_match(True, "#", node):
+        index += 2
+
+        if _is_match(True, "<insert-func>"):
+            new_node = add_parse_tree_node(node, "<insert-func>")
+            _insert_func(new_node, node)
+
+        if _is_match(True, "<indexing>"):
+            new_node = add_parse_tree_node(node, "<indexing>")
+            _indexing(new_node, node)
+
+        if _is_match(True, "<start-end-step>"):
+            new_node = add_parse_tree_node(node, "<start-end-step>")
+            _start_end_step(new_node, node)
+
+    # 66
+    if _is_match(True, "<supply-dirt>", node):
+        new_node = add_parse_tree_node(node, "<supply-dirt>")
+        _supply_dirt(new_node, node)
+
+        if _is_match(False, "(", node):
+            # )
+            index += 1
+
+        if _is_match(True, "#", node):
+            index += 2
+
+        if _is_match(True, "<insert-func>"):
+            new_node = add_parse_tree_node(node, "<insert-func>")
+            _insert_func(new_node, node)
+
+        if _is_match(True, "<indexing>"):
+            new_node = add_parse_tree_node(node, "<indexing>")
+            _indexing(new_node, node)
+
+        if _is_match(True, ")", node):
+            index += 1
+
+
+# 67-68
+def _concatenate(node: classmethod, prev_node: classmethod) -> None:
     global index
 
     if _is_match(True, "<indexing>"):
-        _indexing()
+        new_node = add_parse_tree_node(node, "<indexing>")
+        _indexing(new_node, node)
 
-        if _is_match(False, "+"):
+        if _is_match(False, "+", node):
             index += 1
 
-        if _is_match(True, "<string>"):
-            _string()
+        if _is_match(False, "<string>"):
+            new_node = add_parse_tree_node(node, "<string>")
+            _string(new_node, node)
 
         if _is_match(True, "<concatenate>"):
-            _concatenate()
+            new_node = add_parse_tree_node(node, "<concatenate>")
+            _concatenate(new_node, node)
 
     # 65: EPSILON
     return
 
 
-# 66-67
-def _bloom_value() -> None:
+# 69-70
+def _bloom_value(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 66
-    if _is_match(True, "="):
+    if _is_match(True, "=", node):
         index += 1
 
-        if _is_match(True, "<bloom>"):
-            _bloom()
+        if _is_match(False, "<insert-condition>"):
+            new_node = add_parse_tree_node(node, "<insert-condition>")
+            _insert_condition(new_node, node)
             return
 
-    # 67: EPSILON
     return
 
 
-# 68-69
-def _bloom() -> None:
+# 71-72
+def _insert_condition(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 68
+    if _is_match(True, "<bloom>"):
+        new_node = add_parse_tree_node(node, "<bloom>")
+        _bloom(new_node, node)
+
+    if _is_match(True, "<sqnc-bloom>"):
+        new_node = add_parse_tree_node(node, "<sqnc-bloom>")
+        _sqnc_bloom(new_node, node)
+
+    return
+
+
+# 73-76
+def _bloom(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
     if _is_match(True, "<bloom-literals>"):
-        _bloom_literals()
+        new_node = add_parse_tree_node(node, "<bloom-literals>")
+        _bloom_literals(new_node, node)
 
         if _is_match(True, "<operate-logic>"):
-            _operate_logic()
+            new_node = add_parse_tree_node(node, "<operate-logic>")
+            _operate_logic(new_node, node)
 
         return
 
-    # 69
-    elif _is_match(True, "("):
+    elif _is_match(True, "(", node):
+        # )
         index += 1
 
         if _is_match(True, "<bloom-literals>"):
-            _bloom_literals()
+            new_node = add_parse_tree_node(node, "<bloom-literals>")
+            _bloom_literals(new_node, node)
 
         if _is_match(True, "<cond-operator>"):
-            _cond_operator()
+            new_node = add_parse_tree_node(node, "<cond-operator>")
+            _cond_operator(new_node, node)
 
         if _is_match(True, "<bloom>"):
-            _bloom()
+            new_node = add_parse_tree_node(node, "<bloom>")
+            _bloom(new_node, node)
 
-        if _is_match(False, ")"):
+        if _is_match(False, ")", node):
             index += 1
 
         if _is_match(True, "<operate-logic>"):
-            _operate_logic()
+            new_node = add_parse_tree_node(node, "<operate-logic>")
+            _operate_logic(new_node, node)
 
         return
+
+    errors.append((lexemes[index], f"Syntax Error: Expecting {g.FIRST_SET['<bloom>']}"))
+    return
+
+
+# 77-78
+def _sqnc_bloom(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    if _is_match(True, "<sqnc>"):
+        new_node = add_parse_tree_node(node, "<sqnc>")
+        _sqnc(new_node, node)
+
+        if _is_match(True, "<operate-logic>"):
+            new_node = add_parse_tree_node(node, "<operate-logic>")
+            _operate_logic(new_node, node)
+
+    elif _is_match(True, "(", node):
+        # )
+        index += 1
+
+        if _is_match(True, "<sqnc>"):
+            new_node = add_parse_tree_node(node, "<sqnc>")
+            _sqnc(new_node, node)
+
+        if _is_match(True, "<cond-operator>"):
+            new_node = add_parse_tree_node(node, "<cond-operator>")
+            _cond_operator(new_node, node)
+
+        if _is_match(True, "<sqnc>"):
+            new_node = add_parse_tree_node(node, "<sqnc>")
+            _sqnc(new_node, node)
+
+        elif _is_match(True, ")", node):
+            index += 1
+
+        if _is_match(True, "<operate-logic>"):
+            new_node = add_parse_tree_node(node, "<operate-logic>")
+            _operate_logic(new_node, node)
 
     return
 
 
-# 70-77
-def _bloom_literals() -> None:
+# 79-85
+def _bloom_literals(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 70
-    if _is_match(True, "Bloom Literal"):
+    if _is_match(True, "Bloom Literal", node):
         index += 1
         return
 
-    # 71
-    elif _is_match(True, "bloom"):
-        index += 1
-
-        if _is_match(False, "("):
-            index += 1
-
-        if _is_match(False, "#"):
-            index += 2
-
-        if _is_match(True, "<insert-func>"):
-            _insert_func()
-
-        if _is_match(True, "<indexing>"):
-            _indexing()
-
-        if _is_match(False, ")"):
-            index += 1
-
-        return
-
-    # 72
     elif _is_match(True, "<tint>"):
-        _tint()
+        new_node = add_parse_tree_node(node, "<tint>")
+        _tint(new_node, node)
         return
 
-    # 73
     elif _is_match(True, "<flora>"):
-        _flora()
+        new_node = add_parse_tree_node(node, "<flora>")
+        _flora(new_node, node)
         return
 
-    # 74
     elif _is_match(True, "<chard>"):
-        _chard()
+        new_node = add_parse_tree_node(node, "<chard>")
+        _chard(new_node, node)
         return
 
-    # 75
     elif _is_match(True, "<string>"):
-        _string()
+        new_node = add_parse_tree_node(node, "<string>")
+        _string(new_node, node)
         return
 
-    # 76
     elif _is_match(True, "<sqnc>"):
-        _sqnc()
+        new_node = add_parse_tree_node(node, "<sqnc>")
+        _sqnc(new_node, node)
         return
 
-    # 77
-    elif _is_match(True, "bare"):
+    elif _is_match(True, "bare", node):
         index += 1
         return
 
     return
 
 
-# 78-79
-def _operate_logic() -> None:
+# 86-87
+def _operate_logic(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 78
     if _is_match(True, "<cond-operator>"):
-        _cond_operator()
+        new_node = add_parse_tree_node(node, "<cond-operator>")
+        _cond_operator(new_node, node)
 
-        if _is_match(True, "<bloom>"):
-            _bloom()
+        if _is_match(True, "<insert-condition>"):
+            new_node = add_parse_tree_node(node, "<insert-condition>")
+            _insert_condition(new_node, node)
 
-    # 79: EPSILON
     return
 
 
-# 80-89
-def _cond_operator() -> None:
+# 88-97
+def _cond_operator(node: classmethod, prev_node: classmethod) -> None:
     global index
-    index += 1
-    return
-
-
-# 90-91
-def _insert_func() -> None:
-    global index
-
-    # 90
-    if _is_match(True, "("):
+    if _is_match(True, lexemes[index], node):
         index += 1
-
-        if _is_match(True, "<argument>"):
-            _argument()
-
-        if _is_match(False, ")"):
-            index += 1
-
-        if _is_match(True, "<instance-grab>"):
-            _instance_grab()
-
-        return
-
-    # 91: EPSILON
-    return
-
-
-# 92-93
-def _instance_grab() -> None:
-    global index
-
-    # 92
-    if _is_match(True, "."):
-        index += 1
-
-        if _is_match(False, "#"):
-            index += 2
-
-    # 93: EPSILON
-    return
-
-
-# 94-95
-def _indexing() -> None:
-    global index
-
-    # 94
-    if _is_match(True, "["):
-        index += 1
-
-        if _is_match(True, "<insert-index>"):
-            _insert_index()
-
-        if _is_match(False, "]"):
-            index += 1
-
-        if _is_match(True, "<indexing>"):
-            _indexing()
-
-        return
-
-    # 95: EPSILON
-    return
-
-
-# 96-97
-def _insert_index() -> None:
-    global index
-
-    # 96
-    if _is_match(True, "Tint Literal"):
-        index += 1
-        return
-
-    # 97
-    elif _is_match(True, "Flora Literal"):
-        index += 1
-        return
-
     return
 
 
 # 98-99
-def _more_tint() -> None:
+def _insert_func(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    if _is_match(True, "(", node):
+        index += 1
+
+        if _is_match(True, "<argument>"):
+            new_node = add_parse_tree_node(node, "<argument>")
+            _argument(new_node, node)
+
+        if _is_match(False, ")", node):
+            index += 1
+
+        if _is_match(True, "<instance-grab>"):
+            new_node = add_parse_tree_node(node, "<instance-grab>")
+            _instance_grab(new_node, node)
+
+        return
+
+    return
+
+
+# 100-101
+def _instance_grab(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    # 92
+    if _is_match(True, ".", node):
+        index += 1
+
+        if _is_match(False, "#", node):
+            index += 2
+
+    return
+
+
+# 102-103
+def _indexing(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    # 94
+    if _is_match(True, "[", node):
+        index += 1
+
+        if _is_match(True, "<insert-index>"):
+            new_node = add_parse_tree_node(node, "<insert-index>")
+            _insert_index(new_node, node)
+
+        if _is_match(False, "]", node):
+            index += 1
+
+        if _is_match(True, "<indexing>"):
+            new_node = add_parse_tree_node(node, "<indexing>")
+            _indexing(new_node, node)
+
+        return
+
+    return
+
+
+# 104-105
+def _insert_index(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    # 96
+    if _is_match(True, "Tint Literal", node):
+        index += 1
+        return
+
+    # 97
+    elif _is_match(True, "Flora Literal", node):
+        index += 1
+        return
+
+    return
+
+
+# 106-107
+def _more_tint(node: classmethod, prev_node: classmethod) -> None:
     global index
 
     # 98
-    if _is_match(True, ","):
+    if _is_match(True, ",", node):
         index += 1
 
-        if _is_match(False, "#"):
+        if _is_match(False, "#", node):
+            add_parse_tree_node(node, lexemes[index + 1])
             index += 2
 
         if _is_match(True, "<tint-value>"):
-            _tint_value()
+            new_node = add_parse_tree_node(node, "<tint-value>")
+            _tint_value(new_node, node)
 
         if _is_match(True, "<more-tint>"):
-            _more_tint()
+            new_node = add_parse_tree_node(prev_node, "<more-tint>")
+            _more_tint(new_node, prev_node)
 
         return
 
@@ -1108,500 +1300,407 @@ def _more_tint() -> None:
     return
 
 
-# 100-101
-def _more_flora() -> None:
+# 108-109
+def _more_flora(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 100
-    if _is_match(True, ","):
+    if _is_match(True, ",", node):
         index += 1
 
-        if _is_match(False, "#"):
+        if _is_match(False, "#", node):
+            add_parse_tree_node(node, lexemes[index + 1])
             index += 2
 
         if _is_match(True, "<flora-value>"):
-            _flora_value()
+            new_node = add_parse_tree_node(node, "<flora-value>")
+            _flora_value(new_node, node)
 
         if _is_match(True, "<more-flora>"):
-            _more_flora()
+            new_node = add_parse_tree_node(prev_node, "<more-flora>")
+            _more_flora(new_node, prev_node)
 
         return
 
-    # 101: EPSILON
-    return
-
-
-# 102-103
-def _more_chard() -> None:
-    global index
-
-    # 102
-    if _is_match(True, ","):
-        index += 1
-
-        if _is_match(False, "#"):
-            index += 2
-
-        if _is_match(True, "<chard-value>"):
-            _chard_value()
-
-        if _is_match(True, "<more-chard>"):
-            _more_chard()
-
-        return
-
-    # 103: EPSILON
-    return
-
-
-# 104-105
-def _more_string() -> None:
-    global index
-
-    # 104
-    if _is_match(True, ","):
-        index += 1
-
-        if _is_match(False, "#"):
-            index += 2
-
-        if _is_match(True, "<string-value>"):
-            _string_value()
-
-        if _is_match(True, "<more-string>"):
-            _more_string()
-
-        return
-
-    # 105: EPSILON
-    return
-
-
-# 106-107
-def _more_bloom() -> None:
-    global index
-
-    # 106
-    if _is_match(True, ","):
-        index += 1
-
-        if _is_match(False, "#"):
-            index += 2
-
-        if _is_match(True, "<bloom-value>"):
-            _bloom_value()
-
-        if _is_match(True, "<more-bloom>"):
-            _more_bloom()
-
-        return
-
-    # 107: EPSILON
-    return
-
-
-# 108-109
-def _sqnc_value() -> None:
-    global index
-
-    # 108
-    if _is_match(True, "="):
-        index += 1
-
-        if _is_match(True, "<sqnc>"):
-            _sqnc()
-            return
-
-        if _is_match(True, "<concatenate>"):
-            _concatenate()
-            return
-
-    # 109: EPSILON
     return
 
 
 # 110-111
-def _more_sqnc() -> None:
+def _more_chard(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 110
-    if _is_match(True, ","):
+    # 102
+    if _is_match(True, ",", node):
         index += 1
 
-        if _is_match(True, "#"):
+        if _is_match(False, "#", node):
+            add_parse_tree_node(node, lexemes[index + 1])
             index += 2
 
-        if _is_match(True, "<sqnc-value>"):
-            _sqnc_value()
+        if _is_match(True, "<chard-value>"):
+            new_node = add_parse_tree_node(node, "<chard-value>")
+            _chard_value(new_node, node)
 
-        if _is_match(True, "<more-sqnc>"):
-            _more_sqnc()
+        if _is_match(True, "<more-chard>"):
+            new_node = add_parse_tree_node(prev_node, "<more-chard>")
+            _more_chard(new_node, prev_node)
 
         return
 
-    # 111: EPSILON
     return
 
 
 # 112-113
-def _more_id() -> None:
+def _more_string(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    if _is_match(True, ","):
+    # 104
+    if _is_match(True, ",", node):
         index += 1
 
-        if _is_match(False, "#"):
+        if _is_match(False, "#", node):
+            add_parse_tree_node(node, lexemes[index + 1])
             index += 2
 
-        if _is_match(True, "<insert-func>"):
-            _insert_func()
+        if _is_match(True, "<string-value>"):
+            new_node = add_parse_tree_node(node, "<string-value>")
+            _string_value(new_node, node)
 
-        if _is_match(True, "<indexing>"):
-            _indexing()
+        if _is_match(True, "<more-string>"):
+            new_node = add_parse_tree_node(prev_node, "<more-string>")
+            _more_string(new_node, prev_node)
 
-        if _is_match(True, "<more-id>"):
-            _more_id()
+        return
 
-    # 113: EPSILON
     return
 
 
-# 114-117
-def _sqnc() -> None:
+# 114-115
+def _more_bloom(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 114
-    if _is_match(True, "<open>"):
-        _open()
+    # 106
+    if _is_match(True, ",", node):
+        index += 1
 
-        if _is_match(True, "<dirt>") and lexemes[index + 1] == ":":
-            _dirt()
+        if _is_match(False, "#", node):
+            index += 2
 
-        if _is_match(True, "<sequence>"):
-            _sequence()
+        if _is_match(True, "<bloom-value>"):
+            new_node = add_parse_tree_node(node, "<bloom-value>")
+            _bloom_value(new_node, node)
 
-        if _is_match(False, "<close>"):
-            _close()
+        if _is_match(True, "<more-bloom>"):
+            new_node = add_parse_tree_node(node, "<more-bloom>")
+            _more_bloom(new_node, node)
 
         return
 
-    # 115
-    elif _is_match(True, "<supply-dirt>"):
-        _supply_dirt()
+    return
 
-        if _is_match(False, "("):
-            index += 1
 
-        if _is_match(False, "#"):
+# 116-117
+def _sqnc_value(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    # 108
+    if _is_match(True, "=", node):
+        index += 1
+
+        if _is_match(False, "<sqnc>"):
+            new_node = add_parse_tree_node(node, "<sqnc>")
+            _sqnc(new_node, node)
+            return
+
+        if _is_match(True, "<concatenate>"):
+            new_node = add_parse_tree_node(node, "<concatenate>")
+            _concatenate(new_node, node)
+            return
+
+    return
+
+
+# 118-119
+def _more_sqnc(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    # 110
+    if _is_match(True, ",", node):
+        index += 1
+
+        if _is_match(True, "#", node):
+            index += 2
+
+        if _is_match(True, "<sqnc-value>"):
+            new_node = add_parse_tree_node(node, "<sqnc-value>")
+            _sqnc_value(new_node, node)
+
+        if _is_match(True, "<more-sqnc>"):
+            new_node = add_parse_tree_node(node, "<more-sqnc>")
+            _more_sqnc(new_node, node)
+
+        return
+
+    return
+
+# 120-121
+def _more_data(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    if _is_match(True, ",", node):
+        index += 1
+
+        if _is_match(False, "#", node):
             index += 2
 
         if _is_match(True, "<insert-func>"):
-            _insert_func()
+            new_node = add_parse_tree_node(node, "<insert-func>")
+            _insert_func(new_node, node)
 
         if _is_match(True, "<indexing>"):
-            _indexing()
+            new_node = add_parse_tree_node(node, "<indexing>")
+            _indexing(new_node, node)
 
-        if _is_match(False, ")"):
+        if _is_match(True, "<start-end-step>"):
+            new_node = add_parse_tree_node(node, "<start-end-step>")
+            _start_end_step(new_node, node)
+
+        if _is_match(True, "<more-data>"):
+            new_node = add_parse_tree_node(node, "<more-data>")
+            _more_data(new_node, node)
+
+    return
+
+
+# 122-123
+def _more_id(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    if _is_match(True, ",", node):
+        index += 1
+
+        if _is_match(False, "#", node):
+            index += 2
+
+        if _is_match(True, "<insert-func>"):
+            new_node = add_parse_tree_node(node, "<insert-func>")
+            _insert_func(new_node, node)
+
+        if _is_match(True, "<indexing>"):
+            new_node = add_parse_tree_node(node, "<indexing>")
+            _indexing(new_node, node)
+
+        if _is_match(True, "<more-id>"):
+            new_node = add_parse_tree_node(node, "<more-id>")
+            _more_id(new_node, node)
+
+    return
+
+
+# 124-125
+def _sqnc(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    if _is_match(True, "<sqnc-literals>"):
+        new_node = add_parse_tree_node(node, "<sqnc-literals>")
+        _sqnc_literals(new_node, node)
+
+    elif _is_match(True, "<sqnc-type>"):
+        new_node = add_parse_tree_node(node, "<sqnc-type>")
+        _sqnc_type(new_node, node)
+
+        if _is_match(False, "(", node):
+            # )
+            index += 1
+
+        if _is_match(True, "<all-type-value>"):
+            new_node = add_parse_tree_node(node, "<all-type-value>")
+            _all_type_value(new_node, node)
+
+        if _is_match(False, ")", node):
             index += 1
 
         return
 
-    # 116
+
+# 126-129
+def _sqnc_literals(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    if _is_match(True, "<open>"):
+        new_node = add_parse_tree_node(node, "<open>")
+        _open(new_node, node)
+
+        if _is_match(True, "<sequence>"):
+            new_node = add_parse_tree_node(node, "<sequence>")
+            _sequence(new_node, node)
+
+        if _is_match(True, "<close>"):
+            new_node = add_parse_tree_node(node, "<close>")
+            _close(new_node, node)
+
+    elif _is_match(True, "<supply-dirt>"):
+        new_node = add_parse_tree_node(node, "<supply-dirt>")
+        _supply_dirt(new_node, node)
+
+        if _is_match(False, "(", node):
+            # )
+            index += 1
+
+            if _is_match(True, "#", node):
+                add_parse_tree_node(node, lexemes[index + 1])
+                index += 2
+
+            if _is_match(True, "<insert-func>"):
+                new_node = add_parse_tree_node(node, "<insert-func>")
+                _insert_func(new_node, node)
+
+            if _is_match(True, "<indexing>"):
+                new_node = add_parse_tree_node(node, "<indexing>")
+                _indexing(new_node, node)
+
+            if _is_match(True, ")", node):
+                index += 1
+
     elif _is_match(True, "#"):
         index += 2
 
         if _is_match(True, "<insert-func>"):
-            _insert_func()
+            new_node = add_parse_tree_node(node, "<insert-func>")
+            _insert_func(new_node, node)
 
         if _is_match(True, "<indexing>"):
-            _indexing()
+            new_node = add_parse_tree_node(node, "<indexing>")
+            _indexing(new_node, node)
 
         if _is_match(True, "<start-end-step>"):
-            _start_end_step()
-
-        return
-
-    # 117
-    elif _is_match(True, "<sqnc-type>"):
-        _sqnc_type()
-
-        if _is_match(False, "("):
-            index += 1
-
-        if _is_match(False, "#"):
-            index += 2
-
-        if _is_match(True, "<insert-func>"):
-            _insert_func()
-
-        if _is_match(True, "<indexing>"):
-            _indexing()
-
-        if _is_match(True, "<start-end-step>"):
-            _start_end_step()
-
-        if _is_match(False, ")"):
-            index += 1
+            new_node = add_parse_tree_node(node, "<start-end-step>")
+            _start_end_step(new_node, node)
 
         return
 
     return
 
 
-# 118-120
-def _supply_dirt() -> None:
+# 130-132
+def _supply_dirt(node: classmethod, prev_node: classmethod) -> None:
     global index
-    index += 1
+    if _is_match(True, lexemes[index], node):
+        index += 1
     return
 
 
-# 121-122
-def _open() -> None:
+# 133-134
+def _open(node: classmethod, prev_node: classmethod) -> None:
     global index
-    index += 1
+    if _is_match(True, lexemes[index], node):
+        index += 1
     return
 
 
-# 123-124
-def _dirt() -> None:
+# 135-136
+def _dirt(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 123
-    if _is_match(True, "String Literal"):
+    if _is_match(True, "String Literal", node):
         index += 1
 
-        if _is_match(False, ":"):
+        if _is_match(False, ":", node):
             index += 1
         return
 
-    # 124: EPSILON
     return
 
 
-# 125-126
-def _close() -> None:
+# 137-138
+def _close(node: classmethod, prev_node: classmethod) -> None:
     global index
-    index += 1
+    if _is_match(True, lexemes[index], node):
+        index += 1
     return
 
 
-# 127-128
-def _sequence() -> None:
+# 139-140
+def _sequence(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 127
+    if _is_match(True, "<dirt>"):
+        new_node = add_parse_tree_node(node, "<dirt>")
+        _dirt(new_node, node)
+
     if _is_match(True, "<common-data>") and lexemes[index + 1] != ":":
-        _common_data()
+        new_node = add_parse_tree_node(node, "<common-data>")
+        _common_data(new_node, node)
 
         if _is_match(True, "<next-sqnc>"):
-            _next_sqnc()
+            new_node = add_parse_tree_node(node, "<next-sqnc>")
+            _next_sqnc(new_node, node)
 
         return
 
-    # 128
     elif _is_match(True, "<open>"):
-        _open()
-
-        if _is_match(True, "<dirt>") and lexemes[index + 1] == ":":
-            _dirt()
+        new_node = add_parse_tree_node(node, "<open>")
+        _open(new_node, node)
 
         if _is_match(True, "<2D-sqnc>"):
-            _2D_sqnc()
+            new_node = add_parse_tree_node(node, "<2D-sqnc>")
+            _2D_sqnc(new_node, node)
 
         if _is_match(True, "<close>"):
-            _close()
+            new_node = add_parse_tree_node(node, "<close>")
+            _close(new_node, node)
 
         if _is_match(True, "<next_sqnc>"):
-            _next_sqnc()
+            new_node = add_parse_tree_node(node, "<next_sqnc>")
+            _next_sqnc(new_node, node)
 
         return
 
     return
 
 
-# 129-133
-def _common_data() -> None:
+# 141-145
+def _common_data(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 129
     if _is_match(True, "<tint>"):
-        _tint()
+        new_node = add_parse_tree_node(node, "<tint>")
+        _tint(new_node, node)
         return
 
-    # 130
     elif _is_match(True, "<flora>"):
-        _flora()
+        new_node = add_parse_tree_node(node, "<flora>")
+        _flora(new_node, node)
         return
 
-    # 131
     elif _is_match(True, "<chard>"):
-        _chard()
+        new_node = add_parse_tree_node(node, "<chard>")
+        _chard(new_node, node)
         return
 
-    # 132
     elif _is_match(True, "<string>"):
-        _string()
+        new_node = add_parse_tree_node(node, "<string>")
+        _string(new_node, node)
         return
 
-    # 133
     elif _is_match(True, "<bloom>"):
-        _bloom()
-        return
-
-    return
-
-
-# 134-135
-def _next_sqnc() -> None:
-    global index
-
-    # 134
-    if _is_match(True, ","):
-        index += 1
-
-        if _is_match(False, "<sequence>"):
-            _sequence()
-
-        return
-
-    # 135: EPSILON
-    return
-
-
-# 136-137
-def _2D_sqnc() -> None:
-    global index
-
-    # 136
-    if _is_match(True, "<common-data>"):
-        _common_data()
-
-        if _is_match(True, "<next-2D-sqnc>"):
-            _next_2D_sqnc()
-
-        return
-
-    # 137
-    elif _is_match(True, "<open>"):
-        _open()
-
-        if _is_match(True, "<dirt>") and lexemes[index + 1] == ":":
-            _dirt()
-
-        if _is_match(True, "<common-data>"):
-            _common_data()
-
-        if _is_match(True, "<next-3D-sqnc>"):
-            _next_3D_sqnc()
-
-        if _is_match(True, "<close>"):
-            _close()
-
-        if _is_match(True, "<next-2D-sqnc>"):
-            _next_2D_sqnc()
-
-        return
-
-    return
-
-
-# 138-139
-def _next_2D_sqnc() -> None:
-    global index
-
-    # 138
-    if _is_match(True, ","):
-        index += 1
-
-        if _is_match(True, "<2D-sqnc>"):
-            _2D_sqnc()
-
-        return
-
-    # 139: EPSILON
-    return
-
-
-# 140-141
-def _next_3D_sqnc() -> None:
-    global index
-
-    # 140
-    if _is_match(True, ","):
-        index += 1
-
-        if _is_match(True, "<common-data>"):
-            _common_data()
-
-        if _is_match(True, "<next-3D-sqnc>"):
-            _next_3D_sqnc()
-
-        return
-
-    # 141: EPSILON
-    return
-
-
-# 142-143
-def _start_end_step() -> None:
-    global index
-
-    # 142
-    if _is_match(True, "["):
-        index += 1
-
-        if _is_match(True, "<insert_start>"):
-            _insert_start()
-
-        return
-
-    # 143: EPSILON
-    return
-
-
-# ]] 144-145
-def _insert_start() -> None:
-    global index
-
-    # 144
-    if _is_match(True, "Tint Literal"):
-        index += 1
-
-        if _is_match(False, ":"):
-            index += 1
-
-        if _is_match(True, "<close-start>"):
-            _close_start()
-
-        return
-
-    # 145
-    elif _is_match(True, ":"):
-        index += 1
-
-        if _is_match(True, "<skip-start>"):
-            _skip_start()
-
+        new_node = add_parse_tree_node(node, "<bloom>")
+        _bloom(new_node, node)
         return
 
     return
 
 
 # 146-147
-def _close_start() -> None:
+def _next_sqnc(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 146
-    if _is_match(True, "<close-end>"):
-        _close_end()
-        return
-
-    # 147
-    elif _is_match(True, "Tint Literal"):
+    # 134
+    if _is_match(True, ",", node):
         index += 1
 
-        if _is_match(True, "<close-end>"):
-            _close_end()
+        if _is_match(False, "<sequence>"):
+            new_node = add_parse_tree_node(node, "<sequence>")
+            _sequence(new_node, node)
 
         return
 
@@ -1609,64 +1708,64 @@ def _close_start() -> None:
 
 
 # 148-149
-def _close_end() -> None:
+def _2D_sqnc(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 148
-    if _is_match(True, "]"):
-        index += 1
+    if _is_match(True, "<dirt>"):
+        new_node = add_parse_tree_node(node, "<dirt>")
+        _dirt(new_node, node)
 
-        if _is_match(True, "<2D-start-end-step>"):
-            _2D_start_end_step()
+        if _is_match(True, "<common-data>"):
+            new_node = add_parse_tree_node(node, "<common-data>")
+            _common_data(new_node, node)
 
-        return
+            if _is_match(True, "<next-2D-sqnc>"):
+                new_node = add_parse_tree_node(node, "<next-2D-sqnc>")
+                _next_2D_sqnc(new_node, node)
 
-    # 149
-    elif _is_match(True, ":"):
-        index += 1
+            return
 
-        if _is_match(True, "Tint Literal"):
-            index += 1
+        # 137
+        elif _is_match(True, "<open>"):
+            new_node = add_parse_tree_node(node, "<open>")
+            _open(new_node, node)
 
-        if _is_match(False, "]"):
-            index += 1
+            if _is_match(True, "<dirt>"):
+                new_node = add_parse_tree_node(node, "<dirt>")
+                _dirt(new_node, node)
 
-        if _is_match(True, "<2D-start-end-step>"):
-            _2D_start_end_step()
+            if _is_match(True, "<common-data>"):
+                new_node = add_parse_tree_node(node, "<common-data>")
+                _common_data(new_node, node)
 
-        return
+            if _is_match(True, "<next-3D-sqnc>"):
+                new_node = add_parse_tree_node(node, "<next-3D-sqnc>")
+                _next_3D_sqnc(new_node, node)
+
+            if _is_match(True, "<close>"):
+                new_node = add_parse_tree_node(node, "<close>")
+                _close(new_node, node)
+
+            if _is_match(True, "<next-2D-sqnc>"):
+                new_node = add_parse_tree_node(node, "<next-2D-sqnc>")
+                _next_2D_sqnc(new_node, node)
+
+            return
 
     return
 
 
 # 150-151
-def _skip_start() -> None:
+def _next_2D_sqnc(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 150
-    if _is_match(True, "Tint Literal"):
+    # 138
+    if _is_match(True, ",", node):
         index += 1
 
-        if _is_match(True, "<close-end>"):
-            _close_end()
-
-        if _is_match(True, "<2D-start-end-step>"):
-            _2D_start_end_step()
-
-        return
-
-    # 151
-    elif _is_match(True, ":"):
-        index += 1
-
-        if _is_match(True, "Tint Literal"):
-            index += 1
-
-        if _is_match(False, "]"):
-            index += 1
-
-        if _is_match(True, "<2D-start-end-step>"):
-            _2D_start_end_step()
+        if _is_match(True, "<2D-sqnc>"):
+            new_node = add_parse_tree_node(node, "<2D-sqnc>")
+            _2D_sqnc(new_node, node)
 
         return
 
@@ -1674,64 +1773,71 @@ def _skip_start() -> None:
 
 
 # 152-153
-def _2D_start_end_step() -> None:
+def _next_3D_sqnc(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 152
-    if _is_match(True, "["):
+    # 140
+    if _is_match(True, ",", node):
         index += 1
 
-        if _is_match(True, "<2D-insert-start>"):
-            _2D_insert_start()
+        # dirt
+        if _is_match(True, "<dirt>"):
+            new_node = add_parse_tree_node(node, "<dirt>")
+            _dirt(new_node, node)
+
+        if _is_match(True, "<common-data>"):
+            new_node = add_parse_tree_node(node, "<common-data>")
+            _common_data(new_node, node)
+
+        if _is_match(True, "<next-3D-sqnc>"):
+            new_node = add_parse_tree_node(node, "<next-3D-sqnc>")
+            _next_3D_sqnc(new_node, node)
 
         return
 
-    # ]] 153: EPSILON
     return
 
 
 # 154-155
-def _2D_insert_start() -> None:
+def _start_end_step(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 154
-    if _is_match(True, "Tint Literal"):
+    # 142
+    if _is_match(True, "[", node):
+        # ]
         index += 1
 
-        if _is_match(False, ":"):
+        if _is_match(True, "<insert_start>"):
+            new_node = add_parse_tree_node(node, "<insert_start>")
+            _insert_start(new_node, node)
+
+        return
+
+    return
+
+
+# ]] 156-157
+def _insert_start(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    if _is_match(True, "Tint Literal", node):
+        index += 1
+
+        if _is_match(False, ":", node):
             index += 1
 
-        if _is_match(True, "<2D-close-start>"):
-            _2D_close_start()
+        if _is_match(True, "<close-start>"):
+            new_node = add_parse_tree_node(node, "<close-start>")
+            _close_start(new_node, node)
 
         return
 
-    # 145
-    elif _is_match(True, ":"):
-
-        if _is_match(True, "<2D-skip-start>"):
-            _2D_skip_start()
-
-        return
-
-    return
-
-
-# 156-157
-def _2D_close_start() -> None:
-    global index
-
-    # 156
-    if _is_match(True, "<2D-close-end>"):
-        _2D_close_end()
-        return
-
-    # 157
-    elif _is_match(True, "Tint Literal"):
+    elif _is_match(True, ":", node):
         index += 1
 
-        if _is_match(True, "<2D-close-end>"):
-            _2D_close_end()
+        if _is_match(True, "<skip-start>"):
+            new_node = add_parse_tree_node(node, "<skip-start>")
+            _skip_start(new_node, node)
 
         return
 
@@ -1739,30 +1845,20 @@ def _2D_close_start() -> None:
 
 
 # 158-159
-def _2D_close_end() -> None:
+def _close_start(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 158
-    if _is_match(True, "]"):
-        index += 1
-
-        if _is_match(True, "<3D-start-end-step>"):
-            _3D_start_end_step()
-
+    if _is_match(True, "<close-end>"):
+        new_node = add_parse_tree_node(node, "<close-end>")
+        _close_end(new_node, node)
         return
 
-    # 159
-    elif _is_match(True, ":"):
+    elif _is_match(True, "Tint Literal", node):
         index += 1
 
-        if _is_match(True, "Tint Literal"):
-            index += 1
-
-        if _is_match(False, "]"):
-            index += 1
-
-        if _is_match(True, "<3D-start-end-step>"):
-            _3D_start_end_step()
+        if _is_match(True, "<close-end>"):
+            new_node = add_parse_tree_node(node, "<close-end>")
+            _close_end(new_node, node)
 
         return
 
@@ -1770,33 +1866,30 @@ def _2D_close_end() -> None:
 
 
 # 160-161
-def _2D_skip_start() -> None:
+def _close_end(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 160
-    if _is_match(True, "Tint Literal"):
+    if _is_match(True, "]", node):
         index += 1
 
-        if _is_match(True, "<2D-close-end>"):
-            _2D_close_end()
-
-        if _is_match(True, "<3D-start-end-step>"):
-            _3D_start_end_step()
+        if _is_match(True, "<2D-start-end-step>"):
+            new_node = add_parse_tree_node(node, "<2D-start-end-step>")
+            _2D_start_end_step(new_node, node)
 
         return
 
-    # 161
-    elif _is_match(True, ":"):
+    elif _is_match(True, ":", node):
         index += 1
 
-        if _is_match(True, "Tint Literal"):
+        if _is_match(True, "Tint Literal", node):
             index += 1
 
-        if _is_match(False, "]"):
+        if _is_match(False, "]", node):
             index += 1
 
-        if _is_match(True, "<3D-start-end-step>"):
-            _3D_start_end_step()
+        if _is_match(True, "<2D-start-end-step>"):
+            new_node = add_parse_tree_node(node, "<2D-start-end-step>")
+            _2D_start_end_step(new_node, node)
 
         return
 
@@ -1804,65 +1897,79 @@ def _2D_skip_start() -> None:
 
 
 # 162-163
-def _3D_start_end_step() -> None:
+def _skip_start(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 162
-    if _is_match(True, "["):
+    if _is_match(True, "Tint Literal", node):
         index += 1
 
-        if _is_match(True, "<3D-insert-start>"):
-            _3D_insert_start()
+        if _is_match(True, "<close-end>"):
+            new_node = add_parse_tree_node(node, "<close-end>")
+            _close_end(new_node, node)
+
+        if _is_match(True, "<2D-start-end-step>"):
+            new_node = add_parse_tree_node(node, "<2D-start-end-step>")
+            _2D_start_end_step(new_node, node)
 
         return
 
-    # 163: EPSILON
+    elif _is_match(True, ":", node):
+        index += 1
+
+        if _is_match(True, "Tint Literal", node):
+            index += 1
+
+        if _is_match(False, "]", node):
+            index += 1
+
+        if _is_match(True, "<2D-start-end-step>"):
+            new_node = add_parse_tree_node(node, "<2D-start-end-step>")
+            _2D_start_end_step(new_node, node)
+
+        return
+
     return
 
 
 # 164-165
-def _3D_insert_start() -> None:
+def _2D_start_end_step(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 164
-    if _is_match(True, "Tint Literal"):
+    # 152
+    if _is_match(True, "[", node):
         index += 1
 
-        if _is_match(False, ":"):
-            index += 1
-
-        if _is_match(True, "<3D-close-start>"):
-            _3D_close_start()
+        if _is_match(True, "<2D-insert-start>"):
+            new_node = add_parse_tree_node(node, "<2D-insert-start>")
+            _2D_insert_start(new_node, node)
 
         return
 
-    # 165
-    elif _is_match(True, ":"):
-        index += 1
-
-        if _is_match(True, "<3D-skip-start>"):
-            _3D_skip_start()
-
-        return
-
+    # ]] 153: EPSILON
     return
 
 
 # 166-167
-def _3D_close_start() -> None:
+def _2D_insert_start(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 166
-    if _is_match(True, "<3D-close-end>"):
-        _3D_close_end()
-        return
-
-    # 167
-    elif _is_match(True, "Tint Literal"):
+    if _is_match(True, "Tint Literal", node):
         index += 1
 
-        if _is_match(True, "<3D-close-end>"):
-            _3D_close_end()
+        if _is_match(False, ":", node):
+            index += 1
+
+        if _is_match(True, "<2D-close-start>"):
+            new_node = add_parse_tree_node(node, "<2D-close-start>")
+            _2D_close_start(new_node, node)
+
+        return
+
+    elif _is_match(True, ":", node):
+
+        if _is_match(True, "<2D-skip-start>"):
+            new_node = add_parse_tree_node(node, "<2D-skip-start>")
+            _2D_skip_start(new_node, node)
 
         return
 
@@ -1870,23 +1977,20 @@ def _3D_close_start() -> None:
 
 
 # 168-169
-def _3D_close_end() -> None:
+def _2D_close_start(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 168
-    if _is_match(True, "]"):
-        index += 1
+    if _is_match(True, "<2D-close-end>"):
+        new_node = add_parse_tree_node(node, "<2D-close-end>")
+        _2D_close_end(new_node, node)
         return
 
-    # 169
-    elif _is_match(True, ":"):
+    elif _is_match(True, "Tint Literal", node):
         index += 1
 
-        if _is_match(True, "Tint Literal"):
-            index += 1
-
-        if _is_match(False, "]"):
-            index += 1
+        if _is_match(True, "<2D-close-end>"):
+            new_node = add_parse_tree_node(node, "<2D-close-end>")
+            _2D_close_end(new_node, node)
 
         return
 
@@ -1894,26 +1998,152 @@ def _3D_close_end() -> None:
 
 
 # 170-171
-def _3D_skip_start() -> None:
+def _2D_close_end(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 170
-    if _is_match(True, "Tint Literal"):
+    if _is_match(True, "]", node):
         index += 1
 
-        if _is_match(True, "<3D-close-end>"):
-            _3D_close_end()
+        if _is_match(True, "<3D-start-end-step>"):
+            new_node = add_parse_tree_node(node, "<3D-start-end-step>")
+            _3D_start_end_step(new_node, node)
 
         return
 
-    # 171
-    elif _is_match(True, ":"):
+    elif _is_match(True, ":", node):
         index += 1
 
-        if _is_match(True, "Tint Literal"):
+        if _is_match(True, "Tint Literal", node):
             index += 1
 
-        if _is_match(False, "]"):
+        if _is_match(False, "]", node):
+            index += 1
+
+        if _is_match(True, "<3D-start-end-step>"):
+            new_node = add_parse_tree_node(node, "<3D-start-end-step>")
+            _3D_start_end_step(new_node, node)
+
+        return
+
+    return
+
+
+# 172-173
+def _2D_skip_start(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    if _is_match(True, "Tint Literal", node):
+        index += 1
+
+        if _is_match(True, "<2D-close-end>"):
+            new_node = add_parse_tree_node(node, "<2D-close-end>")
+            _2D_close_end(new_node, node)
+
+        if _is_match(True, "<3D-start-end-step>"):
+            new_node = add_parse_tree_node(node, "<3D-start-end-step>")
+            _3D_start_end_step(new_node, node)
+
+        return
+
+    elif _is_match(True, ":", node):
+        index += 1
+
+        if _is_match(True, "Tint Literal", node):
+            index += 1
+
+        if _is_match(False, "]", node):
+            index += 1
+
+        if _is_match(True, "<3D-start-end-step>"):
+            new_node = add_parse_tree_node(node, "<3D-start-end-step>")
+            _3D_start_end_step(new_node, node)
+
+        return
+
+    return
+
+
+# 174-175
+def _3D_start_end_step(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    if _is_match(True, "[", node):
+        # ]
+        index += 1
+
+        if _is_match(True, "<3D-insert-start>"):
+            new_node = add_parse_tree_node(node, "<3D-insert-start>")
+            _3D_insert_start(new_node, node)
+
+        return
+
+    return
+
+
+# 176-177
+def _3D_insert_start(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    if _is_match(True, "Tint Literal", node):
+        index += 1
+
+        if _is_match(False, ":", node):
+            index += 1
+
+        if _is_match(True, "<3D-close-start>"):
+            new_node = add_parse_tree_node(node, "<3D-close-start>")
+            _3D_close_start(new_node, node)
+
+        return
+
+    elif _is_match(True, ":", node):
+        index += 1
+
+        if _is_match(True, "<3D-skip-start>"):
+            new_node = add_parse_tree_node(node, "<3D-skip-start>")
+            _3D_skip_start(new_node, node)
+
+        return
+
+    return
+
+
+# 178-179
+def _3D_close_start(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    if _is_match(True, "<3D-close-end>"):
+        new_node = add_parse_tree_node(node, "<3D-close-end>")
+        _3D_close_end(new_node, node)
+        return
+
+    elif _is_match(True, "Tint Literal", node):
+        index += 1
+
+        if _is_match(True, "<3D-close-end>"):
+            new_node = add_parse_tree_node(node, "<3D-close-end>")
+            _3D_close_end(new_node, node)
+
+        return
+
+    return
+
+
+# 180-181
+def _3D_close_end(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    if _is_match(True, "]", node):
+        index += 1
+        return
+
+    elif _is_match(True, ":", node):
+        index += 1
+
+        if _is_match(True, "Tint Literal", node):
+            index += 1
+
+        if _is_match(False, "]", node):
             index += 1
 
         return
@@ -1921,509 +2151,297 @@ def _3D_skip_start() -> None:
     return
 
 
-# 172-174
-def _all_type_value() -> None:
+# 182-183
+def _3D_skip_start(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 172
-    if _is_match(True, "<common-data>"):
-        _common_data()
+    if _is_match(True, "Tint Literal", node):
+        index += 1
+
+        if _is_match(True, "<3D-close-end>"):
+            new_node = add_parse_tree_node(node, "<3D-close-end>")
+            _3D_close_end(new_node, node)
+
         return
 
-    # 173
+    elif _is_match(True, ":", node):
+        index += 1
+
+        if _is_match(True, "Tint Literal", node):
+            index += 1
+
+        if _is_match(False, "]", node):
+            index += 1
+
+        return
+
+    return
+
+
+# 184-188
+def _all_type_value(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    if _is_match(True, "<common-data>"):
+        new_node = add_parse_tree_node(node, "<common-data>")
+        _common_data(new_node, node)
+        return
+
+    elif _is_match(True, "<insert-condition>"):
+        _insert_condition()
+        return
+
     elif _is_match(True, "<sqnc>"):
         _sqnc()
         return
 
-    # 174
-    elif _is_match(True, "inpetal"):
-        index += 1
-
-        if _is_match(False, "("):
-            index += 1
-
-        if _is_match(True, "String Literal"):
-            index += 1
-
-        if _is_match(False, ")"):
-            index += 1
-
-        return
-
-    return
-
-
-# 175-176
-def _i_o_statement() -> None:
-    global index
-
-    # 175
-    if _is_match(True, "<insert-inpetal>"):
-        _insert_inpetal()
-
-        if _is_match(False, "inpetal"):
-            index += 1
-
-        if _is_match(False, "("):
-            index += 1
-
-        if _is_match(True, "String Literal"):
-            index += 1
-
-        if _is_match(False, ")"):
-            index += 1
-
-        return
-
-    # 176
-    elif _is_match(True, "mint"):
-        index += 1
-
-        if _is_match(False, "("):
-            index += 1
-
-        if _is_match(True, "<all-type-value>"):
-            _all_type_value()
-
-        if _is_match(False, ")"):
-            index += 1
-
-        return
-
-
-# 177-179
-def _insert_inpetal() -> None:
-    global index
-
-    # 177
-    if _is_match(True, "<common-type>"):
-        _common_type()
-
-        if _is_match(False, "#"):
-            index += 2
-
-        if _is_match(True, "<insert-func>"):
-            _insert_func()
-
-        if _is_match(True, "<indexing>"):
-            _indexing()
-
-        if _is_match(False, "="):
-            index += 1
-
-        return
-
-    # 178
-    elif _is_match(True, "<sqnc-type>"):
-        _sqnc_type()
-
-        if _is_match(False, "#"):
-            index += 2
-
-        if _is_match(True, "<insert-func>"):
-            _insert_func()
-
-        if _is_match(True, "<indexing>"):
-            _indexing()
-
-        if _is_match(False, "="):
-            index += 1
-
-        return
-
-    # 179
     elif _is_match(True, "#"):
+        add_parse_tree_node(node, lexemes[index + 1])
         index += 2
 
         if _is_match(True, "<insert-func>"):
-            _insert_func()
+            new_node = add_parse_tree_node(node, "<insert-func>")
+            _insert_func(new_node, node)
 
         if _is_match(True, "<indexing>"):
-            _indexing()
+            new_node = add_parse_tree_node(node, "<indexing>")
+            _indexing(new_node, node)
 
-        if _is_match(False, "="):
-            index += 1
+        if _is_match(True, "<start-end-step>"):
+            new_node = add_parse_tree_node(node, "<start-end-step>")
+            _start_end_step(new_node, node)
 
         return
 
-    return
-
-
-# 180-184
-def _common_type() -> None:
-    global index
-    index += 1
-    return
-
-
-# 185-186
-def _eleaf() -> None:
-    global index
-
-    # 185
-    if _is_match(True, "eleaf"):
+    elif _is_match(True, "inpetal", node):
         index += 1
 
-        if _is_match(False, "("):
+        if _is_match(False, "(", node):
             index += 1
 
-        if _is_match(True, "<bloom>"):
-            _bloom()
-
-        if _is_match(False, ")"):
+        if _is_match(True, "String Literal", node):
             index += 1
 
-        if _is_match(False, "("):
-            index += 1
-
-        if _is_match(True, "<filter-statement>"):
-            _filter_statement()
-
-        if _is_match(False, ")"):
-            index += 1
-
-        if _is_match(False, ";"):
-            index += 1
-
-        if _is_match(True, "<eleaf>"):
-            _eleaf()
-
-        return
-
-    # 186: EPSILON
-    return
-
-
-# 187-188
-def _2D_eleaf() -> None:
-    global index
-
-    # 185
-    if _is_match(True, "eleaf"):
-        index += 1
-
-        if _is_match(False, "("):
-            index += 1
-
-        if _is_match(True, "<bloom>"):
-            _bloom()
-
-        if _is_match(False, ")"):
-            index += 1
-
-        if _is_match(False, "("):
-            index += 1
-
-        if _is_match(True, "<filter-2D-state>"):
-            _filter_2D_state()
-
-        if _is_match(False, ")"):
-            index += 1
-
-        if _is_match(False, ";"):
+        if _is_match(False, ")", node):
             index += 1
 
         return
 
-    # 186: EPSILON
     return
 
 
 # 189-190
-def _3D_eleaf() -> None:
+def _i_o_statement(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 185
-    if _is_match(True, "eleaf"):
-        index += 1
+    if _is_match(True, "<insert-inpetal>") and _find_future("inpetal"):
+        new_node = add_parse_tree_node(node, "<insert-inpetal>")
+        _insert_inpetal(new_node, node)
 
-        if _is_match(False, "("):
+        if _is_match(False, "inpetal", node):
             index += 1
 
-        if _is_match(True, "<bloom>"):
-            _bloom()
-
-        if _is_match(False, ")"):
+        if _is_match(False, "(", node):
             index += 1
 
-        if _is_match(False, "("):
+        if _is_match(True, "String Literal", node):
             index += 1
 
-        if _is_match(True, "<filter-3D-state>"):
-            _filter_3D_state()
-
-        if _is_match(False, ")"):
-            index += 1
-
-        if _is_match(False, ";"):
+        if _is_match(False, ")", node):
             index += 1
 
         return
 
-    # 186: EPSILON
+    elif _is_match(True, "mint", node):
+        index += 1
+
+        if _is_match(False, "(", node):
+            index += 1
+
+        if _is_match(True, "<all-type-value>"):
+            new_node = add_parse_tree_node(node, "<all-type-value>")
+            _all_type_value(new_node, node)
+
+        if _is_match(False, ")", node):
+            index += 1
+
+        return
+
+
+# 191-193
+def _insert_inpetal(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    if _is_match(True, "<common-type>"):
+        new_node = add_parse_tree_node(node, "<common-type>")
+        _common_type(new_node, node)
+
+        if _is_match(False, "#", node):
+            index += 2
+
+        if _is_match(True, "<insert-func>"):
+            new_node = add_parse_tree_node(node, "<insert-func>")
+            _insert_func(new_node, node)
+
+        if _is_match(True, "<indexing>"):
+            new_node = add_parse_tree_node(node, "<indexing>")
+            _indexing(new_node, node)
+
+        if _is_match(False, "=", node):
+            index += 1
+
+        return
+
+    elif _is_match(True, "<sqnc-type>"):
+        new_node = add_parse_tree_node(node, "<sqnc-type>")
+        _sqnc_type(new_node, node)
+
+        if _is_match(False, "#", node):
+            index += 2
+
+        if _is_match(True, "<insert-func>"):
+            new_node = add_parse_tree_node(node, "<insert-func>")
+            _insert_func(new_node, node)
+
+        if _is_match(True, "<indexing>"):
+            new_node = add_parse_tree_node(node, "<indexing>")
+            _indexing(new_node, node)
+
+        if _is_match(False, "=", node):
+            index += 1
+
+        return
+
+    elif _is_match(True, "#", node):
+        index += 2
+
+        if _is_match(True, "<insert-func>"):
+            new_node = add_parse_tree_node(node, "<insert-func>")
+            _insert_func(new_node, node)
+
+        if _is_match(True, "<indexing>"):
+            new_node = add_parse_tree_node(node, "<indexing>")
+            _indexing(new_node, node)
+
+        if _is_match(False, "=", node):
+            index += 1
+
+        return
+
     return
 
 
-# 191-192
-def _final_eleaf() -> None:
+# 194-198
+def _common_type(node: classmethod, prev_node: classmethod) -> None:
     global index
-
-    # 191
-    if _is_match(True, "eleaf"):
+    if _is_match(True, lexemes[index], node):
         index += 1
-
-        if _is_match(False, "("):
-            index += 1
-
-        if _is_match(True, "<bloom>"):
-            _bloom()
-
-        if _is_match(False, ")"):
-            index += 1
-
-        if _is_match(False, "("):
-            index += 1
-
-        if _is_match(True, "<filter-final-state>"):
-            _filter_final_state()
-
-        if _is_match(False, ")"):
-            index += 1
-
-        if _is_match(False, ";"):
-            index += 1
-
-        return
-
-    # 192: EPSILON
-    return
-
-
-# 193-194
-def _else() -> None:
-    global index
-
-    # 193
-    if _is_match(True, "moss"):
-        index += 1
-
-        if _is_match(False, "("):
-            index += 1
-
-        if _is_match(True, "<filter-statement>"):
-            _filter_statement()
-
-        if _is_match(False, ")"):
-            index += 1
-
-        if _is_match(False, ";"):
-            index += 1
-
-        return
-
-    # 194: EPSILON
-    return
-
-
-# 195-196
-def _2D_else() -> None:
-    global index
-
-    # 195
-    if _is_match(True, "moss"):
-        index += 1
-
-        if _is_match(False, "("):
-            index += 1
-
-        if _is_match(True, "<filter-2D-state>"):
-            _filter_2D_state()
-
-        if _is_match(False, ")"):
-            index += 1
-
-        if _is_match(False, ";"):
-            index += 1
-
-        return
-
-    # 196: EPSILON
-    return
-
-
-# 197-198
-def _3D_else() -> None:
-    global index
-
-    # 197
-    if _is_match(True, "moss"):
-        index += 1
-
-        if _is_match(False, "("):
-            index += 1
-
-        if _is_match(True, "<filter-3D-state>"):
-            _filter_3D_state()
-
-        if _is_match(False, ")"):
-            index += 1
-
-        if _is_match(False, ";"):
-            index += 1
-
-        return
-
-    # 198: EPSILON
     return
 
 
 # 199-200
-def _final_else() -> None:
+def _eleaf(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 199
-    if _is_match(True, "moss"):
+    if _is_match(True, "eleaf", node):
         index += 1
 
-        if _is_match(False, "("):
+        if _is_match(False, "(", node):
             index += 1
 
-        if _is_match(True, "<filter-final-state>"):
-            _filter_final_state()
+        if _is_match(True, "<insert-condition>"):
+            new_node = add_parse_tree_node(node, "<insert-condition>")
+            _insert_condition(new_node, node)
 
-        if _is_match(False, ")"):
+        if _is_match(False, ")", node):
             index += 1
 
-        if _is_match(False, ";"):
+        if _is_match(False, "(", node):
             index += 1
+
+        if _is_match(True, "<filter-statement>"):
+            new_node = add_parse_tree_node(node, "<filter-statement>")
+            _filter_statement(new_node, node)
+
+        if _is_match(False, ")", node):
+            index += 1
+
+        if _is_match(False, ";", node):
+            index += 1
+
+        if _is_match(True, "<eleaf>"):
+            new_node = add_parse_tree_node(node, "<eleaf>")
+            _eleaf(new_node, node)
 
         return
 
-    # 200: EPSILON
     return
 
 
 # 201-202
-def _iterative() -> None:
+def _2D_eleaf(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 201
-    if _is_match(True, "fern"):
+    # 185
+    if _is_match(True, "eleaf", node):
         index += 1
 
-        if _is_match(False, "("):
-            print("here")
+        if _is_match(False, "(", node):
             index += 1
 
-        if _is_match(True, "<insert-fern>"):
-            _insert_fern()
+        if _is_match(True, "<insert-condition>"):
+            new_node = add_parse_tree_node(node, "<insert-condition>")
+            _insert_condition(new_node, node)
+
+        if _is_match(False, ")", node):
+            index += 1
+
+        if _is_match(False, "(", node):
+            index += 1
+
+        if _is_match(True, "<filter-2D-state>"):
+            new_node = add_parse_tree_node(node, "<filter-2D-state>")
+            _filter_2D_state(new_node, node)
+
+        if _is_match(False, ")", node):
+            index += 1
+
+        if _is_match(False, ";", node):
+            index += 1
 
         return
 
-    # 202
-    elif _is_match(True, "willow"):
-        index += 1
-
-        if _is_match(False, "("):
-            index += 1
-
-        if _is_match(True, "<bloom>"):
-            _bloom()
-
-        if _is_match(False, ")"):
-            index += 1
-
-        if _is_match(False, "("):
-            index += 1
-
-        if _is_match(True, "<2D-statement>"):
-            _2D_statement()
-
-        if _is_match(False, ")"):
-            index += 1
-
-        return
     return
 
 
 # 203-204
-def _insert_fern() -> None:
+def _3D_eleaf(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 203
-    if _is_match(True, "tint"):
+    if _is_match(True, "eleaf", node):
         index += 1
 
-        if _is_match(False, "#"):
-            index += 2
-
-        if _is_match(False, "="):
+        if _is_match(False, "(", node):
             index += 1
 
-        if _is_match(True, "Tint Literal"):
+        if _is_match(True, "<insert-condition>"):
+            new_node = add_parse_tree_node(node, "<insert-condition>")
+            _insert_condition(new_node, node)
+
+        if _is_match(False, ")", node):
             index += 1
 
-        if _is_match(False, ";"):
+        if _is_match(False, "(", node):
             index += 1
 
-        if _is_match(True, "<bloom>"):
-            _bloom()
+        if _is_match(True, "<filter-3D-state>"):
+            new_node = add_parse_tree_node(node, "<filter-3D-state>")
+            _filter_3D_state(new_node, node)
 
-        if _is_match(False, ";"):
+        if _is_match(False, ")", node):
             index += 1
 
-        if _is_match(False, "#"):
-            index += 2
-
-        if _is_match(True, "<assignment-op>"):
-            _assignment_op()
-
-        if _is_match(True, "<flora>"):
-            _flora()
-
-        if _is_match(False, ";"):
-            index += 1
-
-        if _is_match(False, ")"):
-            index += 1
-
-        if _is_match(False, "("):
-            index += 1
-
-        if _is_match(True, "<2D-statement>"):
-            _2D_statement()
-
-        if _is_match(False, ")"):
-            index += 1
-
-        return
-
-    # 204
-    elif _is_match(True, "<all-type-value>"):
-        _all_type_value()
-
-        if _is_match(True, "<more-value>"):
-            _more_value()
-
-        if _is_match(False, "at"):
-            index += 1
-
-        if _is_match(True, "<sqnc-value>"):
-            _sqnc_value()
-
-        if _is_match(False, ";"):
-            index += 1
-
-        if _is_match(False, ")"):
-            index += 1
-
-        if _is_match(False, "("):
-            index += 1
-
-        if _is_match(True, "<2D-statement>"):
-            _2D_statement()
-
-        if _is_match(False, ")"):
+        if _is_match(False, ";", node):
             index += 1
 
         return
@@ -2431,296 +2449,371 @@ def _insert_fern() -> None:
     return
 
 
-# 205-212
-def _assignment_op() -> None:
+# 205-206
+def _final_eleaf(node: classmethod, prev_node: classmethod) -> None:
     global index
-    index += 1
+
+    if _is_match(True, "eleaf", node):
+        index += 1
+
+        if _is_match(False, "(", node):
+            index += 1
+
+        if _is_match(True, "<insert-condition>"):
+            new_node = add_parse_tree_node(node, "<insert-condition>")
+            _insert_condition(new_node, node)
+
+        if _is_match(False, ")", node):
+            index += 1
+
+        if _is_match(False, "(", node):
+            index += 1
+
+        if _is_match(True, "<filter-final-state>"):
+            new_node = add_parse_tree_node(node, "<filter-final-state>")
+            _filter_final_state(new_node, node)
+
+        if _is_match(False, ")", node):
+            index += 1
+
+        if _is_match(False, ";", node):
+            index += 1
+
+        return
+
+    return
+
+
+# 207-208
+def _else(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    if _is_match(True, "moss", node):
+        index += 1
+
+        if _is_match(False, "(", node):
+            index += 1
+
+        if _is_match(True, "<filter-statement>"):
+            new_node = add_parse_tree_node(node, "<filter-statement>")
+            _filter_statement(new_node, node)
+
+        if _is_match(False, ")", node):
+            index += 1
+
+        if _is_match(False, ";", node):
+            index += 1
+
+        return
+
+    return
+
+
+# 209-210
+def _2D_else(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    # 195
+    if _is_match(True, "moss", node):
+        index += 1
+
+        if _is_match(False, "(", node):
+            index += 1
+
+        if _is_match(True, "<filter-2D-state>"):
+            new_node = add_parse_tree_node(node, "<filter-2D-state>")
+            _filter_2D_state(new_node, node)
+
+        if _is_match(False, ")", node):
+            index += 1
+
+        if _is_match(False, ";", node):
+            index += 1
+
+        return
+
+    return
+
+
+# 211-212
+def _3D_else(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    # 197
+    if _is_match(True, "moss", node):
+        index += 1
+
+        if _is_match(False, "(", node):
+            index += 1
+
+        if _is_match(True, "<filter-3D-state>"):
+            new_node = add_parse_tree_node(node, "<filter-3D-state>")
+            _filter_3D_state(new_node, node)
+
+        if _is_match(False, ")", node):
+            index += 1
+
+        if _is_match(False, ";", node):
+            index += 1
+
+        return
+
     return
 
 
 # 213-214
-def _more_value() -> None:
+def _final_else(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 213
-    if _is_match(True, ","):
+    # 199
+    if _is_match(True, "moss", node):
         index += 1
 
-        if _is_match(True, "<all-type-value>"):
-            _all_type_value()
+        if _is_match(False, "(", node):
+            index += 1
 
-        if _is_match(True, "<final-value>"):
-            _final_value()
+        if _is_match(True, "<filter-final-state>"):
+            new_node = add_parse_tree_node(node, "<filter-final-state>")
+            _filter_final_state(new_node, node)
+
+        if _is_match(False, ")", node):
+            index += 1
+
+        if _is_match(False, ";", node):
+            index += 1
 
         return
 
-    # 214: EPSILON
     return
 
 
 # 215-216
-def _final_value() -> None:
+def _iterative(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 215
-    if _is_match(True, ","):
+    if _is_match(True, "fern", node):
         index += 1
 
-        if _is_match(True, "<all-type-value>"):
-            _all_type_value()
+        if _is_match(False, "(", node):
+            print("here")
+            index += 1
+
+        if _is_match(True, "<insert-fern>"):
+            new_node = add_parse_tree_node(node, "<insert-fern>")
+            _insert_fern(new_node, node)
+
         return
 
-    # 216: EPSILON
+    elif _is_match(True, "willow", node):
+        index += 1
+
+        if _is_match(False, "(", node):
+            index += 1
+
+        if _is_match(True, "<insert-condition>"):
+            new_node = add_parse_tree_node(node, "<insert-condition>")
+            _insert_condition(new_node, node)
+
+        if _is_match(False, ")", node):
+            index += 1
+
+        if _is_match(False, "(", node):
+            index += 1
+
+        if _is_match(True, "<2D-statement>"):
+            new_node = add_parse_tree_node(node, "<2D-statement>")
+            _2D_statement(new_node, node)
+
+        if _is_match(False, ")", node):
+            index += 1
+
+        return
     return
 
 
 # 217-218
-def _use_tree() -> None:
+def _insert_fern(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 217
-    if _is_match(True, "tree"):
+    if _is_match(True, "tint", node):
         index += 1
 
-        if _is_match(False, "("):
-            index += 1
-
-        if _is_match(False, "#"):
+        if _is_match(False, "#", node):
             index += 2
 
-        if _is_match(False, ")"):
+        if _is_match(False, "=", node):
             index += 1
 
-        if _is_match(False, "("):
+        if _is_match(False, "Tint Literal", node):
             index += 1
 
-        if _is_match(False, "branch"):
+        if _is_match(False, ";", node):
             index += 1
 
-        if _is_match(True, "<check-branch>"):
-            _check_branch()
+        if _is_match(False, "<insert-condition>"):
+            new_node = add_parse_tree_node(node, "<insert-condition>")
+            _insert_condition(new_node, node)
 
-        if _is_match(False, ")"):
+        if _is_match(False, ";", node):
             index += 1
 
-        if _is_match(False, ";"):
+        if _is_match(False, "#", node):
+            add_parse_tree_node(node, lexemes[index + 1])
+            index += 2
+
+        if _is_match(False, "<assignment-op>"):
+            new_node = add_parse_tree_node(node, "<assignment-op>")
+            _assignment_op(new_node, node)
+
+        if _is_match(False, "<tint>"):
+            new_node = add_parse_tree_node(node, "<tint>")
+            _tint(new_node, node)
+
+        if _is_match(False, ";", node):
+            index += 1
+
+        if _is_match(False, ")", node):
+            index += 1
+
+        if _is_match(False, "(", node):
+            index += 1
+
+        if _is_match(True, "<2D-statement>"):
+            new_node = add_parse_tree_node(node, "<2D-statement>")
+            _2D_statement(new_node, node)
+
+        if _is_match(False, ")", node):
             index += 1
 
         return
 
-    # 218: EPSILON
+    elif _is_match(True, "<all-type-value>"):
+        new_node = add_parse_tree_node(node, "<all-type-value>")
+        _all_type_value(new_node, node)
+
+        if _is_match(True, "<more-value>"):
+            new_node = add_parse_tree_node(node, "<more-value>")
+            _more_value(new_node, node)
+
+        if _is_match(False, "at", node):
+            index += 1
+
+        if _is_match(True, "<sqnc>"):
+            new_node = add_parse_tree_node(node, "<sqnc>")
+            _sqnc(new_node, node)
+
+        if _is_match(False, ";", node):
+            index += 1
+
+        if _is_match(False, ")", node):
+            index += 1
+
+        if _is_match(False, "(", node):
+            index += 1
+
+        if _is_match(True, "<2D-statement>"):
+            new_node = add_parse_tree_node(node, "<2D-statement>")
+            _2D_statement(new_node, node)
+
+        if _is_match(False, ")", node):
+            index += 1
+
+        return
+
     return
 
 
 # 219-220
-def _check_branch() -> None:
+def _assignment(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 219
-    if _is_match(True, "<all-type-value>"):
-        _all_type_value()
+    if _is_match(True, "#", node):
+        index += 2
 
-        if _is_match(True, "<insert-branch>"):
-            _insert_branch()
+        if _is_match(True, "<insert-func>"):
+            new_node = add_parse_tree_node(node, "<insert-func>")
+            _insert_func(new_node, node)
 
-        if _is_match(True, "<more-branch>"):
-            _more_branch()
+        if _is_match(True, "<indexing>"):
+            new_node = add_parse_tree_node(node, "<indexing>")
+            _indexing(new_node, node)
 
-        return
+        if _is_match(True, "<start-end-step>"):
+            new_node = add_parse_tree_node(node, "<start-end-step>")
+            _start_end_step(new_node, node)
 
-    # 220
-    elif _is_match(True, "_"):
-        index += 1
+        if _is_match(True, "<more-id>"):
+            new_node = add_parse_tree_node(node, "<more-id>")
+            _more_id(new_node, node)
 
-        if _is_match(False, ":"):
+        if _is_match(True, "<assign>"):
+            new_node = add_parse_tree_node(node, "<assign>")
+            _assign(new_node, node)
+
+    elif _is_match(True, "<common-type>"):
+        new_node = add_parse_tree_node(node, "<common-type>")
+        _common_type(new_node, node)
+
+        if _is_match(False, "(", node):
+            # )
             index += 1
 
-        if _is_match(True, "<filter-statement>"):
-            _filter_statement()
+        if _is_match(False, "#", node):
+            index += 2
 
-        return
+        if _is_match(True, "<insert-func>"):
+            new_node = add_parse_tree_node(node, "<insert-func>")
+            _insert_func(new_node, node)
 
+        if _is_match(True, "<indexing>"):
+            new_node = add_parse_tree_node(node, "<indexing>")
+            _indexing(new_node, node)
+
+        if _is_match(True, "<start-end-step>"):
+            new_node = add_parse_tree_node(node, "<start-end-step>")
+            _start_end_step(new_node, node)
+
+        if _is_match(False, ")", node):
+            index += 1
     return
 
 
 # 221-222
-def _insert_branch() -> None:
+def _assign(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 221
-    if _is_match(True, ":"):
-        index += 1
+    if _is_match(True, "<assignment-op>"):
+        new_node = add_parse_tree_node(node, "<assignment-op>")
+        _assignment_op(new_node, node)
 
-        if _is_match(True, "<filter-statement>"):
-            _filter_statement()
-
-        return
-
-    # 222
-    elif _is_match(True, "leaf"):
-        index += 1
-
-        if _is_match(True, "<bloom>"):
-            _bloom()
-
-        if _is_match(False, "("):
-            index += 1
-
-        if _is_match(True, "<filter-statement>"):
-            _filter_statement()
-
-        if _is_match(False, ")"):
-            index += 1
-
-        if _is_match(False, ";"):
-            index += 1
-
-        return
-
+        if _is_match(False, "<all-type-value>"):
+            new_node = add_parse_tree_node(node, "<all-type-value>")
+            _all_type_value(new_node, node)
     return
 
 
-# 223-224
-def _more_branch() -> None:
+# 223-230
+def _assignment_op(node: classmethod, prev_node: classmethod) -> None:
     global index
-
-    # 223
-    if _is_match(True, "branch"):
+    if _is_match(True, lexemes[index], node):
         index += 1
-
-        if _is_match(True, "<check-branch>"):
-            _check_branch()
-
-        return
-
-    # 224: EPSILON
-    return
-
-
-# 225-226
-def _2D_statement() -> None:
-    global index
-    # Note: Have _statement() & _3D_statement(), modifying this method need to
-    # be done to both _statement() and _3D_statement() methods
-
-    avoid = [")", ";"]
-
-    # 225
-    while True:
-        if _is_match(True, "<use-2D-tree>") and lexemes[index] == "tree":
-            _use_2D_tree()
-
-        elif _is_match(True, "<filter-2D-state>"):
-            _filter_2D_state()
-
-        elif not _is_match(False, "<2D-statement>") or lexemes[index] in avoid:
-            break
-        continue
-
-    # 226: EPSILON
-    return
-
-
-# 227-228
-def _use_2D_tree() -> None:
-    global index
-
-    # 227
-    if _is_match(True, "tree"):
-        index += 1
-
-        if _is_match(False, "("):
-            index += 1
-
-        if _is_match(False, "#"):
-            index += 2
-
-        if _is_match(False, ")"):
-            index += 1
-
-        if _is_match(False, "("):
-            index += 1
-
-        if _is_match(False, "branch"):
-            index += 1
-
-        if _is_match(True, "<check-2D-branch>"):
-            _check_2D_branch()
-
-        if _is_match(False, ")"):
-            index += 1
-
-        if _is_match(False, ";"):
-            index += 1
-
-        return
-
-    # 228: EPSILON
-    return
-
-
-# 229-230
-def _check_2D_branch() -> None:
-    global index
-
-    # 229
-    if _is_match(True, "<all-type-value>"):
-        _all_type_value()
-
-        if _is_match(True, "<insert-2D-branch>"):
-            _insert_2D_branch()
-
-        if _is_match(True, "<more-2D-branch>"):
-            _more_2D_branch()
-
-        return
-
-    # 230
-    elif _is_match(True, "_"):
-        index += 1
-
-        if _is_match(False, ":"):
-            index += 1
-
-        if _is_match(True, "<filter-2D-state>"):
-            _filter_2D_state()
-
-        return
-
     return
 
 
 # 231-232
-def _insert_2D_branch() -> None:
+def _more_value(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 231
-    if _is_match(True, ":"):
+    if _is_match(True, ",", node):
         index += 1
 
-        if _is_match(True, "<filter-2D-state>"):
-            _filter_2D_state()
+        if _is_match(True, "<all-type-value>"):
+            new_node = add_parse_tree_node(node, "<all-type-value>")
+            _all_type_value(new_node, node)
 
-        return
-
-    # 232
-    elif _is_match(True, "leaf"):
-        index += 1
-
-        if _is_match(True, "<bloom>"):
-            _bloom()
-
-        if _is_match(False, "("):
-            index += 1
-
-        if _is_match(True, "<filter-2D-state>"):
-            _filter_2D_state()
-
-        if _is_match(False, ")"):
-            index += 1
-
-        if _is_match(False, ";"):
-            index += 1
+        if _is_match(True, "<final-value>"):
+            new_node = add_parse_tree_node(node, "<final-value>")
+            _final_value(new_node, node)
 
         return
 
@@ -2728,274 +2821,194 @@ def _insert_2D_branch() -> None:
 
 
 # 233-234
-def _more_2D_branch() -> None:
+def _final_value(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 233
-    if _is_match(True, "branch"):
+    if _is_match(True, ",", node):
         index += 1
 
-        if _is_match(True, "<check-2D-branch>"):
-            _check_2D_branch()
-
+        if _is_match(True, "<all-type-value>"):
+            new_node = add_parse_tree_node(node, "<all-type-value>")
+            _all_type_value(new_node, node)
         return
 
-    # 234: EPSILON
     return
 
 
-# 235-242
-def _filter_2D_state() -> None:
+# 235-236
+def _use_tree(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 235
-    if _is_match(True, "<constant>") or _is_match(True, "<insert-variable>"):
-        if _is_match(True, "<constant>"):
-            _constant()
-
-        if _is_match(True, "<insert-variable>"):
-            _insert_variable()
-
-        if _is_match(False, ";"):
-            index += 1
-
-        if _is_match(True, "<filter-2D-state>"):
-            _filter_2D_state()
-
-        return
-    # 238
-    elif _is_match(True, "#") or (_is_match(True, "#") and _is_match(True, "<assignment-op")):
-        index += 2
-
-        if _is_match(True, "<insert-func>"):
-            _insert_func()
-
-        if _is_match(True, "<indexing>"):
-            _indexing()
-
-        if _is_match(True, "<more-id>"):
-            _more_id()
-
-        if _is_match(False, "<assignment-op>"):
-            _assignment_op()
-
-        if _is_match(True, "<all-type-value>"):
-            _all_type_value()
-
-        if _is_match(False, ";"):
-            index += 1
-
-        if _is_match(True, "<filter-2D-state>"):
-            _filter_2D_state()
-
-        return
-
-
-    # 236
-    elif _is_match(True, "<i/o-statement>"):
-        if _is_match(True, "<i/o-statement>"):
-            _i_o_statement()
-
-        if _is_match(False, ";"):
-            index += 1
-
-        if _is_match(True, "<filter-2D-state"):
-            _filter_2D_state()
-
-    # 237
-    elif _is_match(True, "leaf"):
+    if _is_match(True, "tree", node):
         index += 1
 
-        if _is_match(False, "("):
+        if _is_match(False, "(", node):
             index += 1
 
-        if _is_match(True, "<bloom>"):
-            _bloom()
+        if _is_match(False, "#", node):
+            index += 2
 
-        if _is_match(False, ")"):
+        if _is_match(False, ")", node):
             index += 1
 
-        if _is_match(False, "("):
+        if _is_match(False, "(", node):
             index += 1
 
-        if _is_match(True, "<filter-2D-state"):
-            _filter_2D_state()
-
-        if _is_match(False, ")"):
+        if _is_match(False, "branch", node):
             index += 1
 
-        if _is_match(False, ";"):
+        if _is_match(True, "<check-branch>"):
+            new_node = add_parse_tree_node(node, "<check-branch>")
+            _check_branch(new_node, node)
+
+        if _is_match(False, ")", node):
             index += 1
 
-        if _is_match(True, "<2D-eleaf>"):
-            _2D_eleaf()
-
-        if _is_match(True, "<2D-else>"):
-            _2D_else()
-
-        if _is_match(True, "<filter-2D-state"):
-            _filter_2D_state()
+        if _is_match(False, ";", node):
+            index += 1
 
         return
 
-    # 239
-    elif _is_match(True, "<2D-iterative>"):
-        if _is_match(True, "<2D-iterative>"):
-            _2D_iterative()
+    return
 
-        if _is_match(False, ";"):
-            index += 1
 
-        if _is_match(True, "<filter-2D-state>"):
-            _filter_2D_state()
+# 237-238
+def _check_branch(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    if _is_match(True, "<all-type-value>"):
+        new_node = add_parse_tree_node(node, "<all-type-value>")
+        _all_type_value(new_node, node)
+
+        if _is_match(True, "<insert-branch>"):
+            new_node = add_parse_tree_node(node, "<insert-branch>")
+            _insert_branch(new_node, node)
+
+        if _is_match(True, "<more-branch>"):
+            new_node = add_parse_tree_node(node, "<more-branch>")
+            _more_branch(new_node, node)
 
         return
 
-    # 240
-    elif _is_match(True, "clear"):
+    elif _is_match(True, "_", node):
         index += 1
 
-        if _is_match(False, ";"):
+        if _is_match(False, ":"):
             index += 1
 
-        if _is_match(True, "<filter-2D-state>"):
-            _filter_2D_state()
+        if _is_match(True, "<filter-statement>"):
+            new_node = add_parse_tree_node(node, "<filter-statement>")
+            _filter_statement(new_node, node)
 
         return
 
-    # 241
-    elif _is_match(True, "break"):
+    return
+
+
+# 239-240
+def _insert_branch(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    if _is_match(True, ":", node):
         index += 1
 
-        if _is_match(False, ";"):
+        if _is_match(True, "<filter-statement>"):
+            new_node = add_parse_tree_node(node, "<filter-statement>")
+            _filter_statement(new_node, node)
+
+        return
+
+    elif _is_match(True, "leaf", node):
+        index += 1
+
+        if _is_match(True, "<insert-condition>"):
+            new_node = add_parse_tree_node(node, "<insert-condition>")
+            _insert_condition(new_node, node)
+
+        if _is_match(False, "(", node):
+            index += 1
+
+        if _is_match(True, "<filter-statement>"):
+            new_node = add_parse_tree_node(node, "<filter-statement>")
+            _filter_statement(new_node, node)
+
+        if _is_match(False, ")", node):
+            index += 1
+
+        if _is_match(False, ";", node):
             index += 1
 
         return
 
-    # 242: EPSILON
+    return
+
+
+# 241-242
+def _more_branch(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    # 223
+    if _is_match(True, "branch", node):
+        index += 1
+
+        if _is_match(True, "<check-branch>"):
+            new_node = add_parse_tree_node(node, "<check-branch>")
+            _check_branch(new_node, node)
+
+        return
+
     return
 
 
 # 243-244
-def _2D_iterative() -> None:
+def _2D_statement(node: classmethod, prev_node: classmethod) -> None:
     global index
+    # Note: Have _statement() & _3D_statement(), modifying this method need to
+    # be done to both _statement() and _3D_statement() methods
 
-    # 243
-    if _is_match(False, "fern"):
-        index += 1
+    avoid = [")", ";"]
 
-        if _is_match(False, "("):
-            index += 1
+    if _is_match(True, "<use-2D-tree>") and lexemes[index] == "tree":
+        new_node = add_parse_tree_node(node, "<use-2D-tree>")
+        _use_2D_tree(new_node, node)
 
-        if _is_match(True, "<insert-2D-fern>"):
-            _insert_2D_fern()
+    elif _is_match(True, "<filter-2D-state>"):
+        new_node = add_parse_tree_node(node, "<filter-2D-state>")
+        _filter_2D_state(new_node, node)
 
-        return
-
-    # 244
-    elif _is_match(True, "willow"):
-        index += 1
-
-        if _is_match(False, "("):
-            index += 1
-
-        if _is_match(True, "<bloom>"):
-            _bloom()
-
-        if _is_match(False, ")"):
-            index += 1
-
-        if _is_match(False, "("):
-            index += 1
-
-        if _is_match(True, "<3D-statement>"):
-            _3D_statement()
-
-        if _is_match(False, ")"):
-            index += 1
-
-        return
     return
 
 
 # 245-246
-def _insert_2D_fern() -> None:
+def _use_2D_tree(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 245
-    if _is_match(True, "tint"):
+    if _is_match(True, "tree", node):
         index += 1
 
-        if _is_match(False, "#"):
+        if _is_match(False, "(", node):
+            index += 1
+
+        if _is_match(False, "#", node):
             index += 2
 
-        if _is_match(False, "="):
+        if _is_match(False, ")", node):
             index += 1
 
-        if _is_match(False, "Tint Literal"):
+        if _is_match(False, "(", node):
             index += 1
 
-        if _is_match(False, ";"):
+        if _is_match(False, "branch", node):
             index += 1
 
-        if _is_match(True, "<bloom>"):
-            _bloom()
+        if _is_match(True, "<check-2D-branch>"):
+            new_node = add_parse_tree_node(node, "<check-2D-branch>")
+            _check_2D_branch(new_node, node)
 
-        if _is_match(False, ";"):
+        if _is_match(False, ")", node):
             index += 1
 
-        if _is_match(False, "#"):
-            index += 2
-
-        if _is_match(False, "<assignment-op>"):
-            _assignment_op()
-
-        if _is_match(True, "<flora>"):
-            _flora()
-
-        if _is_match(False, ";"):
-            index += 1
-
-        if _is_match(False, ")"):
-            index += 1
-
-        if _is_match(False, "("):
-            index += 1
-
-        if _is_match(True, "<3D-statement>"):
-            _3D_statement()
-
-        if _is_match(False, ")"):
-            index += 1
-
-        return
-
-    # 246
-    elif _is_match(True, "<all-type-value>"):
-        _all_type_value()
-
-        if _is_match(True, "<more-value>"):
-            _more_value()
-
-        if _is_match(False, "at"):
-            index += 1
-
-        if _is_match(True, "<sqnc-value>"):
-            _sqnc_value()
-
-        if _is_match(False, ";"):
-            index += 1
-
-        if _is_match(False, ")"):
-            index += 1
-
-        if _is_match(False, "("):
-            index += 1
-
-        if _is_match(True, "<3D-statement>"):
-            _2D_statement()
-
-        if _is_match(False, ")"):
+        if _is_match(False, ";", node):
             index += 1
 
         return
@@ -3004,404 +3017,402 @@ def _insert_2D_fern() -> None:
 
 
 # 247-248
-def _3D_statement() -> None:
+def _check_2D_branch(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    if _is_match(True, "<all-type-value>"):
+        new_node = add_parse_tree_node(node, "<all-type-value>")
+        _all_type_value(new_node, node)
+
+        if _is_match(True, "<insert-2D-branch>"):
+            new_node = add_parse_tree_node(node, "<insert-2D-branch>")
+            _insert_2D_branch(new_node, node)
+
+        if _is_match(True, "<more-2D-branch>"):
+            new_node = add_parse_tree_node(node, "<more-2D-branch>")
+            _more_2D_branch(new_node, node)
+
+        return
+
+    elif _is_match(True, "_", node):
+        index += 1
+
+        if _is_match(False, ":", node):
+            index += 1
+
+        if _is_match(True, "<filter-2D-state>"):
+            new_node = add_parse_tree_node(node, "<filter-2D-state>")
+            _filter_2D_state(new_node, node)
+
+        return
+
+    return
+
+
+# 249-250
+def _insert_2D_branch(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    if _is_match(True, ":", node):
+        index += 1
+
+        if _is_match(True, "<filter-2D-state>"):
+            new_node = add_parse_tree_node(node, "<filter-2D-state>")
+            _filter_2D_state(new_node, node)
+
+        return
+
+    elif _is_match(True, "leaf", node):
+        index += 1
+
+        if _is_match(True, "<insert-condition>"):
+            new_node = add_parse_tree_node(node, "<insert-condition>")
+            _insert_condition(new_node, node)
+
+        if _is_match(False, "(", node):
+            index += 1
+
+        if _is_match(True, "<filter-2D-state>"):
+            new_node = add_parse_tree_node(node, "<filter-2D-state>")
+            _filter_2D_state(new_node, node)
+
+        if _is_match(False, ")", node):
+            index += 1
+
+        if _is_match(False, ";", node):
+            index += 1
+
+        return
+
+    return
+
+
+# 251-252
+def _more_2D_branch(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    # 233
+    if _is_match(True, "branch", node):
+        index += 1
+
+        if _is_match(True, "<check-2D-branch>"):
+            new_node = add_parse_tree_node(node, "<check-2D-branch>")
+            _check_2D_branch(new_node, node)
+
+        return
+
+    return
+
+
+# 253-260
+def _filter_2D_state(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    if _is_match(True, "<constant>") or _is_match(True, "<insert-variable>"):
+        if _is_match(True, "<constant>"):
+            new_node = add_parse_tree_node(node, "<constant>")
+            _constant(new_node, node)
+
+        if _is_match(True, "<insert-variable>"):
+            new_node = add_parse_tree_node(node, "<insert-variable>")
+            _insert_variable(new_node, node)
+
+        if _is_match(False, ";", node):
+            index += 1
+
+        if _is_match(True, "<filter-2D-state>"):
+            new_node = add_parse_tree_node(prev_node, "<filter-2D-state>")
+            _filter_2D_state(new_node, node)
+
+        return
+
+    elif _is_match(True, "<i/o-statement>"):
+        new_node = add_parse_tree_node(node, "<i/o-statement>")
+        _i_o_statement(new_node, node)
+
+        if _is_match(False, ";", node):
+            index += 1
+
+        if _is_match(True, "<filter-2D-state"):
+            new_node = add_parse_tree_node(prev_node, "<filter-2D-state")
+            _filter_2D_state(new_node, node)
+
+    elif _is_match(True, "leaf", node):
+        index += 1
+
+        if _is_match(False, "(", node):
+            index += 1
+
+        if _is_match(True, "<insert-condition>"):
+            new_node = add_parse_tree_node(node, "<insert-condition>")
+            _insert_condition(new_node, node)
+
+        if _is_match(False, ")", node):
+            index += 1
+
+        if _is_match(False, "(", node):
+            # )
+            index += 1
+
+        if _is_match(True, "<filter-2D-state"):
+            new_node = add_parse_tree_node(node, "<filter-2D-state")
+            _filter_2D_state(new_node, node)
+
+        if _is_match(False, ")", node):
+            index += 1
+
+        if _is_match(False, ";", node):
+            index += 1
+
+        if _is_match(True, "<2D-eleaf>"):
+            new_node = add_parse_tree_node(node, "<2D-eleaf>")
+            _2D_eleaf(new_node, node)
+
+        if _is_match(True, "<2D-else>"):
+            new_node = add_parse_tree_node(node, "<2D-else>")
+            _2D_else(new_node, node)
+
+        if _is_match(True, "<filter-2D-state"):
+            new_node = add_parse_tree_node(prev_node, "<filter-2D-state")
+            _filter_2D_state(new_node, node)
+
+        return
+
+    elif _is_match(True, "<assignment>"):
+        new_node = add_parse_tree_node(node, "<assignment>")
+        _assignment(new_node, node)
+
+        if _is_match(False, ";", node):
+            index += 1
+
+        if _is_match(True, "<filter-2D-state"):
+            new_node = add_parse_tree_node(prev_node, "<filter-2D-state")
+            _filter_2D_state(new_node, node)
+
+        return
+
+    elif _is_match(True, "<2D-iterative>"):
+        new_node = add_parse_tree_node(node, "<2D-iterative>")
+        _2D_iterative(new_node, node)
+
+        if _is_match(False, ";", node):
+            index += 1
+
+        if _is_match(True, "<filter-2D-state>"):
+            new_node = add_parse_tree_node(prev_node, "<filter-2D-state>")
+            _filter_2D_state(new_node, node)
+
+        return
+
+    elif _is_match(True, "clear", node):
+        index += 1
+
+        if _is_match(False, ";", node):
+            index += 1
+
+        if _is_match(True, "<filter-2D-state>"):
+            new_node = add_parse_tree_node(prev_node, "<filter-2D-state>")
+            _filter_2D_state(new_node, node)
+
+        return
+
+    elif _is_match(True, "break", node):
+        index += 1
+
+        if _is_match(False, ";", node):
+            index += 1
+
+        return
+
+    return
+
+
+# 261-262
+def _2D_iterative(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    if _is_match(False, "fern", node):
+        index += 1
+
+        if _is_match(False, "(", node):
+            # )
+            index += 1
+
+        if _is_match(True, "<insert-2D-fern>"):
+            new_node = add_parse_tree_node(node, "<insert-2D-fern>")
+            _insert_2D_fern(new_node, node)
+
+        return
+
+    elif _is_match(True, "willow", node):
+        index += 1
+
+        if _is_match(False, "(", node):
+            index += 1
+
+        if _is_match(True, "<insert-condition>"):
+            new_node = add_parse_tree_node(node, "<insert-condition>")
+            _insert_condition(new_node, node)
+
+        if _is_match(False, ")", node):
+            index += 1
+
+        if _is_match(False, "(", node):
+            index += 1
+
+        if _is_match(True, "<3D-statement>"):
+            new_node = add_parse_tree_node(node, "<3D-statement>")
+            _3D_statement(new_node, node)
+
+        if _is_match(False, ")", node):
+            index += 1
+
+        return
+    return
+
+
+# 263-264
+def _insert_2D_fern(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    if _is_match(True, "tint", node):
+        index += 1
+
+        if _is_match(False, "#", node):
+            add_parse_tree_node(node, lexemes[index + 1])
+            index += 2
+
+        if _is_match(False, "=", node):
+            index += 1
+
+        if _is_match(False, "Tint Literal", node):
+            index += 1
+
+        if _is_match(False, ";", node):
+            index += 1
+
+        if _is_match(False, "<insert-condition>"):
+            new_node = add_parse_tree_node(node, "<insert-condition>")
+            _insert_condition(new_node, node)
+
+        if _is_match(False, ";", node):
+            index += 1
+
+        if _is_match(False, "#", node):
+            index += 2
+
+        if _is_match(False, "<assignment-op>"):
+            new_node = add_parse_tree_node(node, "<assignment-op>")
+            _assignment_op(new_node, node)
+
+        if _is_match(False, "<tint>"):
+            new_node = add_parse_tree_node(node, "<tint>")
+            _tint(new_node, node)
+
+        if _is_match(False, ";", node):
+            index += 1
+
+        if _is_match(False, ")", node):
+            index += 1
+
+        if _is_match(False, "(", node):
+            index += 1
+
+        if _is_match(True, "<3D-statement>"):
+            new_node = add_parse_tree_node(node, "<3D-statement>")
+            _3D_statement(new_node, node)
+
+        if _is_match(False, ")", node):
+            index += 1
+
+        return
+
+    elif _is_match(True, "<all-type-value>"):
+        new_node = add_parse_tree_node(node, "<all-type-value>")
+        _all_type_value(new_node, node)
+
+        if _is_match(True, "<more-value>"):
+            new_node = add_parse_tree_node(node, "<more-value>")
+            _more_value(new_node, node)
+
+        if _is_match(False, "at", node):
+            index += 1
+
+        if _is_match(True, "<sqnc-value>"):
+            new_node = add_parse_tree_node(node, "<sqnc-value>")
+            _sqnc_value(new_node, node)
+
+        if _is_match(False, ";", node):
+            index += 1
+
+        if _is_match(False, ")", node):
+            index += 1
+
+        if _is_match(False, "(", node):
+            index += 1
+
+        if _is_match(True, "<3D-statement>"):
+            new_node = add_parse_tree_node(node, "<3D-statement>")
+            _2D_statement(new_node, node)
+
+        if _is_match(False, ")", node):
+            index += 1
+
+        return
+
+    return
+
+
+# 265-266
+def _3D_statement(node: classmethod, prev_node: classmethod) -> None:
     global index
     # Note: Have _statement() & _2D_statement(), modifying this method need to
     # be done to both _statement() and 2D_statement() methods
 
     avoid = [")", ";"]
 
-    # 247
-    while True:
-        if _is_match(True, "<use-3D-tree>") and lexemes[index] == "tree":
-            _use_3D_tree()
-
-        if _is_match(True, "<filter-3D-state>"):
-            _filter_3D_state()
-
-        if lexemes[index] not in g.FIRST_SET["<3D-statement>"] or lexemes[index] in avoid:
-            break
-        continue
-
-    # 248: EPSILON
-    return
-
-
-# 249-250
-def _use_3D_tree() -> None:
-    global index
-
-    # 249
-    if _is_match(True, "tree"):
-        index += 1
-
-        if _is_match(False, "("):
-            index += 1
-
-        if _is_match(False, "#"):
-            index += 2
-
-        if _is_match(False, ")"):
-            index += 1
-
-        if _is_match(False, "("):
-            index += 1
-
-        if _is_match(False, "branch"):
-            index += 1
-
-        if _is_match(True, "<check-3D-branch>"):
-            _check_3D_branch()
-
-        if _is_match(False, ")"):
-            index += 1
-
-        if _is_match(False, ";"):
-            index += 1
-
-        return
-
-    # 250: EPSILON
-    return
-
-
-# 251-252
-def _check_3D_branch() -> None:
-    global index
-
-    # 251
-    if _is_match(True, "<all-type-value>"):
-        _all_type_value()
-
-        if _is_match(True, "<insert-3D-branch>"):
-            _insert_3D_branch()
-
-        if _is_match(True, "<more-3D-branch>"):
-            _more_3D_branch()
-
-        return
-
-    # 252
-    elif _is_match(True, "_"):
-        index += 1
-
-        if _is_match(False, ":"):
-            index += 1
-
-        if _is_match(True, "<filter-3D-state>"):
-            _filter_3D_state()
-
-        return
-
-    return
-
-
-# 253-254
-def _insert_3D_branch() -> None:
-    global index
-
-    # 253
-    if _is_match(True, ":"):
-        index += 1
-
-        if _is_match(True, "<filter-3D-state>"):
-            _filter_3D_state()
-
-        return
-
-    # 254
-    elif _is_match(True, "leaf"):
-        index += 1
-
-        if _is_match(True, "<bloom>"):
-            _bloom()
-
-        if _is_match(False, "("):
-            index += 1
-
-        if _is_match(True, "<filter-3D-state>"):
-            _filter_3D_state()
-
-        if _is_match(False, ")"):
-            index += 1
-
-        if _is_match(False, ";"):
-            index += 1
-
-        return
-
-    return
-
-
-# 255-256
-def _more_3D_branch() -> None:
-    global index
-
-    # 255
-    if _is_match(True, "branch"):
-        index += 1
-
-        if _is_match(True, "<check-3D-branch>"):
-            _check_3D_branch()
-
-        return
-
-    # 256: EPSILON
-    return
-
-
-# 257-264
-def _filter_3D_state() -> None:
-    global index
-
-    # 257
-    if _is_match(True, "<constant>"):
-        _constant()
-
-        if _is_match(True, "<insert-variable>"):
-            _insert_variable()
-
-        if _is_match(False, ";"):
-            index += 1
-
-        if _is_match(True, "<filter-3D-state>"):
-            _filter_3D_state()
-
-        return
-
-    # 258
-    elif _is_match(True, "<i/o-statement>"):
-        if _is_match(True, "<i/o-statement>"):
-            _i_o_statement()
-
-        if _is_match(False, ";"):
-            index += 1
-
-        if _is_match(True, "<filter-3D-state>"):
-            _filter_3D_state()
-
-    # 259
-    elif _is_match(True, "leaf"):
-        index += 1
-
-        if _is_match(False, "("):
-            index += 1
-
-        if _is_match(True, "<bloom>"):
-            _bloom()
-
-        if _is_match(False, ")"):
-            index += 1
-
-        if _is_match(False, "("):
-            index += 1
-
-        if _is_match(True, "<filter-3D-state>"):
-            _filter_3D_state()
-
-        if _is_match(False, ")"):
-            index += 1
-
-        if _is_match(False, ";"):
-            index += 1
-
-        if _is_match(True, "<3D-eleaf>"):
-            _3D_eleaf()
-
-        if _is_match(True, "<3D-else>"):
-            _3D_else()
-
-        if _is_match(True, "<filter-3D-state"):
-            _filter_3D_state()
-
-        return
-
-    # 260
-    elif _is_match(True, "#"):
-        index += 2
-
-        if _is_match(True, "<insert-func>"):
-            _insert_func()
-
-        if _is_match(True, "<indexing>"):
-            _indexing()
-
-        if _is_match(True, "<more-id>"):
-            _more_id()
-
-        if _is_match(True, "<assignment-op>"):
-            _assignment_op()
-
-        if _is_match(True, "<all-type-value>"):
-            _all_type_value()
-
-        if _is_match(False, ";"):
-            index += 1
-
-        if _is_match(True, "<filter-3D-state>"):
-            _filter_3D_state()
-
-        return
-
-    # 261
-    elif _is_match(True, "<3D-itertive>"):
-        if _is_match(True, "<3-Diterative>"):
-            _3D_iterative()
-
-        if _is_match(False, ";"):
-            index += 1
-
-        if _is_match(True, "<filter-3D-state>"):
-            _filter_3D_state()
-
-        return
-
-    # 262
-    elif _is_match(True, "clear"):
-        index += 1
-
-        if _is_match(False, ";"):
-            index += 1
-
-        if _is_match(True, "<filter-3D-state>"):
-            _filter_3D_state()
-
-        return
-
-    # 263
-    elif _is_match(True, "break"):
-        index += 1
-
-        if _is_match(False, ";"):
-            index += 1
-
-        return
-
-    # 264: EPSILON
-    return
-
-
-# 265-266
-def _3D_iterative() -> None:
-    global index
-
-    # 265
-    if _is_match(True, "fern"):
-        index += 1
-
-        if _is_match(False, "("):
-            index += 1
-
-        if _is_match(True, "<insert-3D-fern>"):
-            _insert_3D_fern()
-
-        return
-
-    # 266
-    elif _is_match(True, "willow"):
-        index += 1
-
-        if _is_match(False, "("):
-            index += 1
-
-        if _is_match(True, "<bloom>"):
-            _bloom()
-
-        if _is_match(False, ")"):
-            index += 1
-
-        if _is_match(False, "("):
-            index += 1
-
-        if _is_match(True, "<final-statement>"):
-            _final_statement()
-
-        if _is_match(False, ")"):
-            index += 1
-
-        return
+    if _is_match(True, "<use-3D-tree>") and lexemes[index] == "tree":
+        new_node = add_parse_tree_node(node, "<use-3D-tree>")
+        _use_3D_tree(new_node, node)
+
+    if _is_match(True, "<filter-3D-state>"):
+        new_node = add_parse_tree_node(node, "<filter-3D-state>")
+        _filter_3D_state(new_node, node)
 
     return
 
 
 # 267-268
-def _insert_3D_fern() -> None:
+def _use_3D_tree(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 267
-    if _is_match(True, "tint"):
+    if _is_match(True, "tree", node):
         index += 1
 
-        if _is_match(False, "#"):
+        if _is_match(False, "(", node):
+            index += 1
+
+        if _is_match(False, "#", node):
+            add_parse_tree_node(node, lexemes[index + 1])
             index += 2
 
-        if _is_match(False, "="):
+        if _is_match(False, ")", node):
             index += 1
 
-        if _is_match(False, "Tint Literal"):
+        if _is_match(False, "(", node):
             index += 1
 
-        if _is_match(False, ";"):
+        if _is_match(False, "branch", node):
             index += 1
 
-        if _is_match(True, "<bloom>"):
-            _bloom()
+        if _is_match(True, "<check-3D-branch>"):
+            new_node = add_parse_tree_node(node, "<check-3D-branch>")
+            _check_3D_branch(new_node, node)
 
-        if _is_match(False, ";"):
+        if _is_match(False, ")", node):
             index += 1
 
-        if _is_match(False, "#"):
-            index += 2
-
-        if _is_match(True, "<assignment-op>"):
-            _assignment_op()
-
-        if _is_match(True, "<flora>"):
-            _flora()
-
-        if _is_match(False, ";"):
-            index += 1
-
-        if _is_match(False, ")"):
-            index += 1
-
-        if _is_match(False, "("):
-            index += 1
-
-        if _is_match(True, "<final-statement>"):
-            _final_statement()
-
-        if _is_match(False, ")"):
-            index += 1
-
-        return
-
-    # 268
-    elif _is_match(True, "<all-type-value>"):
-        _all_type_value()
-
-        if _is_match(True, "<more-value>"):
-            _more_value()
-
-        if _is_match(False, "at"):
-            index += 1
-
-        if _is_match(True, "<sqnc-value>"):
-            _sqnc_value()
-
-        if _is_match(False, ";"):
-            index += 1
-
-        if _is_match(False, ")"):
-            index += 1
-
-        if _is_match(False, "("):
-            index += 1
-
-        if _is_match(True, "<final-statement>"):
-            _final_statement()
-
-        if _is_match(False, ")"):
+        if _is_match(False, ";", node):
             index += 1
 
         return
@@ -3410,126 +3421,69 @@ def _insert_3D_fern() -> None:
 
 
 # 269-270
-def _final_statement() -> None:
+def _check_3D_branch(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 269
-    if _is_match(True, "<use-final-tree>"):
+    if _is_match(True, "<all-type-value>"):
+        new_node = add_parse_tree_node(node, "<all-type-value>")
+        _all_type_value(new_node, node)
 
-        if _is_match(True, "<use-final-tree>"):
-            _use_final_tree()
+        if _is_match(True, "<insert-3D-branch>"):
+            new_node = add_parse_tree_node(node, "<insert-3D-branch>")
+            _insert_3D_branch(new_node, node)
 
-        if _is_match(True, "<filter-final-state>"):
-            _filter_final_state()
-
-        if _is_match(True, "<final-statement>"):
-            _final_statement()
+        if _is_match(True, "<more-3D-branch>"):
+            new_node = add_parse_tree_node(node, "<more-3D-branch>")
+            _more_3D_branch(new_node, node)
 
         return
 
-    # 270: EPSILON
+    elif _is_match(True, "_", node):
+        index += 1
+
+        if _is_match(False, ":", node):
+            index += 1
+
+        if _is_match(True, "<filter-3D-state>"):
+            new_node = add_parse_tree_node(node, "<filter-3D-state>")
+            _filter_3D_state(new_node, node)
+
+        return
+
     return
 
 
 # 271-272
-def _use_final_tree() -> None:
+def _insert_3D_branch(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 271
-    if _is_match(True, "tree"):
+    if _is_match(True, ":", node):
         index += 1
 
-        if _is_match(False, "("):
-            index += 1
-
-        if _is_match(False, "#"):
-            index += 2
-
-        if _is_match(False, ")"):
-            index += 1
-
-        if _is_match(False, "("):
-            index += 1
-
-        if _is_match(False, "branch"):
-            index += 1
-
-        if _is_match(True, "<check-final-branch>"):
-            _check_final_branch()
-
-        if _is_match(False, ")"):
-            index += 1
-
-        if _is_match(False, ";"):
-            index += 1
+        if _is_match(True, "<filter-3D-state>"):
+            new_node = add_parse_tree_node(node, "<filter-3D-state>")
+            _filter_3D_state(new_node, node)
 
         return
 
-    # 272: EPSILON
-    return
-
-
-# 273-274
-def _check_final_branch() -> None:
-    global index
-
-    # 273
-    if _is_match(True, "<all-type-value>"):
-        _all_type_value()
-
-        if _is_match(True, "<insert-final-branch>"):
-            _insert_final_branch()
-
-        if _is_match(True, "<more-final-branch>"):
-            _more_final_branch()
-
-        return
-
-    # 274
-    elif _is_match(True, "_"):
+    elif _is_match(True, "leaf", node):
         index += 1
 
-        if _is_match(False, ":"):
+        if _is_match(True, "<insert-condition>"):
+            new_node = add_parse_tree_node(node, "<insert-condition>")
+            _insert_condition(new_node, node)
+
+        if _is_match(False, "(", node):
             index += 1
 
-        if _is_match(True, "<filter-final-state>"):
-            _filter_final_state()
+        if _is_match(True, "<filter-3D-state>"):
+            new_node = add_parse_tree_node(node, "<filter-3D-state>")
+            _filter_3D_state(new_node, node)
 
-        return
-
-    return
-
-
-# 275-276
-def _insert_final_branch() -> None:
-    global index
-
-    # 275
-    if _is_match(True, ":"):
-        index += 1
-
-        if _is_match(True, "<filter-final-state>"):
-            _filter_final_state()
-
-        return
-
-    # 276
-    elif _is_match(True, "leaf"):
-        index += 1
-
-        if _is_match(True, "<bloom>"):
-            _bloom()
-
-        if _is_match(False, "("):
+        if _is_match(False, ")", node):
             index += 1
 
-        if _is_match(True, "<filter-final-state>"):
-            _filter_final_state()
-
-        if _is_match(False, ")"):
-            index += 1
-
-        if _is_match(False, ";"):
+        if _is_match(False, ";", node):
             index += 1
 
         return
@@ -3537,815 +3491,1168 @@ def _insert_final_branch() -> None:
     return
 
 
-# 277-278
-def _more_final_branch() -> None:
+# 273-274
+def _more_3D_branch(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 277
-    if _is_match(True, "branch"):
+    # 255
+    if _is_match(True, "branch", node):
         index += 1
 
-        if _is_match(True, "<check-final-branch>"):
-            _check_final_branch()
+        if _is_match(True, "<check-3D-branch>"):
+            new_node = add_parse_tree_node(node, "<check-3D-branch>")
+            _check_3D_branch(new_node, node)
 
         return
 
-    # 278: EPSILON
     return
 
 
-# 279-285
-def _filter_final_state() -> None:
+# 275-282
+def _filter_3D_state(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 279
     if _is_match(True, "<constant>") or _is_match(True, "<insert-variable>"):
+
         if _is_match(True, "<constant>"):
-            _constant()
+            new_node = add_parse_tree_node(node, "<constant>")
+            _constant(new_node, node)
 
         if _is_match(True, "<insert-variable>"):
-            _insert_variable()
+            new_node = add_parse_tree_node(node, "<insert-variable>")
+            _insert_variable(new_node, node)
 
-        if _is_match(False, ";"):
+        if _is_match(False, ";", node):
             index += 1
 
-        if _is_match(True, "<filter-final-state>"):
-            _filter_final_state()
+        if _is_match(True, "<filter-3D-state>"):
+            new_node = add_parse_tree_node(prev_node, "<filter-3D-state>")
+            _filter_3D_state(new_node, node)
 
         return
 
-    # 280
     elif _is_match(True, "<i/o-statement>"):
-        _i_o_statement()
+        new_node = add_parse_tree_node(node, "<i/o-statement>")
+        _i_o_statement(new_node, node)
 
-        if _is_match(False, ";"):
+        if _is_match(False, ";", node):
             index += 1
 
-        if _is_match(True, "<filter-final-state>"):
-            _filter_final_state()
+        if _is_match(True, "<filter-3D-state>"):
+            new_node = add_parse_tree_node(prev_node, "<filter-3D-state>")
+            _filter_3D_state(new_node, node)
 
-    # 281
-    elif _is_match(True, "leaf"):
+    elif _is_match(True, "leaf", node):
+        index += 1
+
+        if _is_match(False, "(", node):
+            index += 1
+
+        if _is_match(True, "<insert-condition>"):
+            new_node = add_parse_tree_node(node, "<insert-condition>")
+            _insert_condition(new_node, node)
+
+        if _is_match(False, ")", node):
+            index += 1
+
+        if _is_match(False, "(", node):
+            index += 1
+
+        if _is_match(True, "<filter-3D-state>"):
+            new_node = add_parse_tree_node(node, "<filter-3D-state>")
+            _filter_3D_state(new_node, node)
+
+        if _is_match(False, ")", node):
+            index += 1
+
+        if _is_match(False, ";", node):
+            index += 1
+
+        if _is_match(True, "<3D-eleaf>"):
+            new_node = add_parse_tree_node(node, "<3D-eleaf>")
+            _3D_eleaf(new_node, node)
+
+        if _is_match(True, "<3D-else>"):
+            new_node = add_parse_tree_node(node, "<3D-else>")
+            _3D_else(new_node, node)
+
+        if _is_match(True, "<filter-3D-state"):
+            new_node = add_parse_tree_node(prev_node, "<filter-3D-state")
+            _filter_3D_state(new_node, node)
+
+        return
+
+    elif _is_match(True, "<assignment>", node):
+        new_node = add_parse_tree_node(node, "<assignment>")
+        _assignment(new_node, node)
+
+        if _is_match(False, ";", node):
+            index += 1
+
+        if _is_match(True, "<filter-3D-state>"):
+            new_node = add_parse_tree_node(node, "<filter-3D-state>")
+            _filter_3D_state(new_node, node)
+
+        return
+
+    elif _is_match(True, "<3D-itertive>"):
+        new_node = add_parse_tree_node(node, "<3D-itertive>")
+        _3D_iterative(new_node, node)
+
+        if _is_match(False, ";", node):
+            index += 1
+
+        if _is_match(True, "<filter-3D-state>"):
+            new_node = add_parse_tree_node(prev_node, "<filter-3D-state>")
+            _filter_3D_state(new_node, node)
+
+        return
+
+    elif _is_match(True, "clear", node):
+        index += 1
+
+        if _is_match(False, ";", node):
+            index += 1
+
+        if _is_match(True, "<filter-3D-state>"):
+            new_node = add_parse_tree_node(prev_node, "<filter-3D-state>")
+            _filter_3D_state(new_node, node)
+
+        return
+
+    elif _is_match(True, "break", node):
+        index += 1
+
+        if _is_match(False, ";", node):
+            index += 1
+
+        return
+
+    return
+
+
+# 283-284
+def _3D_iterative(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    if _is_match(True, "fern", node):
+        index += 1
+
+        if _is_match(False, "(", node):
+            index += 1
+
+        if _is_match(True, "<insert-3D-fern>"):
+            new_node = add_parse_tree_node(node, "<insert-3D-fern>")
+            _insert_3D_fern(new_node, node)
+
+        return
+
+    elif _is_match(True, "willow", node):
         index += 1
 
         if _is_match(False, "("):
             index += 1
 
-        if _is_match(True, "<bloom>"):
-            _bloom()
+        if _is_match(True, "<insert-condition>"):
+            new_node = add_parse_tree_node(node, "<insert-condition>")
+            _insert_condition(new_node, node)
 
-        if _is_match(False, ")"):
+        if _is_match(False, ")", node):
             index += 1
 
-        if _is_match(False, "("):
+        if _is_match(False, "(", node):
+            index += 1
+
+        if _is_match(True, "<final-statement>"):
+            new_node = add_parse_tree_node(node, "<final-statement>")
+            _final_statement(new_node, node)
+
+        if _is_match(False, ")", node):
+            index += 1
+
+        return
+
+    return
+
+
+# 285-286
+def _insert_3D_fern(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    if _is_match(True, "tint", node):
+        index += 1
+
+        if _is_match(False, "#", node):
+            add_parse_tree_node(node, lexemes[index + 1])
+            index += 2
+
+        if _is_match(False, "=", node):
+            index += 1
+
+        if _is_match(False, "Tint Literal", node):
+            index += 1
+
+        if _is_match(False, ";", node):
+            index += 1
+
+        if _is_match(True, "<insert-condition>"):
+            new_node = add_parse_tree_node(node, "<insert-condition>")
+            _insert_condition(new_node, node)
+
+        if _is_match(False, ";", node):
+            index += 1
+
+        if _is_match(False, "#", node):
+            index += 2
+
+        if _is_match(True, "<assignment-op>"):
+            new_node = add_parse_tree_node(node, "<assignment-op>")
+            _assignment_op(new_node, node)
+
+        if _is_match(True, "<tint>"):
+            new_node = add_parse_tree_node(node, "<tint>")
+            _tint(new_node, node)
+
+        if _is_match(False, ";", node):
+            index += 1
+
+        if _is_match(False, ")", node):
+            index += 1
+
+        if _is_match(False, "(", node):
+            index += 1
+
+        if _is_match(True, "<final-statement>"):
+            new_node = add_parse_tree_node(node, "<final-statement>")
+            _final_statement(new_node, node)
+
+        if _is_match(False, ")", node):
+            index += 1
+
+        return
+
+    elif _is_match(True, "<all-type-value>"):
+        new_node = add_parse_tree_node(node, "<all-type-value>")
+        _all_type_value(new_node, node)
+
+        if _is_match(True, "<more-value>"):
+            new_node = add_parse_tree_node(node, "<more-value>")
+            _more_value(new_node, node)
+
+        if _is_match(False, "at", node):
+            index += 1
+
+        if _is_match(True, "<sqnc-value>"):
+            new_node = add_parse_tree_node(node, "<sqnc-value>")
+            _sqnc_value(new_node, node)
+
+        if _is_match(False, ";", node):
+            index += 1
+
+        if _is_match(False, ")", node):
+            index += 1
+
+        if _is_match(False, "(", node):
+            index += 1
+
+        if _is_match(True, "<final-statement>"):
+            new_node = add_parse_tree_node(node, "<final-statement>")
+            _final_statement(new_node, node)
+
+        if _is_match(False, ")", node):
+            index += 1
+
+        return
+
+    return
+
+
+# 287-288
+def _final_statement(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    if _is_match(True, "<use-final-tree>"):
+        new_node = add_parse_tree_node(node, "<use-final-tree>")
+        _use_final_tree(new_node, node)
+
+        if _is_match(True, "<filter-final-state>"):
+            new_node = add_parse_tree_node(node, "<filter-final-state>")
+            _filter_final_state(new_node, node)
+
+        if _is_match(True, "<final-statement>"):
+            new_node = add_parse_tree_node(node, "<final-statement>")
+            _final_statement(new_node, node)
+
+        return
+    return
+
+
+# 289-290
+def _use_final_tree(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    if _is_match(True, "tree", node):
+        index += 1
+
+        if _is_match(False, "(", node):
+            index += 1
+
+        if _is_match(False, "#", node):
+            index += 2
+
+        if _is_match(False, ")", node):
+            index += 1
+
+        if _is_match(False, "(", node):
+            index += 1
+
+        if _is_match(False, "branch", node):
+            index += 1
+
+        if _is_match(True, "<check-final-branch>"):
+            new_node = add_parse_tree_node(node, "<check-final-branch>")
+            _check_final_branch(new_node, node)
+
+        if _is_match(False, ")", node):
+            index += 1
+
+        if _is_match(False, ";", node):
+            index += 1
+
+        return
+
+    return
+
+
+# 291-292
+def _check_final_branch(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    if _is_match(True, "<all-type-value>"):
+        new_node = add_parse_tree_node(node, "<all-type-value>")
+        _all_type_value(new_node, node)
+
+        if _is_match(True, "<insert-final-branch>"):
+            new_node = add_parse_tree_node(node, "<insert-final-branch>")
+            _insert_final_branch(new_node, node)
+
+        if _is_match(True, "<more-final-branch>"):
+            new_node = add_parse_tree_node(node, "<more-final-branch>")
+            _more_final_branch(new_node, node)
+
+        return
+
+    elif _is_match(True, "_", node):
+        index += 1
+
+        if _is_match(False, ":", node):
+            index += 1
+
+        if _is_match(True, "<filter-final-state>"):
+            new_node = add_parse_tree_node(node, "<filter-final-state>")
+            _filter_final_state(new_node, node)
+
+        return
+
+    return
+
+
+# 293-294
+def _insert_final_branch(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    if _is_match(True, ":", node):
+        index += 1
+
+        if _is_match(True, "<filter-final-state>"):
+            new_node = add_parse_tree_node(node, "<filter-final-state>")
+            _filter_final_state(new_node, node)
+
+        return
+
+    elif _is_match(True, "leaf", node):
+        index += 1
+
+        if _is_match(True, "<insert-condition>"):
+            new_node = add_parse_tree_node(node, "<insert-condition>")
+            _insert_condition(new_node, node)
+
+        if _is_match(False, "(", node):
             index += 1
 
         if _is_match(True, "<filter-final-state>"):
             _filter_final_state()
 
-        if _is_match(False, ")"):
+        if _is_match(False, ")", node):
             index += 1
 
-        if _is_match(False, ";"):
+        if _is_match(False, ";", node):
+            index += 1
+
+        return
+
+    return
+
+
+# 295-296
+def _more_final_branch(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    if _is_match(True, "branch", node):
+        index += 1
+
+        if _is_match(True, "<check-final-branch>"):
+            new_node = add_parse_tree_node(node, "<check-final-branch>")
+            _check_final_branch(new_node, node)
+
+        return
+    return
+
+
+# 297-303
+def _filter_final_state(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    if _is_match(True, "<constant>") or _is_match(True, "<insert-variable>"):
+
+        if _is_match(True, "<constant>"):
+            new_node = add_parse_tree_node(node, "<constant>")
+            _constant(new_node, node)
+
+        if _is_match(True, "<insert-variable>"):
+            new_node = add_parse_tree_node(node, "<insert-variable>")
+            _insert_variable(new_node, node)
+
+        if _is_match(False, ";", node):
+            index += 1
+
+        if _is_match(True, "<filter-final-state>"):
+            new_node = add_parse_tree_node(prev_node, "<filter-final-state>")
+            _filter_final_state(new_node, prev_node)
+
+        return
+
+    elif _is_match(True, "<i/o-statement>"):
+        new_node = add_parse_tree_node(node, "<i/o-statement>")
+        _i_o_statement(new_node, node)
+
+        if _is_match(False, ";", node):
+            index += 1
+
+        if _is_match(True, "<filter-final-state>"):
+            new_node = add_parse_tree_node(prev_node, "<filter-final-state>")
+            _filter_final_state(new_node, prev_node)
+
+    elif _is_match(True, "leaf", node):
+        index += 1
+
+        if _is_match(False, "(", node):
+            index += 1
+
+        if _is_match(True, "<insert-condition>"):
+            new_node = add_parse_tree_node(prev_node, "<insert-condition>")
+            _insert_condition(new_node, prev_node)
+
+        if _is_match(False, ")", node):
+            index += 1
+
+        if _is_match(False, "(", node):
+            index += 1
+
+        if _is_match(True, "<filter-final-state>"):
+            new_node = add_parse_tree_node(node, "<filter-final-state>")
+            _filter_final_state(new_node, node)
+
+        if _is_match(False, ")", node):
+            index += 1
+
+        if _is_match(False, ";", node):
             index += 1
 
         if _is_match(True, "<final-eleaf>"):
-            _final_eleaf()
+            new_node = add_parse_tree_node(node, "<final-eleaf>")
+            _final_eleaf(new_node, node)
 
         if _is_match(True, "<final-else>"):
-            _final_else()
+            new_node = add_parse_tree_node(node, "<final-else>")
+            _final_else(new_node, node)
 
-        if _is_match(True, "<filter-final-state"):
-            _filter_final_state()
+        if _is_match(True, "<filter-final-state>"):
+            new_node = add_parse_tree_node(prev_node, "<filter-final-state>")
+            _filter_final_state(new_node, prev_node)
 
         return
 
-    # 282
-    elif _is_match(True, "#"):
-        index += 2
+    elif _is_match(True, "<assignment>", node):
+        new_node = add_parse_tree_node(node, "<assignment>")
+        _assignment(new_node, node)
 
-        if _is_match(True, "<insert-func>"):
-            _insert_func()
-
-        if _is_match(True, "<indexing>"):
-            _indexing()
-
-        if _is_match(True, "<more-id>"):
-            _more_id()
-
-        if _is_match(True, "<assignment-op>"):
-            _assignment_op()
-
-        if _is_match(True, "<all-type-value>"):
-            _all_type_value()
-
-        if _is_match(False, ";"):
+        if _is_match(False, ";", node):
             index += 1
 
         if _is_match(True, "<filter-final-state>"):
-            _filter_final_state()
+            new_node = add_parse_tree_node(prev_node, "<filter-final-state>")
+            _filter_final_state(new_node, prev_node)
 
         return
 
-    # 283
-    elif _is_match(True, "clear"):
-        if _is_match(True, ";"):
+    elif _is_match(True, "clear", node):
+        if _is_match(True, ";", node):
             index += 1
 
         if _is_match(True, "<filter-final-state>"):
-            _filter_final_state()
+            new_node = add_parse_tree_node(prev_node, "<filter-final-state>")
+            _filter_final_state(new_node, prev_node)
 
         return
 
-    # 284
-    elif _is_match(True, "break"):
+    elif _is_match(True, "break", node):
         index += 1
 
-        if _is_match(False, ";"):
+        if _is_match(False, ";", node):
             index += 1
 
         return
 
-    # 285: EPSILON
     return
 
 
-# 286-288
-def _argument() -> None:
+# 304-306
+def _argument(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 286
     if _is_match(True, "<insert-argument>"):
-        _insert_argument()
+        new_node = add_parse_tree_node(node, "<insert-argument>")
+        _insert_argument(new_node, node)
         return
 
-    # 287
-    elif _is_match(True, "#"):
-        index += 2
-
-        if _is_match(False, "("):
-            index += 1
-
-        if _is_match(True, "<2D-argument>"):
-            _2D_argument()
-
-        if _is_match(False, ")"):
-            index += 1
-
-        if _is_match(True, "<add-argument>"):
-            _add_argument()
+    elif _is_match(True, "<insert**kwargs>", node):
+        new_node = add_parse_tree_node(node, "<insert**kwargs>")
+        _insert_kwargs(new_node, node)
 
         return
 
-    # 288: EPSILON
     return
 
 
-# 289-291
-def _insert_argument() -> None:
+# 307-309
+def _insert_argument(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 289
     if _is_match(True, "<all-type-value>"):
-        _all_type_value()
+        new_node = add_parse_tree_node(node, "<all-type-value>")
+        _all_type_value(new_node, node)
 
         if _is_match(True, "<add-argument>"):
-            _add_argument()
+            new_node = add_parse_tree_node(node, "<add-argument>")
+            _add_argument(new_node, node)
 
         return
 
-    # 290
-    elif _is_match(True, "#"):
+    elif _is_match(True, "#", node):
         index += 2
 
-        if _is_match(False, "("):
+        if _is_match(False, "(", node):
             index += 1
 
         if _is_match(True, "<2D-argument>"):
-            _2D_argument()
+            new_node = add_parse_tree_node(node, "<2D-argument>")
+            _2D_argument(new_node, node)
 
-        if _is_match(False, ")"):
+        if _is_match(False, ")", node):
             index += 1
 
         if _is_match(True, "<add-argument>"):
-            _add_argument()
+            new_node = add_parse_tree_node(node, "<add-argument>")
+            _add_argument(new_node, node)
 
         return
 
-    # 291: EPSILON
     return
 
 
-# 292-296
-def _insert_kwargs() -> None:
+# 310-314
+def _insert_kwargs(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 292
-    if _is_match(True, "tint"):
+    if _is_match(True, "tint", node):
         index += 1
 
-        if _is_match(False, "#"):
+        if _is_match(False, "#", node):
             index += 2
 
         if _is_match(True, "<tint-value"):
-            _tint_value()
+            new_node = add_parse_tree_node(node, "<tint-value")
+            _tint_value(new_node, node)
 
         if _is_match(True, "<more**kwargs>"):
-            _more_kwargs()
+            new_node = add_parse_tree_node(node, "<more**kwargs>")
+            _more_kwargs(new_node, node)
 
         return
 
-    # 293
-    elif _is_match(True, "flora"):
+    elif _is_match(True, "flora", node):
         index += 1
 
         if _is_match(True, "<flora-value>"):
-            _flora_value()
+            new_node = add_parse_tree_node(node, "<flora-value>")
+            _flora_value(new_node, node)
 
         if _is_match(True, "<more**kwargs>"):
-            _more_kwargs()
+            new_node = add_parse_tree_node(node, "<more**kwargs>")
+            _more_kwargs(new_node, node)
 
         return
 
-    # 294
-    elif _is_match(True, "chard"):
+    elif _is_match(True, "chard", node):
         index += 1
 
         if _is_match(True, "<chard-value>"):
-            _chard_value()
+            new_node = add_parse_tree_node(node, "<chard-value>")
+            _chard_value(new_node, node)
 
         if _is_match(True, "<more**kwargs>"):
-            _more_kwargs()
+            new_node = add_parse_tree_node(node, "<more**kwargs>")
+            _more_kwargs(new_node, node)
 
         return
 
-    # 295
-    elif _is_match(True, "string"):
+    elif _is_match(True, "string", node):
         index += 1
 
         if _is_match(True, "<string-value>"):
-            _string_value()
+            new_node = add_parse_tree_node(node, "<string-value>")
+            _string_value(new_node, node)
 
         if _is_match(True, "<more**kwargs>"):
-            _more_kwargs()
+            new_node = add_parse_tree_node(node, "<more**kwargs>")
+            _more_kwargs(new_node, node)
 
         return
 
-    # 296
-    elif _is_match(True, "bloom"):
+    elif _is_match(True, "bloom", node):
         index += 1
 
         if _is_match(True, "<bloom-value>"):
-            _bloom_value()
+            new_node = add_parse_tree_node(node, "<bloom-value>")
+            _bloom_value(new_node, node)
 
         if _is_match(True, "<more**kwargs>"):
-            _more_kwargs()
+            new_node = add_parse_tree_node(node, "<more**kwargs>")
+            _more_kwargs(new_node, node)
 
         return
 
     return
 
 
-# 297-298
-def _more_kwargs() -> None:
+# 315-316
+def _more_kwargs(node: classmethod, prev_node: classmethod) -> None:
     global index
 
     # 297
-    if _is_match(True, ","):
+    if _is_match(True, ",", node):
         index += 1
 
         if _is_match(True, "<insert**kwargs>"):
-            _insert_kwargs()
+            new_node = add_parse_tree_node(node, "<insert**kwargs>")
+            _insert_kwargs(new_node, node)
 
+        if _is_match(True, "<more**kwargs>"):
+            new_node = add_parse_tree_node(node, "<more**kwargs>")
+            _more_kwargs(new_node, node)
         return
 
-    # 298: EPSILON
     return
 
 
-# 299-300
-def _add_argument() -> None:
+# 317-318
+def _add_argument(node: classmethod, prev_node: classmethod) -> None:
     global index
 
     # 299
-    if _is_match(True, ","):
+    if _is_match(True, ",", node):
         index += 1
 
         if _is_match(True, "<argument>"):
-            _argument()
+            new_node = add_parse_tree_node(node, "<argument>")
+            _argument(new_node, node)
 
         return
 
-    # 300: EPSILON
     return
 
 
-# 301-302
-def _2D_argument() -> None:
+# 319-320
+def _2D_argument(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 301
     if _is_match(True, "<all-type-value>"):
-        _all_type_value()
+        new_node = add_parse_tree_node(node, "<all-type-value>")
+        _all_type_value(new_node, node)
 
-        if _is_match(True, "<more-value>"):
-            _more_value()
+        if _is_match(True, "<add-2D-argument>"):
+            new_node = add_parse_tree_node(node, "<add-2D-argument>")
+            _add_2D_argument(new_node, node)
 
         return
 
-    # 302
-    elif _is_match(True, "#"):
+    elif _is_match(True, "#", node):
         index += 2
 
-        if _is_match(False, "("):
+        if _is_match(False, "(", node):
             index += 1
 
         if _is_match(True, "<all-type-value>"):
-            _all_type_value()
+            new_node = add_parse_tree_node(node, "<all-type-value>")
+            _all_type_value(new_node, node)
 
-        if _is_match(True, "add-3D-argument"):
-            _add_3D_argument()
+        if _is_match(True, "<add-3D-argument>"):
+            new_node = add_parse_tree_node(node, "<add-3D-argument>")
+            _add_3D_argument(new_node, node)
 
-        if _is_match(False, ")"):
+        if _is_match(False, ")", node):
             index += 1
 
         if _is_match(True, "<add-2D-argument>"):
-            _add_2D_argument()
+            new_node = add_parse_tree_node(node, "<add-2D-argument>")
+            _add_2D_argument(new_node, node)
 
         return
 
     return
 
 
-# 303-304
-def _add_2D_argument() -> None:
+# 321-322
+def _add_2D_argument(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 303
-    if _is_match(True, ","):
+    if _is_match(True, ",", node):
         index += 1
 
         if _is_match(True, "<2D-argument>"):
-            _2D_argument()
+            new_node = add_parse_tree_node(node, "<2D-argument>")
+            _2D_argument(new_node, node)
 
         return
 
-    # 304: EPSILON
     return
 
 
-# 305-306
-def _add_3D_argument() -> None:
+# 323-324
+def _add_3D_argument(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 305
-    if _is_match(True, ","):
+    if _is_match(True, ",", node):
         index += 1
 
         if _is_match(True, "<all-type-value>"):
-            _all_type_value()
+            new_node = add_parse_tree_node(node, "<all-type-value>")
+            _all_type_value(new_node, node)
 
         if _is_match(True, "<add-3D-argument>"):
-            _add_3D_argument()
+            new_node = add_parse_tree_node(node, "<add-3D-argument>")
+            _add_3D_argument(new_node, node)
 
         return
-
-    # 306: EPSILON
     return
 
 
-# 307-308
-def _check_func() -> None:
+# 325-326
+def _function(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 307
-    if _is_match(True, "("):
-        index += 1
-
-        if _is_match(True, "<argument>"):
-            _argument()
-
-        if _is_match(False, ")"):
-            index += 1
-
-        return
-
-    # 308
-    elif _is_match(True, "<insert-func>"):
-        _insert_func()
-
-        if _is_match(True, "<indexing>"):
-            _indexing()
-
-        if _is_match(True, "<more-id>"):
-            _more_id()
-
-        if _is_match(True, "<assignment-op>"):
-            _assignment_op()
-
-        if _is_match(True, "<all-type-value>"):
-            _all_type_value()
-
-        return
-
-    return
-
-
-# 309-311
-def _function() -> None:
-    global index
-
-    # 309
     if _is_match(True, "<common-type>"):
-        _common_type()
+        new_node = add_parse_tree_node(node, "<common-type>")
+        _common_type(new_node, node)
 
-        if _is_match(False, "#"):
+        if _is_match(False, "#", node):
+            add_parse_tree_node(node, lexemes[index + 1])
             index += 2
 
-        if _is_match(False, "("):
+        if _is_match(False, "(", node):
             index += 1
 
         if _is_match(True, "<parameter>"):
-            _parameter()
+            new_node = add_parse_tree_node(node, "<parameter>")
+            _parameter(new_node, node)
 
-        if _is_match(False, ")"):
+        if _is_match(False, ")", node):
             index += 1
 
-        if _is_match(False, "("):
+        if _is_match(False, "(", node):
             index += 1
 
         if _is_match(True, "<statement>"):
-            _statement()
+            new_node = add_parse_tree_node(node, "<statement>")
+            _statement(new_node, node)
 
-        if _is_match(False, "regrow"):
+        if _is_match(False, "regrow", node):
             index += 1
 
         if _is_match(True, "<all-type-value>"):
-            _all_type_value()
+            new_node = add_parse_tree_node(node, "<all-type-value>")
+            _all_type_value(new_node, node)
 
         if _is_match(True, "<add-at>"):
-            _add_at()
+            new_node = add_parse_tree_node(node, "<add-at>")
+            _add_at(new_node, node)
 
-        if _is_match(False, ";"):
+        if _is_match(False, ";", node):
             index += 1
 
-        if _is_match(False, ")"):
+        if _is_match(False, ")", node):
             index += 1
 
-        if _is_match(False, ";"):
+        if _is_match(False, ";", node):
             index += 1
 
         if _is_match(True, "<function>"):
-            _function()
+            new_node = add_parse_tree_node(prev_node, "<function>")
+            _function(new_node, prev_node)
 
         return
 
-    # 310
-    elif _is_match(True, "viola"):
+    elif _is_match(True, "viola", node):
         index += 1
 
-        if _is_match(False, "#"):
+        if _is_match(False, "#", node):
             index += 2
 
-        if _is_match(False, "("):
+        if _is_match(False, "(", node):
             index += 1
 
         if _is_match(True, "<undefined-param>"):
-            _undefined_param()
+            new_node = add_parse_tree_node(node, "<undefined-param>")
+            _undefined_param(new_node, node)
 
-        if _is_match(False, ")"):
+        if _is_match(False, ")", node):
             index += 1
 
-        if _is_match(False, "("):
+        if _is_match(False, "(", node):
             index += 2
 
         if _is_match(True, "<statement>"):
-            _statement()
+            new_node = add_parse_tree_node(node, "<statement>")
+            _statement(new_node, node)
 
-        if _is_match(False, ")"):
+        if _is_match(False, ")", node):
             index += 1
 
-        if _is_match(False, ";"):
+        if _is_match(False, ";", node):
             index += 1
 
         if _is_match(True, "<function>"):
-            _function()
+            new_node = add_parse_tree_node(prev_node, "<function>")
+            _function(new_node, prev_node)
 
         return
-
-    # 311: EPSILON
-    return
-
-
-# 312-313
-def _add_at() -> None:
-    global index
-
-    # 312
-    if _is_match(True, "<more-value>"):
-        _more_value()
-
-        if _is_match(False, "at"):
-            index += 1
-
-        if _is_match(True, "<all-type-value>"):
-            _all_type_value()
-
-        return
-
-    # 313: EPSILON
-    return
-
-
-# 314-318
-def _common_variable() -> None:
-    global index
-
-    # 314
-    if _is_match(True, "tint"):
-        index += 1
-
-        if _is_match(False, "#"):
-            index += 2
-
-        if _is_match(True, "<tint-value>"):
-            _tint_value()
-
-        return
-
-    # 315
-    elif _is_match(True, "flora"):
-        index += 1
-
-        if _is_match(False, "#"):
-            index += 2
-
-        if _is_match(True, "<flora-value>"):
-            _flora_value()
-        return
-
-    # 316
-    elif _is_match(True, "chard"):
-        index += 1
-
-        if _is_match(False, "#"):
-            index += 2
-
-        if _is_match(True, "<chard-value>"):
-            _chard_value()
-        return
-
-    # 317
-    elif _is_match(True, "string"):
-        index += 1
-
-        if _is_match(False, "#"):
-            index += 2
-
-        if _is_match(True, "<string-value>"):
-            _string_value()
-        return
-
-    # 318
-    elif _is_match(True, "bloom"):
-        index += 1
-
-        if _is_match(False, "#"):
-            index += 2
-
-        if _is_match(True, "<bloom-value>"):
-            _bloom_value()
-        return
-
-    return
-
-
-# 319-323
-def _parameter() -> None:
-    global index
-
-    # 319
-    if _is_match(True, "<undefined-param>") and lexemes[index + 1] == "*#":
-        _undefined_param()
-        return
-
-    # 320
-    elif _is_match(True, "<common-variable>"):
-        _common_variable()
-
-        if _is_match(True, "<next-parameter>"):
-            _next_parameter()
-
-        return
-
-    # 321
-    elif _is_match(True, "<sqnc-type>"):
-        _sqnc_type()
-
-        if _is_match(False, "#"):
-            index += 2
-
-        if _is_match(True, "<sqnc-value>"):
-            _sqnc_value()
-
-        if _is_match(True, "<next-parameter>"):
-            _next_parameter()
-
-        return
-
-    # 322
-    elif _is_match(True, "#"):
-        index += 2
-
-        if _is_match(False, "("):
-            index += 1
-
-        if _is_match(True, "<2D-parameter>"):
-            _2D_parameter()
-
-        if _is_match(False, ")"):
-            index += 1
-
-        if _is_match(True, "<next-parameter>"):
-            _next_parameter()
-
-        return
-
-    # 323: EPSILON
-    return
-
-
-# 324-325
-def _undefined_param() -> None:
-    global index
-
-    # 324
-    if _is_match(True, "<common-type>"):
-        _common_type()
-
-        if _is_match(False, "*#"):
-            index += 2
-
-        if _is_match(True, "<add-kwargs>"):
-            _add_kwargs()
-
-    # 325: EPSILON
-    return
-
-
-# 326-327
-def _add_kwargs() -> None:
-    global index
-
-    # 326
-    if _is_match(True, ","):
-        index += 1
-
-        if _is_match(False, "**#"):
-            index += 2
-
-        return
-
-    # 327: EPSILON
     return
 
 
 # 328-329
-def _next_parameter() -> None:
+def _add_at(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    if _is_match(True, "<more-value>"):
+        new_node = add_parse_tree_node(node, "<more-value>")
+        _more_value(new_node, node)
+
+        if _is_match(False, "at", node):
+            index += 1
+
+        if _is_match(True, "<all-type-value>"):
+            new_node = add_parse_tree_node(node, "<all-type-value>")
+            _all_type_value(new_node, node)
+
+        return
+    return
+
+
+# 330-334
+def _common_variable(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    if _is_match(True, "tint", node):
+        index += 1
+
+        if _is_match(False, "#", node):
+            index += 2
+
+        if _is_match(True, "<tint-value>"):
+            new_node = add_parse_tree_node(node, "<tint-value>")
+            _tint_value(new_node, node)
+        return
+
+    elif _is_match(True, "flora", node):
+        index += 1
+
+        if _is_match(False, "#", node):
+            index += 2
+
+        if _is_match(True, "<flora-value>"):
+            new_node = add_parse_tree_node(node, "<flora-value>")
+            _flora_value(new_node, node)
+        return
+
+    elif _is_match(True, "chard", node):
+        index += 1
+
+        if _is_match(False, "#", node):
+            index += 2
+
+        if _is_match(True, "<chard-value>"):
+            new_node = add_parse_tree_node(node, "<chard-value>")
+            _chard_value(new_node, node)
+        return
+
+    elif _is_match(True, "string", node):
+        index += 1
+
+        if _is_match(False, "#", node):
+            index += 2
+
+        if _is_match(True, "<string-value>"):
+            new_node = add_parse_tree_node(node, "<string-value>")
+            _string_value(new_node, node)
+        return
+
+    elif _is_match(True, "bloom", node):
+        index += 1
+
+        if _is_match(False, "#", node):
+            index += 2
+
+        if _is_match(True, "<bloom-value>"):
+            new_node = add_parse_tree_node(node, "<bloom-value>")
+            _bloom_value(new_node, node)
+        return
+    return
+
+
+# 335-339
+def _parameter(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    if _is_match(True, "<undefined-param>") and lexemes[index + 1] == "*#":
+        new_node = add_parse_tree_node(node, "<undefined-param>")
+        _undefined_param(new_node, node)
+        return
+
+    elif _is_match(True, "<common-variable>"):
+        new_node = add_parse_tree_node(node, "<common-variable>")
+        _common_variable(new_node, node)
+
+        if _is_match(True, "<next-parameter>"):
+            new_node = add_parse_tree_node(node, "<next-parameter>")
+            _next_parameter(new_node, node)
+
+        return
+
+    elif _is_match(True, "<sqnc-type>"):
+        new_node = add_parse_tree_node(node, "<sqnc-type>")
+        _sqnc_type(new_node, node)
+
+        if _is_match(False, "#", node):
+            index += 2
+
+        if _is_match(True, "<sqnc-value>"):
+            new_node = add_parse_tree_node(node, "<sqnc-value>")
+            _sqnc_value(new_node, node)
+
+        if _is_match(True, "<next-parameter>"):
+            new_node = add_parse_tree_node(node, "<next-parameter>")
+            _next_parameter(new_node, node)
+
+        return
+
+    elif _is_match(True, "#", node):
+        index += 2
+
+        if _is_match(False, "(", node):
+            index += 1
+
+        if _is_match(True, "<2D-parameter>"):
+            new_node = add_parse_tree_node(node, "<2D-parameter>")
+            _2D_parameter(new_node, node)
+
+        if _is_match(False, ")", node):
+            index += 1
+
+        if _is_match(True, "<next-parameter>"):
+            new_node = add_parse_tree_node(node, "<next-parameter>")
+            _next_parameter(new_node, node)
+
+        return
+    return
+
+
+# 340-342
+def _undefined_param(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    if _is_match(True, "<common-type>"):
+        new_node = add_parse_tree_node(node, "<common-type>")
+        _common_type(new_node, node)
+
+        if _is_match(False, "*#", node):
+            add_parse_tree_node(node, lexemes[index + 1])
+            index += 2
+
+        if _is_match(True, "<add-kwargs>"):
+            new_node = add_parse_tree_node(node, "<add-kwargs>")
+            _add_kwargs(new_node, node)
+
+    return
+
+
+# 343-344
+def _add_kwargs(node: classmethod, prev_node: classmethod) -> None:
+    global index
+
+    if _is_match(True, ",", node):
+        index += 1
+
+        if _is_match(False, "**#", node):
+            add_parse_tree_node(node, lexemes[index + 1])
+            index += 2
+
+        return
+    return
+
+
+# 345-346
+def _next_parameter(node: classmethod, prev_node: classmethod) -> None:
     global index
 
     # 328
-    if _is_match(True, ","):
+    if _is_match(True, ",", node):
         index += 1
 
         if _is_match(True, "<parameter>"):
-            _parameter()
+            new_node = add_parse_tree_node(node, "<parameter>")
+            _parameter(new_node, node)
 
         return
-
-    # 329: EPSILON
     return
 
 
-# 330-333
-def _2D_parameter() -> None:
+# 347-350
+def _2D_parameter(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 330
     if _is_match(True, "<undefined-param>"):
-        _undefined_param()
+        new_node = add_parse_tree_node(node, "<undefined-param>")
+        _undefined_param(new_node, node)
         return
 
-    # 331
     elif _is_match(True, "<common-variable>"):
-        _common_variable()
+        new_node = add_parse_tree_node(node, "<common-variable>")
+        _common_variable(new_node, node)
 
         if _is_match(True, "<next-2D-param>"):
-            _next_2D_param()
-
+            new_node = add_parse_tree_node(node, "<next-2D-param>")
+            _next_2D_param(new_node, node)
         return
 
-    # 332
     elif _is_match(True, "<sqnc-type>"):
-        _sqnc_type()
+        new_node = add_parse_tree_node(node, "<sqnc-type>")
+        _sqnc_type(new_node, node)
 
-        if _is_match(False, "#"):
+        if _is_match(False, "#", node):
             index += 2
 
         if _is_match(True, "<sqnc-value>"):
-            _sqnc_value()
+            new_node = add_parse_tree_node(node, "<sqnc-value>")
+            _sqnc_value(new_node, node)
 
         if _is_match(True, "<next-2D-param>"):
-            _next_2D_param()
-
+            new_node = add_parse_tree_node(node, "<next-2D-param>")
+            _next_2D_param(new_node, node)
         return
 
-    # 333
-    elif _is_match(True, "#"):
+    elif _is_match(True, "#", node):
         index += 2
 
-        if _is_match(False, "("):
+        if _is_match(False, "(", node):
             index += 1
 
         if _is_match(True, "<3D-parameter>"):
-            _3D_parameter()
+            new_node = add_parse_tree_node(node, "<3D-parameter>")
+            _3D_parameter(new_node, node)
 
-        if _is_match(False, ")"):
+        if _is_match(False, ")", node):
             index += 1
 
         if _is_match(True, "<next-2D-param>"):
-            _next_2D_param()
-
+            new_node = add_parse_tree_node(node, "<next-2D-param>")
+            _next_2D_param(new_node, node)
         return
-
     return
 
 
-# 334-335
-def _next_2D_param() -> None:
+# 351-352
+def _next_2D_param(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 334
-    if _is_match(True, ","):
+    if _is_match(True, ",", node):
         index += 1
 
         if _is_match(True, "<2D-parameter>"):
-            _2D_parameter()
+            new_node = add_parse_tree_node(node, "<2D-parameter>")
+            _2D_parameter(new_node, node)
 
         return
-
-    # 335: EPSILON
     return
 
 
-# 336-338
-def _3D_parameter() -> None:
+# 353-355
+def _3D_parameter(node: classmethod, prev_node: classmethod) -> None:
     global index
 
-    # 336
     if _is_match(True, "<undefined-param>"):
-        _undefined_param()
+        new_node = add_parse_tree_node(node, "<undefined-param>")
+        _undefined_param(new_node, node)
         return
 
-    # 337
     elif _is_match(True, "<common-variable>"):
-        _common_variable()
+        new_node = add_parse_tree_node(node, "<common-variable>")
+        _common_variable(new_node, node)
 
         if _is_match(True, "<next-3D-param>"):
-            _next_3D_param()
-
+            new_node = add_parse_tree_node(node, "<next-3D-param>")
+            _next_3D_param(new_node, node)
         return
 
-    # 338
     elif _is_match(True, "<sqnc-type>"):
-        _sqnc_type()
+        new_node = add_parse_tree_node(node, "<sqnc-type>")
+        _sqnc_type(new_node, node)
 
-        if _is_match(False, "#"):
+        if _is_match(False, "#", node):
+            add_parse_tree_node(node, lexemes[index + 1])
             index += 2
 
         if _is_match(True, "<sqnc-value>"):
-            _sqnc_value()
+            new_node = add_parse_tree_node(node, "<sqnc-value>")
+            _sqnc_value(new_node, node)
 
         if _is_match(True, "<next-3D-param>"):
-            _next_3D_param()
-
+            new_node = add_parse_tree_node(node, "<next-3D-param>")
+            _next_3D_param(new_node, node)
         return
-
     return
 
 
-# 339-340
-def _next_3D_param() -> None:
+# 356-357
+def _next_3D_param(node: classmethod, prev_node: classmethod) -> None:
     global index
 
     # 339
-    if _is_match(True, ","):
+    if _is_match(True, ",", node):
         index += 1
 
         if _is_match(True, "<3D-parameter>"):
-            _3D_parameter()
-
+            new_node = add_parse_tree_node(node, "<3D-parameter>")
+            _3D_parameter(new_node, node)
         return
-
-    # 340: EPSILON
     return

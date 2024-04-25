@@ -1,6 +1,8 @@
 import tkinter as tk
 from lexical_analyzer import is_lexical_valid
 from syntax_analyzer import is_syntax_valid
+from semantic_analyzer import is_semantic_valid
+from var import print_parse_tree, parse_tree_root
 
 # REF(TextLineNumbers, CustomText): https://stackoverflow.com/questions/16369470/tkinter-adding-line-number-to-text-widget
 
@@ -138,7 +140,8 @@ class _HeadersFrame(tk.Frame):
                 self.output_instance,
                 lexer_output,
             ):
-                pass
+                print_parse_tree()
+                is_semantic_valid(self.output_instance, lexer_output)
 
 
 class OutputFrame(tk.Frame):
