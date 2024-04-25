@@ -10,6 +10,12 @@ output: object = None
 
 
 def is_syntax_valid(output_instance: object, lexer_output: object) -> bool:
+    """
+    Check if the syntax of the code is valid
+    :param output_instance: object: The output will be displayed in output/error
+    :param lexer_output: object: The output from the lexical analyser (tokens: list, lexemes: list)
+    :return: bool: True if the syntax is valid, False otherwise
+    """
     global index, errors, line_number, tokens, lexemes, output
     output = output_instance
 
@@ -39,6 +45,13 @@ def is_syntax_valid(output_instance: object, lexer_output: object) -> bool:
 
 
 def _is_match(_continue: bool, expected: str, node: classmethod = None) -> bool:
+    """
+    Check if the expected token matches the current token
+    :param _continue: bool: Continue checking even if the token does not match
+    :param expected: str: The expected token
+    :param node: classmethod: The current node in the parse tree
+    :return: bool: True if the token matches the expected token, False otherwise
+    """
     global index, lexemes, tokens, errors, line_number, output
 
     if errors:
@@ -95,6 +108,11 @@ def _is_match(_continue: bool, expected: str, node: classmethod = None) -> bool:
 
 
 def _find_future(expected: str) -> True:
+    """
+    Check if the expected token is in the current line
+    :param expected: str: The expected token, can be a terminal or non-terminal
+    :return: bool: True if the token is in the current line, False otherwise
+    """
     global index, lexemes
 
     if g.FIRST_SET.get(expected) is not None:
@@ -118,23 +136,6 @@ def _find_future(expected: str) -> True:
                 break
 
     return True
-
-
-def _get_error(expected: str) -> None:
-    global index, lexemes, errors
-
-    if g.FIRST_SET.get(expected):
-        if "EPSILON" in g.FIRST_SET[expected]:
-            return
-        else:
-            print(f"Syntax Error: {expected} not found")
-            errors.append((lexemes[index], f"Syntax Error: {expected} not found"))
-
-    elif lexemes[index] != expected:
-        print(f"Syntax Error: {expected} not found")
-        errors.append((lexemes[index], f"Syntax Error: {expected} not found"))
-
-    return
 
 
 # 1: program
@@ -551,7 +552,7 @@ def _tint(node: classmethod, prev_node: classmethod) -> None:
     global index
 
     # 28
-    if _is_match(True, "<tint-literals>"):
+    if _is_match(True, "<tint-literals>") and _find_future("<operator>"):
         new_node = add_parse_tree_node(node, "<tint-literals>")
         _tint_literals(new_node, node)
         return
