@@ -69,9 +69,9 @@ DELIM28 = LET + HT
 
 RW = "Reserved Word"
 RS = "Reserved Symbol"
-TINT_LIT = "Tint Literal"
-FLORA_LIT = "Flora Literal"
-STR_LIT = "String Literal"
-CHR_LIT = "Chard Literal"
+TINT_LIT = "tint literal"
+FLORA_LIT = "flora literal"
+STR_LIT = "string literal"
+CHR_LIT = "chard literal"
 ID = "Identifier"
 BL = "Bloom Literal"
