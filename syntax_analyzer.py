@@ -525,6 +525,8 @@ def _data(node: classmethod) -> None:
             _operate_number(child_node)
 
     elif _is_match(True, "<common-type>", node):
+        child_node = add_parse_tree_node(node, "<common-type>")
+        _common_type(child_node)
 
         if _is_match(False, "(", node):
             pass
@@ -546,6 +548,8 @@ def _data(node: classmethod) -> None:
             _operate_logic(child_node)
 
     elif _is_match(True, "<supply-dirt>", node):
+        child_node = add_parse_tree_node(node, "<supply-dirt>")
+        _supply_dirt(child_node)
 
         if _is_match(False, "(", node):
             pass
@@ -953,6 +957,8 @@ def _sequence(node: classmethod) -> None:
     global index
 
     if _is_match(True, "<supply-dirt>", node):
+        child_node = add_parse_tree_node(node, "<supply-dirt>")
+        _supply_dirt(child_node)
 
         if _is_match(False, "(", node):
             pass
@@ -965,6 +971,8 @@ def _sequence(node: classmethod) -> None:
             pass
 
     elif _is_match(True, "<sqnc-type>", node):
+        child_node = add_parse_tree_node(node, "<sqnc-type>")
+        _sqnc_type(child_node)
 
         if _is_match(False, "(", node):
             pass
@@ -1422,6 +1430,8 @@ def _insert_assign(node: classmethod) -> None:
     global index
 
     if _is_match(True, "<common-type>", node):
+        child_node = add_parse_tree_node(node, "<common-type>")
+        _common_type(child_node)
 
         if _is_match(False, "(", node):
             pass
@@ -1434,6 +1444,8 @@ def _insert_assign(node: classmethod) -> None:
             pass
 
     elif _is_match(True, "<sqnc-type>", node):
+        child_node = add_parse_tree_node(node, "<sqnc-type>")
+        _sqnc_type(child_node)
 
         if _is_match(False, "(", node):
             pass
@@ -1713,6 +1725,8 @@ def _argument(node: classmethod) -> None:
         _insert_argument(child_node)
 
     elif _is_match(True, "<common-type>", node):
+        child_node = add_parse_tree_node(node, "<common-type>")
+        _common_type(child_node)
 
         if _is_match(True, "#", node):
             pass
@@ -1796,6 +1810,7 @@ def _more_kwargs(node: classmethod) -> None:
 def _function(node: classmethod) -> None:
 
     if _is_match(True, "<common-type>", node):
+        child_node = add_parse_tree_node(node, "<common-type>")
 
         if _is_match(True, "#", node):
             pass
@@ -1901,6 +1916,8 @@ def _parameter(node: classmethod) -> None:
         _undefined_param(child_node)
 
     elif _is_match(True, "<common-type>", node):
+        child_node = add_parse_tree_node(node, "<common-type>")
+        _common_type(child_node)
 
         if _is_match(True, "#", node):
             pass
@@ -1914,6 +1931,8 @@ def _parameter(node: classmethod) -> None:
             _next_parameter(child_node)
 
     elif _is_match(True, "<sqnc-type>", node):
+        child_node = add_parse_tree_node(node, "<sqnc-type>")
+        _sqnc_type(child_node)
 
         if _is_match(True, "#", node):
             pass
@@ -1947,6 +1966,8 @@ def _parameter(node: classmethod) -> None:
 def _undefined_param(node: classmethod) -> None:
 
     if _is_match(True, "<common-type>", node):
+        child_node = add_parse_tree_node(node, "<common-type>")
+        _common_type(child_node)
 
         if _is_match(True, "*", node):
             pass
