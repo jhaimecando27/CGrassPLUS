@@ -101,12 +101,12 @@ def _is_match(_continue: bool, expected: str, node: classmethod = None) -> bool:
     elif lexemes[index] == expected:
         print(f"Matched {lexemes[index]} with {expected}")
         output.set_output(f"Matched {lexemes[index]} with {expected}\n")
-        add_parse_tree_node(node, expected)
         if lexemes[index] == "#":
+            add_parse_tree_node(node, lexemes[index] + lexemes[index + 1])
+            index += 2
+        else:
+            add_parse_tree_node(node, expected)
             index += 1
-            print(f"{lexemes[index]}")
-            add_parse_tree_node(node, lexemes[index])
-        index += 1
         return True
 
     if _continue:
