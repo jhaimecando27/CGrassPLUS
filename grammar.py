@@ -144,7 +144,7 @@ FIRST_SET = {
     ],
     "<cond-operator>": ["==", "!=", ">", "<", ">=", "<=", "=&", "=/", "at", "nut"],
     "<supply-dirt>": ["getItems", "getKeys", "getValues"],
-    "<insert-func>": ["(", "EPSILON"],
+    "<insert-func>": ["#", "(", "EPSILON"],
     "<instance-grab>": [",", "EPSILON"],
     "<indexing>": ["[", "EPSILON"],
     "insert-index>": ["tint literal", "string literal"],

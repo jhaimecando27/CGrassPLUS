@@ -33,7 +33,6 @@ def is_semantic_valid(output_instance: object, lexer_output: object) -> bool:
 
             # "<name>("
             col += 2
-            print(lexeme[col])
 
             # count parameter
             num_param: int = 0
@@ -100,6 +99,23 @@ def is_semantic_valid(output_instance: object, lexer_output: object) -> bool:
                         == symbol_table[lexeme[col + 3]]["type"]
                     ):
                         col += 4
+                        print(symbol_table[lexeme[col - 1]]["kind"])
+                        if symbol_table[lexeme[col - 1]]["kind"] == "function":
+                            key = lexeme[col - 1]
+                            # count parameter
+                            num_param: int = 0
+                            while lexeme[col] != ")":
+                                num_param += 1
+                                while lexeme[col] != "," and lexeme[col] != ")":
+                                    col += 1
+                                    if lexeme[col] == ",":
+                                        col += 1
+                                        break
+                            # ERROR - number of parameter mismatch
+                            if num_param != symbol_table[key]["properties"]["num_param"]:
+                                output_instance.set_output(
+                                    f"Semantic Error: number of parameter/s doesnt match at {row}"
+                                )
                         continue
                     else:
                         output_instance.set_output(
@@ -135,6 +151,21 @@ def is_semantic_valid(output_instance: object, lexer_output: object) -> bool:
                         == symbol_table[lexeme[col + 3]]["type"]
                     ):
                         col += 4
+
+                        print(symbol_table[lexeme[col - 1]]["kind"])
+                        if symbol_table[lexeme[col - 1]]["kind"] == "function":
+                            key = lexeme[col - 1]
+                            # count parameter
+                            num_param: int = 0
+                            while lexeme[col] != ")":
+                                num_param += 1
+                                while lexeme[col] != "," and lexeme[col] != ")":
+                                    col += 1
+                                    if lexeme[col] == ",":
+                                        col += 1
+                                        break
+                            if num_param != lexeme[key]["properties"]["num_param"]:
+                                print("error")
                         continue
                     else:
                         # ERROR - type mismatch
@@ -150,7 +181,7 @@ def is_semantic_valid(output_instance: object, lexer_output: object) -> bool:
                         )
                         return False
                 else:
-                    # ERROR - variable is hard (constant)
+                    # ERROR - variable is immutable (constant)
                     output_instance.set_output(
                         f"Semantic Error: Cannot update immutable variable '{lexeme[col]}' at line {row}"
                     )

@@ -466,6 +466,7 @@ def _insert_operation(node: classmethod) -> None:
 def _data(node: classmethod) -> None:
     global index
 
+    print(lexemes[index + 2])
     if _is_match(True, "tint literal", node):
         pass
 
@@ -482,11 +483,10 @@ def _data(node: classmethod) -> None:
         pass
 
     elif _is_match(True, "#", node):
-        pass
 
-    elif _is_match(True, "<insert-func>", node):
-        child_node = add_parse_tree_node(node, "<insert-func>")
-        _insert_func(child_node)
+        if _is_match(True, "<insert-func>", node):
+            child_node = add_parse_tree_node(node, "<insert-func>")
+            _insert_func(child_node)
 
         if _is_match(True, "<indexing>", node):
             child_node = add_parse_tree_node(node, "<indexing>")
@@ -496,7 +496,7 @@ def _data(node: classmethod) -> None:
             child_node = add_parse_tree_node(node, "<start-end-step>")
             _start_end_step(child_node)
 
-        if _is_match(True, "<concatenate>", node):
+        if tokens[index] == "string literal" and _is_match(True, "<concatenate>", node):
             child_node = add_parse_tree_node(node, "<concatenate>")
             _concatenate(child_node)
 
@@ -741,6 +741,22 @@ def _flora(node: classmethod) -> None:
         errors.append((lexemes[index], "Syntax Error: Expecting <flora>"))
 
 
+def _concatenate(node: classmethod) -> None:
+    if _is_match(True, "<indexing>", node):
+        child_node = add_parse_tree_node(node, "<indexing>")
+        _indexing(child_node)
+
+        if _is_match(False, "+", node):
+            pass
+
+        if _is_match(True, "<all-type-value>", node):
+            child_node = add_parse_tree_node(node, "<all-type-value>")
+            _all_type_value(child_node)
+
+        if _is_match(True, "<concatenate>", node):
+            child_node = add_parse_tree_node(node, "<concatenate>")
+            _concatenate(child_node)
+
 # #60-#61: <condition> ->
 # <data> <operate-logic> |
 # <sequence> <operate-logic>
@@ -850,7 +866,7 @@ def _insert_func(node: classmethod) -> None:
             child_node = add_parse_tree_node(node, "<argument>")
             _argument(child_node)
 
-        if _is_match(True, ")", node):
+        if _is_match(False, ")", node):
             pass
 
         if _is_match(True, "<instance-grab>", node):
