@@ -62,7 +62,7 @@ def _is_match(_continue: bool, expected: str, node: classmethod = None) -> bool:
         line_number += 1
         index += 1
 
-    if g.FIRST_SET.get(expected) is not None:
+    if expected in g.FIRST_SET:
         print(f"Checking {lexemes[index]} with {expected}")
         if (
             lexemes[index] in g.FIRST_SET[expected]
@@ -157,7 +157,7 @@ def _program(node: classmethod) -> None:
         child_node = add_parse_tree_node(node, "<function>")
         _function(child_node)
 
-    if _is_match(True, "plant", node):
+    if _is_match(False, "plant", node):
         pass
 
 
@@ -1811,6 +1811,7 @@ def _function(node: classmethod) -> None:
 
     if _is_match(True, "<common-type>", node):
         child_node = add_parse_tree_node(node, "<common-type>")
+        _common_type(child_node)
 
         if _is_match(True, "#", node):
             pass
@@ -1910,8 +1911,9 @@ def _add_at(node: classmethod) -> None:
 # <sqnc-type> # <sqnc-value> <next-parameter> |
 # # ( <parameter> ) <next-parameter> | EPSILON
 def _parameter(node: classmethod) -> None:
+    global index
 
-    if _is_match(True, "<undefined-param>", node):
+    if _is_match(True, "<undefined-param>", node) and lexemes[index + 1] == "*":
         child_node = add_parse_tree_node(node, "<undefined-param>")
         _undefined_param(child_node)
 
@@ -1965,7 +1967,7 @@ def _parameter(node: classmethod) -> None:
 # #179-#180: <undefined-param> -> <common-type> *# <add-kwargs>
 def _undefined_param(node: classmethod) -> None:
 
-    if _is_match(True, "<common-type>", node):
+    if _is_match(False, "<common-type>", node):
         child_node = add_parse_tree_node(node, "<common-type>")
         _common_type(child_node)
 

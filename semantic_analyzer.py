@@ -1,13 +1,17 @@
 import redef
 
+symbol_table = {}
+
+
 def is_semantic_valid(output_instance: object, lexer_output: object) -> bool:
     avoid = ["<space>", "<--", "-->", "?"]
     lexer_output = [x for x in lexer_output if x[1] not in avoid]
     lexer_output.append(("EOF", "EOF"))
     token, lexeme = zip(*lexer_output)
+    fern_depth: int = 0
+    leaf_depth: int = 0
+    willow_depth: int = 0
     print(token)
-
-    symbol_table = {}
 
     datatypes = ["hard", "tint", "flora", "string", "chard", "bloom"]
 
@@ -15,18 +19,57 @@ def is_semantic_valid(output_instance: object, lexer_output: object) -> bool:
     row: int = 1
     col: int = 0
     while token[col] != "EOF":
-        print(lexeme[col])
         if (
-            token[col] == redef.ID
-            and lexeme[col - 2] in datatypes
-            and lexeme[col + 1] == "("
-        ):
-            symbol_table[lexeme[col]] = {
+            (token[col] == redef.ID and lexeme[col - 2] in datatypes)
+            or lexeme[col] == "garden"
+        ) and lexeme[col + 1] == "(":
+            key = lexeme[col]
+            type = lexeme[col - 2] if lexeme[col] != "garden" else "garden"
+            symbol_table[key] = {
                 "kind": "function",
-                "type": lexeme[col - 2],
-                "properties": None,
+                "type": type,
                 "location": {"row": row, "col": col + 1},
             }
+
+            # "<name>("
+            col += 2
+            print(lexeme[col])
+
+            # count parameter
+            num_param: int = 0
+            while lexeme[col] != ")":
+                num_param += 1
+                while lexeme[col] != "," and lexeme[col] != ")":
+                    col += 1
+                    if lexeme[col] == ",":
+                        col += 1
+                        break
+            col += 1
+
+            if lexeme[col] == "(":
+                start: int = (row, col)
+                temp: int = 1
+                col += 1
+
+                # finding end function body
+                while temp != 2:
+                    if lexeme[col] == "<newline>":
+                        row += 1
+
+                    if lexeme[col] == "(":
+                        temp -= 1
+                    elif lexeme[col] == ")":
+                        temp += 1
+                    col += 1
+
+                end = (row, col)
+
+                symbol_table[key]["properties"] = {
+                    "num_param": num_param,
+                    "start": start,
+                    "end": end,
+                }
+
         if lexeme[col] == "<newline>":
             row += 1
 
@@ -37,7 +80,11 @@ def is_semantic_valid(output_instance: object, lexer_output: object) -> bool:
     while token[col] != "EOF":
 
         # Initialize variable
-        if token[col] == redef.ID and lexeme[col - 2] in datatypes:
+        if (
+            token[col] == redef.ID
+            and lexeme[col - 2] in datatypes
+            and lexeme[col + 1] != "("
+        ):
             symbol_table[lexeme[col]] = {
                 "kind": redef.ID,
                 "type": lexeme[col - 2],
@@ -77,7 +124,12 @@ def is_semantic_valid(output_instance: object, lexer_output: object) -> bool:
             and token[col + 3] == redef.ID
         ):
             if lexeme[col] in symbol_table and lexeme[col + 3] in symbol_table:
-                if symbol_table[lexeme[col]]["properties"] != "hard":
+
+                # avoid immutable
+                if (
+                    symbol_table[lexeme[col]]["properties"] != "hard"
+                    and symbol_table[lexeme[col]]["properties"] != "tulip"
+                ):
                     if (
                         symbol_table[lexeme[col]]["type"]
                         == symbol_table[lexeme[col + 3]]["type"]
@@ -100,7 +152,7 @@ def is_semantic_valid(output_instance: object, lexer_output: object) -> bool:
                 else:
                     # ERROR - variable is hard (constant)
                     output_instance.set_output(
-                        f"Semantic Error: Cannot update hard variable '{lexeme[col]}' at line {row}"
+                        f"Semantic Error: Cannot update immutable variable '{lexeme[col]}' at line {row}"
                     )
                     return False
             else:
@@ -110,6 +162,18 @@ def is_semantic_valid(output_instance: object, lexer_output: object) -> bool:
                     f"Semantic Error: Variable '{lexeme[col]}' not initialized at line {row}"
                 )
                 return False
+
+        if lexeme[col] == "leaf":
+            leaf_depth += 1
+
+        if lexeme[col] == "fern":
+            leaf_depth += 1
+
+        if lexeme[col] == "willow":
+            leaf_depth += 1
+
+        # TODO: check num param
+
         if lexeme[col] == "<newline>":
             row += 1
         col += 1

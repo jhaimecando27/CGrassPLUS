@@ -75,3 +75,5 @@ STR_LIT = "string literal"
 CHR_LIT = "chard literal"
 ID = "Identifier"
 BL = "Bloom Literal"
+
+datatypes = ["tint", "flora", "string", "bloom"]
