@@ -98,6 +98,7 @@ def is_semantic_valid(output_instance: object, lexer_output: object) -> bool:
                         symbol_table[lexeme[col]]["type"]
                         == symbol_table[lexeme[col + 3]]["type"]
                     ):
+
                         col += 4
                         print(symbol_table[lexeme[col - 1]]["kind"])
                         if symbol_table[lexeme[col - 1]]["kind"] == "function":
@@ -129,7 +130,7 @@ def is_semantic_valid(output_instance: object, lexer_output: object) -> bool:
                         return False
                 else:
                     output_instance.set_output(
-                        f"Semantic Error: Variable '{lexeme[col + 2]}{lexeme[col + 3]}' not initialized at line {row}"
+                        f"Semantic Error: Variable '{lexeme[col + 2]}{lexeme[col + 3]}' is undeclared at line {row}"
                     )
                     return False
 
@@ -190,7 +191,7 @@ def is_semantic_valid(output_instance: object, lexer_output: object) -> bool:
                 # ERROR - variable not initialized
                 print(symbol_table)
                 output_instance.set_output(
-                    f"Semantic Error: Variable '{lexeme[col]}' not initialized at line {row}"
+                    f"Semantic Error: Variable '{lexeme[col]}' is undeclared at line {row}"
                 )
                 return False
 

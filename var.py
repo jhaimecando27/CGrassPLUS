@@ -2,15 +2,17 @@ symbol_table: dict = {}
 
 
 class ParseTreeNode:
-    def __init__(self, symbol: str):
+    def __init__(self, symbol: str, level=0):
         self.symbol = symbol
+        self.level = level
         self.children = []
 
     def add_child(self, child):
+        child.level = self.level + 1
         self.children.append(child)
 
     def __str__(self):
-        return str(self.symbol)
+        return f"{self.symbol} (Level: {self.level})"
 
 
 parse_tree_root = ParseTreeNode("<program>")

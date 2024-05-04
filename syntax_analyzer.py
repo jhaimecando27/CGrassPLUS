@@ -785,10 +785,15 @@ def _condition(node: classmethod) -> None:
 
 # #62-#63: <operate-logic> -> <cond-operator> <open-parenthesis> <condition> <close-parenthesis> | EPSILON
 def _operate_logic(node: classmethod) -> None:
+    global index
 
     if _is_match(True, "<cond-operator>", node):
         child_node = add_parse_tree_node(node, "<cond-operator>")
         _cond_operator(child_node)
+        is_true = False
+
+        if lexemes[index] == "(":
+            is_true = True
 
         if _is_match(True, "<open-parenthesis>", node):
             child_node = add_parse_tree_node(node, "<open-parenthesis>")
@@ -798,7 +803,7 @@ def _operate_logic(node: classmethod) -> None:
             child_node = add_parse_tree_node(node, "<condition>")
             _condition(child_node)
 
-        if _is_match(True, "<close-parenthesis>", node):
+        if is_true and _is_match(True, "<close-parenthesis>", node):
             child_node = add_parse_tree_node(node, "<close-parenthesis>")
             _close_parenthesis(child_node)
 
