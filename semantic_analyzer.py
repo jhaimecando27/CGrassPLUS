@@ -8,9 +8,6 @@ def is_semantic_valid(output_instance: object, lexer_output: object) -> bool:
     lexer_output = [x for x in lexer_output if x[1] not in avoid]
     lexer_output.append(("EOF", "EOF"))
     token, lexeme = zip(*lexer_output)
-    fern_depth: int = 0
-    leaf_depth: int = 0
-    willow_depth: int = 0
     print(token)
 
     datatypes = ["hard", "tint", "flora", "string", "chard", "bloom"]
@@ -84,11 +81,20 @@ def is_semantic_valid(output_instance: object, lexer_output: object) -> bool:
             and lexeme[col - 2] in datatypes
             and lexeme[col + 1] != "("
         ):
+            data = lexeme[col + 2] if token[col + 2] != redef.ID else symbol_table[lexeme[col + 2]]["data"]
+
+            if token[col + 3] == redef.ID:
+                if symbol_table[lexeme[col + 3]]["data"] == "<newline>":
+                    output_instance.set_output(
+                        f"Semantic Error: using uninitialized variable at {row}"
+                    )
+
             symbol_table[lexeme[col]] = {
                 "kind": redef.ID,
                 "type": lexeme[col - 2],
                 "properties": "hard" if lexeme[col - 3] == "hard" else None,
                 "location": {"row": row, "col": col + 1},
+                "data": data,
             }
 
             # TYPE CHECKING: check if assignment variable is initialized
@@ -195,14 +201,14 @@ def is_semantic_valid(output_instance: object, lexer_output: object) -> bool:
                 )
                 return False
 
-        if lexeme[col] == "leaf":
-            leaf_depth += 1
+        if token[col] == redef.ID and lexeme[col + 1] == "=":
+            if lexeme[col] in symbol_table and symbol_table[lexeme[col]]["properties"] == "hard":
+                output_instance.set_output(
+                        f"Semantic Error: Cannot update immutable variable '{lexeme[col]}' at line {row}"
+                        )
+                return False
 
-        if lexeme[col] == "fern":
-            leaf_depth += 1
 
-        if lexeme[col] == "willow":
-            leaf_depth += 1
 
         # TODO: check num param
 

@@ -69,17 +69,17 @@ def _is_match(_continue: bool, expected: str, node: classmethod = None) -> bool:
             or tokens[index] in g.FIRST_SET[expected]
         ):
             print(f"Matched {lexemes[index]} with {expected}")
-            output.set_output(f"Matched {lexemes[index]} with {expected}\n")
+            #output.set_output(f"Matched {lexemes[index]} with {expected}\n")
             return True
 
         elif "EPSILON" in g.FIRST_SET[expected]:
             print(f"Skipping {expected} : {lexemes[index]}")
-            output.set_output(f"Skipping {expected} : {lexemes[index]}\n")
+            #output.set_output(f"Skipping {expected} : {lexemes[index]}\n")
             return False
 
         if _continue:
             print(f"Skipping {expected}")
-            output.set_output(f"Skipping {expected}\n")
+            #output.set_output(f"Skipping {expected}\n")
             return False
 
         print(f"Syntax Error: {expected} not found : {expected}")
@@ -93,14 +93,14 @@ def _is_match(_continue: bool, expected: str, node: classmethod = None) -> bool:
 
     if tokens[index] == expected:
         print(f"Matched {lexemes[index]} with {expected}")
-        output.set_output(f"Matched {lexemes[index]} with {expected}\n")
+        #output.set_output(f"Matched {lexemes[index]} with {expected}\n")
         add_parse_tree_node(node, expected)
         index += 1
         return True
 
     elif lexemes[index] == expected:
         print(f"Matched {lexemes[index]} with {expected}")
-        output.set_output(f"Matched {lexemes[index]} with {expected}\n")
+        #output.set_output(f"Matched {lexemes[index]} with {expected}\n")
         if lexemes[index] == "#":
             add_parse_tree_node(node, lexemes[index] + lexemes[index + 1])
             index += 2
@@ -111,12 +111,43 @@ def _is_match(_continue: bool, expected: str, node: classmethod = None) -> bool:
 
     if _continue:
         print(f"Skipping {expected}")
-        output.set_output(f"Skipping {expected}\n")
+        #output.set_output(f"Skipping {expected}\n")
         return False
 
     print(f"Syntax Error: Expecting {expected} : But found {lexemes[index]}")
     errors.append((lexemes[index], f"Syntax Error: Expecting {expected}"))
     return False
+
+
+def _is_exist(expected: str) -> True:
+    """
+    Check if the expected token is in the current line
+    :param expected: str: The expected token, can be a terminal or non-terminal
+    :return: bool: True if the token is in the current line, False otherwise
+    """
+    global index, lexemes
+
+    if g.FIRST_SET.get(expected) is not None:
+        avoid: list[str] = g.FIRST_SET[expected]
+
+        for word in lexemes[index:]:
+            if word == "<newline>":
+                return False
+
+            if word in avoid:
+                break
+
+    else:
+        words: list[str] = lexemes[index:]
+
+        for word in words:
+            if word == "<newline>":
+                return False
+
+            if word == expected:
+                break
+
+    return True
 
 
 # 1
@@ -220,7 +251,7 @@ def _statement(node: classmethod) -> None:
             child_node = add_parse_tree_node(node, "<statement>")
             _statement(child_node)
 
-    elif _is_match(True, "<i/o-statement>", node):
+    elif (_is_exist("mint") or _is_exist("inpetal")) and _is_match(True, "<i/o-statement>", node):
         child_node = add_parse_tree_node(node, "<i/o-statement>")
         _i_o_statement(child_node)
 
@@ -232,6 +263,8 @@ def _statement(node: classmethod) -> None:
             _statement(child_node)
 
     elif _is_match(True, "leaf", node):
+        if node.con_level > 3:
+            errors.append((lexemes[index], "exceeds max nested conditional (3)"))
 
         if _is_match(False, "(", node):
             pass
