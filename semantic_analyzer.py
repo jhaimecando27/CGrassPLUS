@@ -215,3 +215,5 @@ def is_semantic_valid(output_instance: object, lexer_output: object) -> bool:
         if lexeme[col] == "<newline>":
             row += 1
         col += 1
+
+        return True

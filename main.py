@@ -142,9 +142,11 @@ class _HeadersFrame(tk.Frame):
                 lexer_output,
             ):
                 print_parse_tree()
-                is_semantic_valid(self.output_instance, lexer_output)
-                print(symbol_table)
-                generate(self.code_editor_instance.get_text(), self.output_instance)
+                if is_semantic_valid(self.output_instance, lexer_output):
+                    print(symbol_table)
+                    self.output_instance.set_output("SemanticAnalyser: No Errors Found.\n")
+                    generate(self.code_editor_instance.get_text(), self.output_instance)
+
 
 
 class OutputFrame(tk.Frame):
@@ -243,7 +245,7 @@ class _MainFrame(tk.Frame):
 if __name__ == "__main__":
     # Create the main window
     window = tk.Tk()
-    window.title("Compiler")
+    window.title("CGrassPlus Compiler")
     window.minsize(800, 600)
 
     # Create the main app

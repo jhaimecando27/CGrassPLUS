@@ -2,28 +2,72 @@ symbol_table: dict = {}
 
 
 class ParseTreeNode:
-    def __init__(self, symbol: str, level=0):
+    def __init__(self, symbol: str, level=0, con_level=0, itr_level=0):
         self.symbol = symbol
         self.level = level
         self.children = []
-        self.con_level = 0
+        self.con_level = con_level
+        self.itr_level = itr_level
+
+        self.kind = None
+        self.type = None
+        self.properties = {}
+        self.line_number = None
 
     def add_child(self, child):
-        child.level = self.level + 1
-        if child.symbol == "leaf":
-            self.con_level += 1
+        child.level = self.level
+        if self.symbol[1:] != "<" and self.symbol[-1] != ">":
+            child.level += 1
         child.con_level = self.con_level
+        child.itr_level = self.itr_level
+
+        if child.symbol in ["leaf", "eleaf", "moss"]:
+            child.con_level += 1
+
+        if child.symbol in ["fern", "willow"]:
+            child.itr_level += 1
 
         self.children.append(child)
 
+    def set_kind(self, kind):
+        self.kind = kind
+
+    def set_type(self, type_):
+        self.type = type_
+
+    def set_properties(self, properties):
+        self.properties.update(properties)
+
+    def set_line_number(self, line_number):
+        self.line_number = line_number
+
+    def set_data(self, data):
+        self.data = data
+
     def __str__(self):
-        return f"{self.symbol} (Level: {self.level}) (Con Level: {self.con_level})"
+        output: str = ""
+        output += "" if self.con_level == 0 else f" (Con Level: {self.con_level})"
+        output += "" if self.itr_level == 0 else f" (Itr Level: {self.itr_level})"
+        output += "" if self.kind is None else f" (kind: {self.kind})"
+        output += "" if self.type is None else f" (type: {self.type})"
+        output += f" (level: {self.level})"
+        output += "" if self.line_number is None else f" (line number: {self.line_number})"
+        output += "" if len(self.properties) == 0 else f" (properties: {self.properties})"
+        if output != "":
+            output = "-" + output
+        return f"{self.symbol} {output}"
 
 
 parse_tree_root = ParseTreeNode("<program>")
 
 
 def add_parse_tree_node(parent, symbol):
+    """
+    Add a new node to the parse tree.
+    :param parent: The parent node.
+    :param symbol: The symbol of the new node.
+    :return: The new node.
+    """
     if symbol == "<newline>":
         return
     new_node = ParseTreeNode(symbol)

@@ -69,17 +69,14 @@ def _is_match(_continue: bool, expected: str, node: classmethod = None) -> bool:
             or tokens[index] in g.FIRST_SET[expected]
         ):
             print(f"Matched {lexemes[index]} with {expected}")
-            #output.set_output(f"Matched {lexemes[index]} with {expected}\n")
             return True
 
         elif "EPSILON" in g.FIRST_SET[expected]:
             print(f"Skipping {expected} : {lexemes[index]}")
-            #output.set_output(f"Skipping {expected} : {lexemes[index]}\n")
             return False
 
         if _continue:
             print(f"Skipping {expected}")
-            #output.set_output(f"Skipping {expected}\n")
             return False
 
         print(f"Syntax Error: {expected} not found : {expected}")
@@ -91,33 +88,35 @@ def _is_match(_continue: bool, expected: str, node: classmethod = None) -> bool:
         )
         return False
 
-    if tokens[index] == expected:
+    elif tokens[index] == expected:
         print(f"Matched {lexemes[index]} with {expected}")
-        #output.set_output(f"Matched {lexemes[index]} with {expected}\n")
-        add_parse_tree_node(node, expected)
+        if node is not None:
+            data_node = add_parse_tree_node(node, lexemes[index])
+            data_node.kind = "data"
+            data_node.type = tokens[index]
         index += 1
         return True
 
     elif lexemes[index] == expected:
         print(f"Matched {lexemes[index]} with {expected}")
-        #output.set_output(f"Matched {lexemes[index]} with {expected}\n")
         if lexemes[index] == "#":
-            add_parse_tree_node(node, lexemes[index] + lexemes[index + 1])
+            if node is not None:
+                id = add_parse_tree_node(node, lexemes[index] + lexemes[index + 1])
+                id.set_kind(tokens[index + 1])
             index += 2
         else:
-            add_parse_tree_node(node, expected)
+            if node is not None:
+                add_parse_tree_node(node, expected)
             index += 1
         return True
 
     if _continue:
         print(f"Skipping {expected}")
-        #output.set_output(f"Skipping {expected}\n")
         return False
 
     print(f"Syntax Error: Expecting {expected} : But found {lexemes[index]}")
     errors.append((lexemes[index], f"Syntax Error: Expecting {expected}"))
     return False
-
 
 def _is_exist(expected: str) -> True:
     """
@@ -157,35 +156,32 @@ def _program(node: classmethod) -> None:
     if _is_match(False, "seed", node):
         pass
 
-    if _is_match(True, "<global>", node):
-        child_node = add_parse_tree_node(node, "<global>")
-        _global(child_node)
+    if _is_match(True, "<global>"):
+        _global(node)
 
-    if _is_match(False, "garden", node):
-        pass
+    if _is_match(False, "garden"):
+        child_node = add_parse_tree_node(node, "garden")
 
-    if _is_match(False, "(", node):
-        pass
+        if _is_match(False, "("):
+            pass
 
-    if _is_match(False, ")", node):
-        pass
+        if _is_match(False, ")"):
+            pass
 
-    if _is_match(False, "(", node):
-        pass
-    # )
+        if _is_match(False, "("):
+            pass
+        # )
 
-    if _is_match(True, "<statement>", node):
-        child_node = add_parse_tree_node(node, "<statement>")
-        _statement(child_node)
+        if _is_match(True, "<statement>"):
+            _statement(child_node)
 
-    if _is_match(False, ")", node):
-        pass
+        if _is_match(False, ")"):
+            pass
 
-    if _is_match(False, ";", node):
+    if _is_match(False, ";"):
         pass
 
     if _is_match(True, "<function>", node):
-        child_node = add_parse_tree_node(node, "<function>")
         _function(child_node)
 
     if _is_match(False, "plant", node):
@@ -194,30 +190,32 @@ def _program(node: classmethod) -> None:
 
 # #2,#3: <global> -> floral <constant> <insert-variable>; <global> | EPSILON
 def _global(node: classmethod) -> None:
+    var_node = add_parse_tree_node(node, "<variable>")
+    var_node.properties["global"] = True
 
-    if _is_match(True, "floral", node):
+    if _is_match(True, "floral"):
         pass
 
-    if _is_match(True, "<constant>", node):
-        child_node = add_parse_tree_node(node, "<constant>")
-        _constant(child_node)
+    if _is_match(True, "<constant>"):
+        _constant(var_node)
+        var_node.properties["constant"] = True
+    elif lexemes[index] in g.FIRST_SET["<insert-variable>"]:
+        var_node.properties["constant"] = False
 
-    if _is_match(True, "<insert-variable>", node):
-        child_node = add_parse_tree_node(node, "<insert-variable>")
-        _insert_variable(child_node)
+    if _is_match(True, "<insert-variable>"):
+        _insert_variable(var_node)
 
-    if _is_match(True, ";", node):
+    if _is_match(True, ";"):
         pass
 
     if _is_match(True, "<global>", node):
-        child_node = add_parse_tree_node(node, "<global>")
-        _global(child_node)
+        _global(node)
 
 
 # #4, #5: <constant> -> hard | EPISLON
 def _constant(node: classmethod) -> None:
 
-    if _is_match(True, "hard", node):
+    if _is_match(True, "hard"):
         pass
 
 
@@ -232,142 +230,136 @@ def _constant(node: classmethod) -> None:
 # break; <statement> |
 # EPSILON
 def _statement(node: classmethod) -> None:
+    stmt_node = add_parse_tree_node(node, "<statement>")
 
-    if _is_match(True, "<constant>", node) or _is_match(
-        True, "<insert-variable>", node
-    ):
-        if _is_match(True, "<constant>", node):
-            child_node = add_parse_tree_node(node, "<constant>")
-            _constant(child_node)
+    if _is_match(True, "<constant>") or _is_match(True, "<insert-variable>"):
+        stmt_node.properties["global"] = False
 
-        if _is_match(False, "<insert-variable>", node):
-            child_node = add_parse_tree_node(node, "<insert-variable>")
-            _insert_variable(child_node)
+        if _is_match(True, "<constant>"):
+            _constant(stmt_node)
+            stmt_node.properties["constant"] = True
+        elif lexemes[index] in g.FIRST_SET["<insert-variable>"]:
+            stmt_node.properties["constant"] = False
 
-        if _is_match(False, ";", node):
+        if _is_match(False, "<insert-variable>"):
+            _insert_variable(stmt_node)
+
+        if _is_match(False, ";"):
             pass
 
-        if _is_match(True, "<statement>", node):
-            child_node = add_parse_tree_node(node, "<statement>")
-            _statement(child_node)
+        if _is_match(True, "<statement>"):
+            _statement(node)
 
-    elif (_is_exist("mint") or _is_exist("inpetal")) and _is_match(True, "<i/o-statement>", node):
-        child_node = add_parse_tree_node(node, "<i/o-statement>")
-        _i_o_statement(child_node)
+    elif _is_match(True, "<i/o-statement>") and (_is_exist("mint") or _is_exist("inpetal")):
+        stmt_node.kind = "i/o"
+        _i_o_statement(stmt_node)
 
-        if _is_match(False, ";", node):
+        if _is_match(False, ";"):
             pass
 
-        if _is_match(True, "<statement>", node):
-            child_node = add_parse_tree_node(node, "<statement>")
-            _statement(child_node)
+        if _is_match(True, "<statement>"):
+            _statement(node)
 
-    elif _is_match(True, "leaf", node):
-        if node.con_level > 3:
-            errors.append((lexemes[index], "exceeds max nested conditional (3)"))
+    elif _is_match(True, "leaf"):
+        stmt_node.kind = "if"
+        leaf_node = add_parse_tree_node(stmt_node, "leaf")
 
-        if _is_match(False, "(", node):
+        if _is_match(False, "("):
             pass
 
-        if _is_match(False, "<condition>", node):
-            child_node = add_parse_tree_node(node, "<condition>")
+        if _is_match(False, "<condition>"):
+            child_node = add_parse_tree_node(leaf_node, "<condition>")
             _condition(child_node)
 
-        if _is_match(False, ")", node):
+        if _is_match(False, ")"):
             pass
 
-        if _is_match(False, "(", node):
+        if _is_match(False, "("):
             pass
 
-        if _is_match(False, "<statement>", node):
-            child_node = add_parse_tree_node(node, "<statement>")
-            _statement(child_node)
+        if _is_match(False, "<statement>"):
+            _statement(leaf_node)
 
-        if _is_match(False, ")", node):
+        if _is_match(False, ")"):
             pass
 
-        if _is_match(False, ";", node):
+        if _is_match(False, ";"):
             pass
 
-        if _is_match(False, "<eleaf>", node):
-            child_node = add_parse_tree_node(node, "<eleaf>")
-            _eleaf(child_node)
+        if _is_match(False, "<eleaf>"):
+            _eleaf(stmt_node)
 
-        if _is_match(False, "<else>", node):
-            child_node = add_parse_tree_node(node, "<else>")
-            _else(child_node)
+        if _is_match(False, "<else>"):
+            _else(stmt_node)
 
-        if _is_match(True, "<statement>", node):
-            child_node = add_parse_tree_node(node, "<statement>")
-            _statement(child_node)
+        if _is_match(True, "<statement>"):
+            _statement(node)
 
-    elif _is_match(True, "<assignment>", node):
-        child_node = add_parse_tree_node(node, "<assignment>")
-        _assignment(child_node)
+    elif _is_match(True, "<assignment>"):
+        stmt_node.kind = "assignment"
+        _assignment(stmt_node)
 
-        if _is_match(False, ";", node):
+        if _is_match(False, ";"):
             pass
 
-        if _is_match(True, "<statement>", node):
-            child_node = add_parse_tree_node(node, "<statement>")
-            _statement(child_node)
+        if _is_match(True, "<statement>"):
+            _statement(node)
 
-    elif _is_match(True, "<iterative>", node):
-        child_node = add_parse_tree_node(node, "<iterative>")
-        _iterative(child_node)
+    elif _is_match(True, "<iterative>"):
+        stmt_node.kind = "iterative"
+        _iterative(stmt_node)
 
-        if _is_match(False, ";", node):
+        if _is_match(False, ";"):
             pass
 
-        if _is_match(True, "<statement>", node):
-            child_node = add_parse_tree_node(node, "<statement>")
-            _statement(child_node)
+        if _is_match(True, "<statement>"):
+            _statement(node)
 
-    elif _is_match(True, "tree", node):
+    elif _is_match(True, "tree"):
+        tree_node = add_parse_tree_node(stmt_node, "tree")
 
-        if _is_match(False, "(", node):
+        if _is_match(False, "("):
             pass
 
-        if _is_match(False, "#", node):
+        if _is_match(False, "#", tree_node):
             pass
 
-        if _is_match(True, ")", node):
+        if _is_match(True, ")"):
             pass
 
-        if _is_match(False, "branch", node):
+        if _is_match(False, "("):
             pass
 
-        if _is_match(False, "<check-branch>", node):
-            child_node = add_parse_tree_node(node, "<check-branch>")
-            _check_branch(child_node)
-
-        if _is_match(False, ")", node):
+        if _is_match(False, "branch", tree_node):
             pass
 
-        if _is_match(False, ";", node):
+        if _is_match(False, "<check-branch>"):
+            _check_branch(tree_node)
+
+        if _is_match(False, ")"):
             pass
 
-        if _is_match(True, "<statement>", node):
-            child_node = add_parse_tree_node(node, "<statement>")
-            _statement(child_node)
-
-    elif _is_match(True, "clear", node):
-
-        if _is_match(False, ";", node):
+        if _is_match(False, ";"):
             pass
 
-        if _is_match(True, "<statement>", node):
-            child_node = add_parse_tree_node(node, "<statement>")
-            _statement(child_node)
+        if _is_match(True, "<statement>"):
+            _statement(node)
 
-    elif _is_match(True, "break", node):
+    elif _is_match(True, "clear", stmt_node):
 
-        if _is_match(False, ";", node):
+        if _is_match(False, ";"):
             pass
 
-        if _is_match(True, "<statement>", node):
-            child_node = add_parse_tree_node(node, "<statement>")
-            _statement(child_node)
+        if _is_match(True, "<statement>"):
+            _statement(node)
+
+    elif _is_match(True, "break", stmt_node):
+
+        if _is_match(False, ";"):
+            pass
+
+        if _is_match(True, "<statement>"):
+            _statement(node)
 
 
 # #15,#16: <insert-variable> ->
@@ -375,36 +367,35 @@ def _statement(node: classmethod) -> None:
 # <sqnc-type> # <sqnc-value> <more-sqnc>
 def _insert_variable(node: classmethod) -> None:
     global index
+    node.set_kind("variable")
+    node.line_number = line_number
 
-    if _is_match(True, "<common-type>", node):
-        child_node = add_parse_tree_node(node, "<common-type>")
-        _common_type(child_node)
+    if _is_match(True, "<common-type>"):
+        _common_type(node)
+        child_node = add_parse_tree_node(node, lexemes[index] + lexemes[index + 1])
 
-        if _is_match(False, "#", node):
+        if _is_match(False, "#"):
             pass
 
-        if _is_match(True, "<common-data>", node):
-            child_node = add_parse_tree_node(node, "<common-data>")
+        child_node.set_kind(tokens[index - 1])
+
+        if _is_match(True, "<common-data>"):
             _common_data(child_node)
 
-        if _is_match(True, "<more-data>", node):
-            child_node = add_parse_tree_node(node, "<more-data>")
-            _more_data(child_node)
+        if _is_match(True, "<more-data>"):
+            _more_data(node)
 
-    elif _is_match(True, "<sqnc-type>", node):
-        child_node = add_parse_tree_node(node, "<sqnc-type>")
-        _sqnc_type(child_node)
+    elif _is_match(True, "<sqnc-type>"):
+        _sqnc_type(node)
 
         if _is_match(False, "#", node):
             pass
 
-        if _is_match(True, "<sqnc-value>", node):
-            child_node = add_parse_tree_node(node, "<sqnc-value>")
-            _sqnc_value(child_node)
+        if _is_match(True, "<sqnc-value>"):
+            _sqnc_value(node)
 
-        if _is_match(True, "<more-sqnc>", node):
-            child_node = add_parse_tree_node(node, "<more-sqnc>")
-            _more_sqnc(child_node)
+        if _is_match(True, "<more-sqnc>"):
+            _more_sqnc(node)
 
     else:
         errors.append((lexemes[index], "Syntax Error: Expecting <insert-variable>"))
@@ -414,20 +405,20 @@ def _insert_variable(node: classmethod) -> None:
 def _common_type(node: classmethod) -> None:
     global index
 
-    if _is_match(True, "tint", node):
-        pass
+    if _is_match(True, "tint"):
+        node.set_type("int")
 
-    elif _is_match(True, "flora", node):
-        pass
+    elif _is_match(True, "flora"):
+        node.set_type("float")
 
-    elif _is_match(True, "chard", node):
-        pass
+    elif _is_match(True, "chard"):
+        node.set_type("char")
 
-    elif _is_match(True, "string", node):
-        pass
+    elif _is_match(True, "string"):
+        node.set_type("string")
 
-    elif _is_match(True, "bloom", node):
-        pass
+    elif _is_match(True, "bloom"):
+        node.set_type("bool")
     else:
         errors.append((lexemes[index], "Syntax Error: Expecting <common-type>"))
 
@@ -435,10 +426,9 @@ def _common_type(node: classmethod) -> None:
 # #22,#23: <common-data> -> = <insert-data> | EPSILON
 def _common_data(node: classmethod) -> None:
 
-    if _is_match(True, "=", node):
-        if _is_match(False, "<insert-data>", node):
-            child_node = add_parse_tree_node(node, "<insert-data>")
-            _insert_data(child_node)
+    if _is_match(True, "="):
+        if _is_match(False, "<insert-data>"):
+            _insert_data(node)
 
 
 # #24,#25: <insert-data> -> <data> | <open-parenthesis> <insert-operation>
@@ -446,16 +436,13 @@ def _insert_data(node: classmethod) -> None:
     global index
 
     if _is_match(True, "<data>", node):
-        child_node = add_parse_tree_node(node, "<data>")
-        _data(child_node)
+        _data(node)
 
-    elif _is_match(True, "<open-parenthesis>", node):
-        child_node = add_parse_tree_node(node, "<open-parenthesis>")
-        _open_parenthesis(child_node)
+    elif _is_match(True, "<open-parenthesis>"):
+        _open_parenthesis(node)
 
-        if _is_match(True, "<insert-operation>", node):
-            child_node = add_parse_tree_node(node, "<insert-operation>")
-            _insert_operation(child_node)
+        if _is_match(True, "<insert-operation>"):
+            _insert_operation(node)
 
     else:
         errors.append((lexemes[index], "Syntax Error: Expecting <insert-data>"))
@@ -467,16 +454,14 @@ def _insert_data(node: classmethod) -> None:
 def _insert_operation(node: classmethod) -> None:
     global index
 
-    if _is_match(True, "<arithmetic>", node):
-        child_node = add_parse_tree_node(node, "<arithmetic>")
-        _arithmetic(child_node)
+    if _is_match(True, "<arithmetic>"):
+        _arithmetic(node)
 
-        if _is_match(False, "<close-parenthesis>", node):
+        if _is_match(False, "<close-parenthesis>"):
             pass
 
-    elif _is_match(True, "<condition>", node):
-        child_node = add_parse_tree_node(node, "<condition>")
-        _condition(child_node)
+    elif _is_match(True, "<condition>"):
+        _condition(node)
 
         if _is_match(False, "<close-parenthesis>", node):
             pass
@@ -497,9 +482,8 @@ def _insert_operation(node: classmethod) -> None:
 # <supply-dirt> ( <all-type-value> ) |
 # bare
 def _data(node: classmethod) -> None:
-    global index
+    global index, lexemes
 
-    print(lexemes[index + 2])
     if _is_match(True, "tint literal", node):
         pass
 
@@ -517,79 +501,64 @@ def _data(node: classmethod) -> None:
 
     elif _is_match(True, "#", node):
 
-        if _is_match(True, "<insert-func>", node):
-            child_node = add_parse_tree_node(node, "<insert-func>")
-            _insert_func(child_node)
+        if _is_match(True, "<insert-func>"):
+            _insert_func(node)
 
-        if _is_match(True, "<indexing>", node):
-            child_node = add_parse_tree_node(node, "<indexing>")
-            _indexing(child_node)
+        if _is_match(True, "<indexing>"):
+            _indexing(node)
 
-        if _is_match(True, "<start-end-step>", node):
-            child_node = add_parse_tree_node(node, "<start-end-step>")
-            _start_end_step(child_node)
+        if _is_match(True, "<start-end-step>"):
+            _start_end_step(node)
 
-        if tokens[index] == "string literal" and _is_match(True, "<concatenate>", node):
-            child_node = add_parse_tree_node(node, "<concatenate>")
-            _concatenate(child_node)
+        if tokens[index] == "string literal" and _is_match(True, "<concatenate>"):
+            _concatenate(node)
 
-        if _is_match(True, "<operate-number>", node):
-            child_node = add_parse_tree_node(node, "<operate-number>")
-            _operate_number(child_node)
+        if _is_match(True, "<operate-number>"):
+            _operate_number(node)
 
-        if _is_match(True, "<operate-logic>", node):
-            child_node = add_parse_tree_node(node, "<operate-logic>")
-            _operate_logic(child_node)
+        if _is_match(True, "<operate-logic>"):
+            _operate_logic(node)
 
     elif _is_match(True, "lent", node):
 
         if _is_match(False, "(", node):
             pass
 
-        if _is_match(True, "<all-type-value>", node):
-            child_node = add_parse_tree_node(node, "<all-type-value>")
-            _all_type_value(child_node)
+        if _is_match(True, "<all-type-value>"):
+            _all_type_value(node)
 
         if _is_match(False, ")", node):
             pass
 
-        if _is_match(True, "<operate-number>", node):
-            child_node = add_parse_tree_node(node, "<operate-number>")
-            _operate_number(child_node)
+        if _is_match(True, "<operate-number>"):
+            _operate_number(node)
 
-    elif _is_match(True, "<common-type>", node):
-        child_node = add_parse_tree_node(node, "<common-type>")
-        _common_type(child_node)
+    elif _is_match(True, "<common-type>"):
+        _common_type(node)
 
         if _is_match(False, "(", node):
             pass
 
-        if _is_match(True, "<all-type-value>", node):
-            child_node = add_parse_tree_node(node, "<all-type-value>")
-            _all_type_value(child_node)
+        if _is_match(True, "<all-type-value>"):
+            _all_type_value(node)
 
-        if _is_match(True, "<concatenate>", node):
-            child_node = add_parse_tree_node(node, "<concatenate>")
-            _concatenate(child_node)
+        if _is_match(True, "<concatenate>"):
+            _concatenate(node)
 
-        if _is_match(True, "<operate-number>", node):
-            child_node = add_parse_tree_node(node, "<operate-number>")
-            _operate_number(child_node)
+        if _is_match(True, "<operate-number>"):
+            _operate_number(node)
 
-        if _is_match(True, "<operate-logic>", node):
-            child_node = add_parse_tree_node(node, "<operate-logic>")
-            _operate_logic(child_node)
+        if _is_match(True, "<operate-logic>"):
+            _operate_logic(node)
 
-    elif _is_match(True, "<supply-dirt>", node):
-        child_node = add_parse_tree_node(node, "<supply-dirt>")
-        _supply_dirt(child_node)
+    elif _is_match(True, "<supply-dirt>"):
+        _supply_dirt(node)
 
         if _is_match(False, "(", node):
             pass
 
-        if _is_match(True, "<all-type-value>", node):
-            child_node = add_parse_tree_node(node, "<all-type-value>")
-            _all_type_value(child_node)
+        if _is_match(True, "<all-type-value>"):
+            _all_type_value(node)
 
         if _is_match(False, ")", node):
             pass
@@ -604,7 +573,7 @@ def _data(node: classmethod) -> None:
 # #38,#39: <open-parenthesis> -> ( | EPSILON
 def _open_parenthesis(node: classmethod) -> None:
 
-    if _is_match(True, "(", node):
+    if _is_match(True, "("):
         pass
 
 
@@ -614,7 +583,7 @@ def _open_parenthesis(node: classmethod) -> None:
 # #40-#41: <close-parenthesis> -> ) | EPSILON
 def _close_parenthesis(node: classmethod) -> None:
 
-    if _is_match(True, ")", node):
+    if _is_match(True, ")"):
         pass
 
 
@@ -622,21 +591,17 @@ def _close_parenthesis(node: classmethod) -> None:
 def _arithmetic(node: classmethod) -> None:
     global index
 
-    if _is_match(True, "<tint>", node):
-        child_node = add_parse_tree_node(node, "<tint>")
-        _tint(child_node)
+    if _is_match(True, "<tint>"):
+        _tint(node)
 
-        if _is_match(True, "<operate-number>", node):
-            child_node = add_parse_tree_node(node, "<operate-number>")
-            _operate_number(child_node)
+        if _is_match(True, "<operate-number>"):
+            _operate_number(node)
 
-    elif _is_match(True, "<flora>", node):
-        child_node = add_parse_tree_node(node, "<flora>")
-        _flora(child_node)
+    elif _is_match(True, "<flora>"):
+        _flora(node)
 
-        if _is_match(True, "<operate-number>", node):
-            child_node = add_parse_tree_node(node, "<operate-number>")
-            _operate_number(child_node)
+        if _is_match(True, "<operate-number>"):
+            _operate_number(node)
 
     else:
         errors.append((lexemes[index], "Syntax Error: Expecting <arithmetic>"))
@@ -645,21 +610,23 @@ def _arithmetic(node: classmethod) -> None:
 # #44-#45: <operate-number> -> <operator> <open-parenthesis> <arithmetic> <close-parenthesis> | EPSILON
 def _operate_number(node: classmethod) -> None:
 
-    if _is_match(True, "<operator>", node):
-        child_node = add_parse_tree_node(node, "<operator>")
-        _operator(child_node)
+    if _is_match(True, "<operator>"):
+        is_div = False
+        if lexemes[index] == "/":
+            is_div = True
+        _operator(node)
 
-        if _is_match(True, "<open-parenthesis>", node):
-            child_node = add_parse_tree_node(node, "<open-parenthesis>")
-            _open_parenthesis(child_node)
+        if _is_match(True, "<open-parenthesis>"):
+            _open_parenthesis(node)
 
-        if _is_match(True, "<arithmetic>", node):
-            child_node = add_parse_tree_node(node, "<arithmetic>")
-            _arithmetic(child_node)
+        if is_div and lexemes[index] == "0":
+            errors.append((lexemes[index], "Syntax Error: Division by zero"))
 
-        if _is_match(True, "<close-parenthesis>", node):
-            child_node = add_parse_tree_node(node, "<close-parenthesis>")
-            _close_parenthesis(child_node)
+        if _is_match(True, "<arithmetic>"):
+            _arithmetic(node)
+
+        if _is_match(True, "<close-parenthesis>"):
+            _close_parenthesis(node)
 
 
 # #46-#52: <operator> -> + | - | * | / | % | ** | //
@@ -707,9 +674,8 @@ def _tint(node: classmethod) -> None:
         if _is_match(False, "(", node):
             pass
 
-        if _is_match(True, "<all-type-value>", node):
-            child_node = add_parse_tree_node(node, "<all-type-value>")
-            _all_type_value(child_node)
+        if _is_match(True, "<all-type-value>"):
+            _all_type_value(node)
 
         if _is_match(False, ")", node):
             pass
@@ -719,21 +685,18 @@ def _tint(node: classmethod) -> None:
         if _is_match(False, "(", node):
             pass
 
-        if _is_match(True, "<all-type-value>", node):
-            child_node = add_parse_tree_node(node, "<all-type-value>")
-            _all_type_value(child_node)
+        if _is_match(True, "<all-type-value>"):
+            _all_type_value(node)
 
         if _is_match(False, ")", node):
             pass
 
     elif _is_match(True, "#", node):
-        if _is_match(True, "<insert-func>", node):
-            child_node = add_parse_tree_node(node, "<insert-func>")
-            _insert_func(child_node)
+        if _is_match(True, "<insert-func>"):
+            _insert_func(node)
 
-        if _is_match(True, "<indexing>", node):
-            child_node = add_parse_tree_node(node, "<indexing>")
-            _indexing(child_node)
+        if _is_match(True, "<indexing>"):
+            _indexing(node)
 
     else:
         errors.append((lexemes[index], "Syntax Error: Expecting <tint>"))
@@ -754,41 +717,36 @@ def _flora(node: classmethod) -> None:
         if _is_match(False, "(", node):
             pass
 
-        if _is_match(True, "<all-type-value>", node):
-            child_node = add_parse_tree_node(node, "<all-type-value>")
-            _all_type_value(child_node)
+        if _is_match(True, "<all-type-value>"):
+            _all_type_value(node)
 
         if _is_match(False, ")", node):
             pass
 
     elif _is_match(True, "#", node):
-        if _is_match(True, "<insert-func>", node):
-            child_node = add_parse_tree_node(node, "<insert-func>")
-            _insert_func(child_node)
+        if _is_match(True, "<insert-func>"):
+            _insert_func(node)
 
-        if _is_match(True, "<indexing>", node):
-            child_node = add_parse_tree_node(node, "<indexing>")
-            _indexing(child_node)
+        if _is_match(True, "<indexing>"):
+            _indexing(node)
 
     else:
         errors.append((lexemes[index], "Syntax Error: Expecting <flora>"))
 
 
 def _concatenate(node: classmethod) -> None:
-    if _is_match(True, "<indexing>", node):
-        child_node = add_parse_tree_node(node, "<indexing>")
-        _indexing(child_node)
+    if _is_match(True, "<indexing>"):
+        _indexing(node)
 
         if _is_match(False, "+", node):
             pass
 
-        if _is_match(True, "<all-type-value>", node):
-            child_node = add_parse_tree_node(node, "<all-type-value>")
-            _all_type_value(child_node)
+        if _is_match(True, "<all-type-value>"):
+            _all_type_value(node)
 
-        if _is_match(True, "<concatenate>", node):
-            child_node = add_parse_tree_node(node, "<concatenate>")
-            _concatenate(child_node)
+        if _is_match(True, "<concatenate>"):
+            _concatenate(node)
+
 
 # #60-#61: <condition> ->
 # <data> <operate-logic> |
@@ -796,21 +754,17 @@ def _concatenate(node: classmethod) -> None:
 def _condition(node: classmethod) -> None:
     global index
 
-    if _is_match(True, "<data>", node):
-        child_node = add_parse_tree_node(node, "<data>")
-        _data(child_node)
+    if _is_match(True, "<data>"):
+        _data(node)
 
-        if _is_match(True, "<operate-logic>", node):
-            child_node = add_parse_tree_node(node, "<operate-logic>")
-            _operate_logic(child_node)
+        if _is_match(True, "<operate-logic>"):
+            _operate_logic(node)
 
-    elif _is_match(True, "<sequence>", node):
-        child_node = add_parse_tree_node(node, "<sequence>")
-        _sequence(child_node)
+    elif _is_match(True, "<sequence>"):
+        _sequence(node)
 
-        if _is_match(True, "<operate-logic>", node):
-            child_node = add_parse_tree_node(node, "<operate-logic>")
-            _operate_logic(child_node)
+        if _is_match(True, "<operate-logic>"):
+            _operate_logic(node)
 
     else:
         errors.append((lexemes[index], "Syntax Error: Expecting <condition>"))
@@ -820,25 +774,21 @@ def _condition(node: classmethod) -> None:
 def _operate_logic(node: classmethod) -> None:
     global index
 
-    if _is_match(True, "<cond-operator>", node):
-        child_node = add_parse_tree_node(node, "<cond-operator>")
-        _cond_operator(child_node)
+    if _is_match(True, "<cond-operator>"):
+        _cond_operator(node)
         is_true = False
 
         if lexemes[index] == "(":
             is_true = True
 
-        if _is_match(True, "<open-parenthesis>", node):
-            child_node = add_parse_tree_node(node, "<open-parenthesis>")
-            _open_parenthesis(child_node)
+        if _is_match(True, "<open-parenthesis>"):
+            _open_parenthesis(node)
 
-        if _is_match(True, "<condition>", node):
-            child_node = add_parse_tree_node(node, "<condition>")
-            _condition(child_node)
+        if _is_match(True, "<condition>"):
+            _condition(node)
 
-        if is_true and _is_match(True, "<close-parenthesis>", node):
-            child_node = add_parse_tree_node(node, "<close-parenthesis>")
-            _close_parenthesis(child_node)
+        if is_true and _is_match(True, "<close-parenthesis>"):
+            _close_parenthesis(node)
 
 
 # #64-#73: <cond-operator> -> == | != | > | < | >= | <= | =& | =/ | at | nut
@@ -900,16 +850,14 @@ def _supply_dirt(node: classmethod) -> None:
 def _insert_func(node: classmethod) -> None:
 
     if _is_match(True, "(", node):
-        if _is_match(True, "<argument>", node):
-            child_node = add_parse_tree_node(node, "<argument>")
-            _argument(child_node)
+        if _is_match(True, "<argument>"):
+            _argument(node)
 
         if _is_match(False, ")", node):
             pass
 
-        if _is_match(True, "<instance-grab>", node):
-            child_node = add_parse_tree_node(node, "<instance-grab>")
-            _instance_grab(child_node)
+        if _is_match(True, "<instance-grab>"):
+            _instance_grab(node)
 
 
 # #79-#80: <instance-grab> -> .# | EPSILON
@@ -924,16 +872,14 @@ def _instance_grab(node: classmethod) -> None:
 def _indexing(node: classmethod) -> None:
 
     if _is_match(True, "[", node):
-        if _is_match(True, "<insert-index>", node):
-            child_node = add_parse_tree_node(node, "<insert-index>")
-            _insert_index(child_node)
+        if _is_match(True, "<insert-index>"):
+            _insert_index(node)
 
         if _is_match(True, "]", node):
             pass
 
-        if _is_match(True, "<indexing>", node):
-            child_node = add_parse_tree_node(node, "<indexing>")
-            _indexing(child_node)
+        if _is_match(True, "<indexing>"):
+            _indexing(node)
 
 
 # #83-#84: <insert-index> -> 'tint literal' | 'string literal'
@@ -953,25 +899,21 @@ def _insert_index(node: classmethod) -> None:
 # #85-#86: <more-data> -> , <common-data> <more-data> # <common-data> <more-data> | EPSILON
 def _more_data(node: classmethod) -> None:
 
-    if _is_match(True, ",", node):
-        if _is_match(True, "<common-data>", node):
-            child_node = add_parse_tree_node(node, "<common-data>")
-            _common_data(child_node)
+    if _is_match(True, ","):
+        if _is_match(True, "<common-data>"):
+            _common_data(node)
 
-        if _is_match(True, "<more-data>", node):
-            child_node = add_parse_tree_node(node, "<more-data>")
-            _more_data(child_node)
+        if _is_match(True, "<more-data>"):
+            _more_data(node)
 
         if _is_match(True, "#", node):
             pass
 
-        if _is_match(True, "<common-data>", node):
-            child_node = add_parse_tree_node(node, "<common-data>")
-            _common_data(child_node)
+        if _is_match(True, "<common-data>"):
+            _common_data(node)
 
-        if _is_match(True, "<more-data>", node):
-            child_node = add_parse_tree_node(node, "<more-data>")
-            _more_data(child_node)
+        if _is_match(True, "<more-data>"):
+            _more_data(node)
 
 
 # #87-#90: <sqnc-type> -> florist | tulip | dirt | stem
@@ -998,9 +940,8 @@ def _sqnc_type(node: classmethod) -> None:
 def _sqnc_value(node: classmethod) -> None:
 
     if _is_match(True, "=", node):
-        if _is_match(True, "<sequence>", node):
-            child_node = add_parse_tree_node(node, "<sequence>")
-            _sequence(child_node)
+        if _is_match(True, "<sequence>"):
+            _sequence(node)
 
 
 # #93-#96: <sequence> ->
@@ -1010,46 +951,39 @@ def _sqnc_value(node: classmethod) -> None:
 def _sequence(node: classmethod) -> None:
     global index
 
-    if _is_match(True, "<supply-dirt>", node):
-        child_node = add_parse_tree_node(node, "<supply-dirt>")
-        _supply_dirt(child_node)
+    if _is_match(True, "<supply-dirt>"):
+        _supply_dirt(node)
 
         if _is_match(False, "(", node):
             pass
 
-        if _is_match(True, "<all-type-value>", node):
-            child_node = add_parse_tree_node(node, "<all-type-value>")
-            _all_type_value(child_node)
+        if _is_match(True, "<all-type-value>"):
+            _all_type_value(node)
 
         if _is_match(False, ")", node):
             pass
 
-    elif _is_match(True, "<sqnc-type>", node):
-        child_node = add_parse_tree_node(node, "<sqnc-type>")
-        _sqnc_type(child_node)
+    elif _is_match(True, "<sqnc-type>"):
+        _sqnc_type(node)
 
         if _is_match(False, "(", node):
             pass
 
-        if _is_match(True, "<all-type-value>", node):
-            child_node = add_parse_tree_node(node, "<all-type-value>")
-            _all_type_value(child_node)
+        if _is_match(True, "<all-type-value>"):
+            _all_type_value(node)
 
         if _is_match(False, ")", node):
             pass
 
     elif _is_match(True, "#", node):
-        if _is_match(True, "<insert-func>", node):
-            child_node = add_parse_tree_node(node, "<insert-func>")
-            _insert_func(child_node)
+        if _is_match(True, "<insert-func>"):
+            _insert_func(node)
 
-        if _is_match(True, "<indexing>", node):
-            child_node = add_parse_tree_node(node, "<indexing>")
-            _indexing(child_node)
+        if _is_match(True, "<indexing>"):
+            _indexing(node)
 
-        if _is_match(True, "<start-end-step>", node):
-            child_node = add_parse_tree_node(node, "<start-end-step>")
-            _start_end_step(child_node)
+        if _is_match(True, "<start-end-step>"):
+            _start_end_step(node)
 
     else:
         errors.append((lexemes[index], "Syntax Error: Expecting <sequence>"))
@@ -1097,20 +1031,17 @@ def _close(node: classmethod) -> None:
 def _more_sqnc(node: classmethod) -> None:
 
     if _is_match(True, ",", node):
-        if _is_match(True, "<sqnc-type>", node):
-            child_node = add_parse_tree_node(node, "<sqnc-type>")
-            _sqnc_type(child_node)
+        if _is_match(True, "<sqnc-type>"):
+            _sqnc_type(node)
 
         if _is_match(True, "#", node):
             pass
 
-        if _is_match(True, "<sqnc-value>", node):
-            child_node = add_parse_tree_node(node, "<sqnc-value>")
-            _sqnc_value(child_node)
+        if _is_match(True, "<sqnc-value>"):
+            _sqnc_value(node)
 
-        if _is_match(True, "<more-sqnc>", node):
-            child_node = add_parse_tree_node(node, "<more-sqnc>")
-            _more_sqnc(child_node)
+        if _is_match(True, "<more-sqnc>"):
+            _more_sqnc(node)
 
 
 # #105-#106: <insert-sqnc> ->
@@ -1118,51 +1049,42 @@ def _more_sqnc(node: classmethod) -> None:
 # <open> <insert-sqnc> <close> <next-sqnc>
 def _insert_sqnc(node: classmethod) -> None:
 
-    if _is_match(True, "<data>", node):
-        child_node = add_parse_tree_node(node, "<data>")
-        _data(child_node)
+    if _is_match(True, "<data>"):
+        _data(node)
 
-        if _is_match(True, "<next-sqnc>", node):
-            child_node = add_parse_tree_node(node, "<next-sqnc>")
-            _next_sqnc(child_node)
+        if _is_match(True, "<next-sqnc>"):
+            _next_sqnc(node)
 
-    elif _is_match(True, "<open>", node):
-        child_node = add_parse_tree_node(node, "<open>")
-        _open(child_node)
+    elif _is_match(True, "<open>"):
+        _open(node)
 
-        if _is_match(True, "<insert-sqnc>", node):
-            child_node = add_parse_tree_node(node, "<insert-sqnc>")
-            _insert_sqnc(child_node)
+        if _is_match(True, "<insert-sqnc>"):
+            _insert_sqnc(node)
 
-        if _is_match(True, "<close>", node):
-            child_node = add_parse_tree_node(node, "<close>")
-            _close(child_node)
+        if _is_match(True, "<close>"):
+            _close(node)
 
-        if _is_match(True, "<next-sqnc>", node):
-            child_node = add_parse_tree_node(node, "<next-sqnc>")
-            _next_sqnc(child_node)
+        if _is_match(True, "<next-sqnc>"):
+            _next_sqnc(node)
 
 
 # #107-#108: <next-sqnc> -> , <dirt> <insert-sqnc> | EPSILON
 def _next_sqnc(node: classmethod) -> None:
 
     if _is_match(True, ",", node):
-        if _is_match(True, "<dirt>", node):
-            child_node = add_parse_tree_node(node, "<dirt>")
-            _dirt(child_node)
+        if _is_match(True, "<dirt>"):
+            _dirt(node)
 
-        if _is_match(True, "<insert-sqnc>", node):
-            child_node = add_parse_tree_node(node, "<insert-sqnc>")
-            _insert_sqnc(child_node)
+        if _is_match(True, "<insert-sqnc>"):
+            _insert_sqnc(node)
 
 
 # #109-#110: <start-end-step> -> [ <insert-start> | EPSILON
 def _start_end_step(node: classmethod) -> None:
 
     if _is_match(True, "[", node):
-        if _is_match(True, "<insert-start>", node):
-            child_node = add_parse_tree_node(node, "<insert-start>")
-            _insert_start(child_node)
+        if _is_match(True, "<insert-start>"):
+            _insert_start(node)
 
 
 # ]]
@@ -1176,16 +1098,14 @@ def _insert_start(node: classmethod) -> None:
         if _is_match(True, ":", node):
             pass
 
-        if _is_match(True, "<close-start>", node):
-            child_node = add_parse_tree_node(node, "<close-start>")
-            _close_start(child_node)
+        if _is_match(True, "<close-start>"):
+            _close_start(node)
 
     elif _is_match(True, ":", node):
         pass
 
-        if _is_match(True, "<skip-start>", node):
-            child_node = add_parse_tree_node(node, "<skip-start>")
-            _skip_start(child_node)
+        if _is_match(True, "<skip-start>"):
+            _skip_start(node)
 
     else:
         errors.append((lexemes[index], "Syntax Error: Expecting <insert-start>"))
@@ -1194,30 +1114,26 @@ def _insert_start(node: classmethod) -> None:
 # #113-#114: <close-start> -> <close-end> | 'tint literal' <close-end>
 def _close_start(node: classmethod) -> None:
 
-    if _is_match(True, "<close-end>", node):
-        child_node = add_parse_tree_node(node, "<close-end>")
-        _close_end(child_node)
+    if _is_match(True, "<close-end>"):
+        _close_end(node)
 
     elif _is_match(True, "tint literal", node):
 
-        if _is_match(True, "<close-end>", node):
-            child_node = add_parse_tree_node(node, "<close-end>")
-            _close_end(child_node)
+        if _is_match(True, "<close-end>"):
+            _close_end(node)
 
 
 # #115-116: <close-end> -> ] <start-end-step> | : 'tint literal' <start-end-step>
 def _close_end(node: classmethod) -> None:
 
     if _is_match(True, "]", node):
-        if _is_match(True, "<start-end-step>", node):
-            child_node = add_parse_tree_node(node, "<start-end-step>")
-            _start_end_step(child_node)
+        if _is_match(True, "<start-end-step>"):
+            _start_end_step(node)
 
     elif _is_match(True, ":", node):
         if _is_match(True, "tint literal", node):
-            if _is_match(True, "<start-end-step>", node):
-                child_node = add_parse_tree_node(node, "<start-end-step>")
-                _start_end_step(child_node)
+            if _is_match(True, "<start-end-step>"):
+                _start_end_step(node)
 
 
 # #117-#118: <skip-start> ->
@@ -1226,23 +1142,19 @@ def _close_end(node: classmethod) -> None:
 def _skip_start(node: classmethod) -> None:
 
     if _is_match(True, "tint literal", node):
-        if _is_match(True, "<close-end>", node):
-            child_node = add_parse_tree_node(node, "<close-end>")
-            _close_end(child_node)
+        if _is_match(True, "<close-end>"):
+            _close_end(node)
 
-        if _is_match(True, "<start-end-step>", node):
-            child_node = add_parse_tree_node(node, "<start-end-step>")
-            _start_end_step(child_node)
+        if _is_match(True, "<start-end-step>"):
+            _start_end_step(node)
 
     elif _is_match(True, ":", node):
         if _is_match(True, "tint literal", node):
-            if _is_match(True, "]", node):
-                child_node = add_parse_tree_node(node, "]")
-                _close_end(child_node)
+            if _is_match(True, "<close-end>"):
+                _close_end(node)
 
-            if _is_match(True, "<start-end-step>", node):
-                child_node = add_parse_tree_node(node, "<start-end-step>")
-                _start_end_step(child_node)
+            if _is_match(True, "<start-end-step>"):
+                _start_end_step(node)
 
 
 # #119-#121: <all-type-value> ->
@@ -1252,13 +1164,11 @@ def _skip_start(node: classmethod) -> None:
 def _all_type_value(node: classmethod) -> None:
     global index
 
-    if _is_match(True, "<insert-data>", node):
-        child_node = add_parse_tree_node(node, "<insert-data>")
-        _insert_data(child_node)
+    if _is_match(True, "<insert-data>"):
+        _insert_data(node)
 
-    elif _is_match(True, "<sequence>", node):
-        child_node = add_parse_tree_node(node, "<sequence>")
-        _sequence(child_node)
+    elif _is_match(True, "<sequence>"):
+        _sequence(node)
 
     elif _is_match(True, "inpetal", node):
 
@@ -1281,9 +1191,8 @@ def _all_type_value(node: classmethod) -> None:
 def _i_o_statement(node: classmethod) -> None:
     global index
 
-    if _is_match(True, "<insert-inpetal>", node):
-        child_node = add_parse_tree_node(node, "<insert-inpetal>")
-        _insert_inpetal(child_node)
+    if _is_match(True, "<insert-inpetal>"):
+        _insert_inpetal(node)
 
         if _is_match(True, "inpetal", node):
 
@@ -1301,9 +1210,8 @@ def _i_o_statement(node: classmethod) -> None:
         if _is_match(False, "(", node):
             pass
 
-        if _is_match(True, "<all-type-value>", node):
-            child_node = add_parse_tree_node(node, "<all-type-value>")
-            _all_type_value(child_node)
+        if _is_match(True, "<all-type-value>"):
+            _all_type_value(node)
 
         if _is_match(False, ")", node):
             pass
@@ -1319,9 +1227,8 @@ def _i_o_statement(node: classmethod) -> None:
 def _insert_inpetal(node: classmethod) -> None:
     global index
 
-    if _is_match(True, "<common-type>", node):
-        child_node = add_parse_tree_node(node, "<common-type>")
-        _common_type(child_node)
+    if _is_match(True, "<common-type>"):
+        _common_type(node)
 
         if _is_match(True, "#", node):
             pass
@@ -1329,9 +1236,8 @@ def _insert_inpetal(node: classmethod) -> None:
         if _is_match(True, "=", node):
             pass
 
-    elif _is_match(True, "<sqnc-type>", node):
-        child_node = add_parse_tree_node(node, "<sqnc-type>")
-        _sqnc_type(child_node)
+    elif _is_match(True, "<sqnc-type>"):
+        _sqnc_type(node)
 
         if _is_match(True, "#", node):
             pass
@@ -1340,25 +1246,20 @@ def _insert_inpetal(node: classmethod) -> None:
             pass
 
     elif _is_match(True, "#", node):
-        if _is_match(True, "<insert-func>", node):
-            child_node = add_parse_tree_node(node, "<insert-func>")
-            _insert_func(child_node)
+        if _is_match(True, "<insert-func>"):
+            _insert_func(node)
 
-        if _is_match(True, "<indexing>", node):
-            child_node = add_parse_tree_node(node, "<indexing>")
-            _indexing(child_node)
+        if _is_match(True, "<indexing>"):
+            _indexing(node)
 
-        if _is_match(True, "<start-end-step>", node):
-            child_node = add_parse_tree_node(node, "<start-end-step>")
-            _start_end_step(child_node)
+        if _is_match(True, "<start-end-step>"):
+            _start_end_step(node)
 
-        if _is_match(True, "<more-id>", node):
-            child_node = add_parse_tree_node(node, "<more-id>")
-            _more_id(child_node)
+        if _is_match(True, "<more-id>"):
+            _more_id(node)
 
-        if _is_match(True, "<assignment-op>", node):
-            child_node = add_parse_tree_node(node, "<assignment-op>")
-            _assignment_op(child_node)
+        if _is_match(True, "<assignment-op>"):
+            _assignment_op(node)
 
     else:
         errors.append((lexemes[index], "Syntax Error: Expecting <insert-inpetal>"))
@@ -1373,72 +1274,69 @@ def _more_id(node: classmethod) -> None:
         if _is_match(True, "#", node):
             pass
 
-        if _is_match(True, "<insert-func>", node):
-            child_node = add_parse_tree_node(node, "<insert-func>")
-            _insert_func(child_node)
+        if _is_match(True, "<insert-func>"):
+            _insert_func(node)
 
-        if _is_match(True, "<indexing>", node):
-            child_node = add_parse_tree_node(node, "<indexing>")
-            _indexing(child_node)
+        if _is_match(True, "<indexing>"):
+            _indexing(node)
 
-        if _is_match(True, "<start-end-step>", node):
-            child_node = add_parse_tree_node(node, "<start-end-step>")
-            _start_end_step(child_node)
+        if _is_match(True, "<start-end-step>"):
+            _start_end_step(node)
 
-        if _is_match(True, "<more-id>", node):
-            child_node = add_parse_tree_node(node, "<more-id>")
-            _more_id(child_node)
+        if _is_match(True, "<more-id>"):
+            _more_id(node)
 
 
 # #129-#130: <eleaf> -> eleaf (<condition>) (<statement>); <eleaf> | EPSILON
 def _eleaf(node: classmethod) -> None:
 
-    if _is_match(True, "eleaf", node):
+    if _is_match(True, "eleaf"):
+        eleaf_node = add_parse_tree_node(node, "eleaf")
+        eleaf_node.set_kind("elif")
 
-        if _is_match(False, "(", node):
+        if _is_match(False, "("):
             pass
 
-        if _is_match(True, "<condition>", node):
-            child_node = add_parse_tree_node(node, "<condition>")
+        if _is_match(True, "<condition>"):
+            child_node = add_parse_tree_node(eleaf_node, "<condition>")
             _condition(child_node)
 
-        if _is_match(False, ")", node):
+        if _is_match(False, ")"):
             pass
 
-        if _is_match(False, "(", node):
+        if _is_match(False, "("):
             pass
 
-        if _is_match(True, "<statement>", node):
-            child_node = add_parse_tree_node(node, "<statement>")
-            _statement(child_node)
+        if _is_match(True, "<statement>"):
+            _statement(eleaf_node)
 
-        if _is_match(False, ")", node):
+        if _is_match(False, ")"):
             pass
 
-        if _is_match(False, ";", node):
+        if _is_match(False, ";"):
             pass
 
-        if _is_match(True, "<eleaf>", node):
-            child_node = add_parse_tree_node(node, "<eleaf>")
-            _eleaf(child_node)
+        if _is_match(True, "<eleaf>"):
+            _eleaf(node)
 
 
 # #131-#132: <else> -> moss (<statement>); | EPSILON
 def _else(node: classmethod) -> None:
 
-    if _is_match(True, "moss", node):
+    if _is_match(True, "moss"):
+        moss_node = add_parse_tree_node(node, "moss")
+        moss_node.set_kind("else")
 
-        if _is_match(False, "(", node):
+        if _is_match(False, "("):
             pass
 
-        if _is_match(True, "<statement>", node):
-            child_node = add_parse_tree_node(node, "<statement>")
-            _statement(child_node)
+        if _is_match(True, "<statement>"):
+            _statement(moss_node)
 
-        if _is_match(False, ")", node):
+        if _is_match(False, ")"):
             pass
 
-        if _is_match(False, ";", node):
+        if _is_match(False, ";"):
             pass
 
     else:
@@ -1449,21 +1347,17 @@ def _else(node: classmethod) -> None:
 def _assignment(node: classmethod) -> None:
     global index
 
-    if _is_match(True, "<insert-inpetal>", node):
-        child_node = add_parse_tree_node(node, "<insert-inpetal>")
-        _insert_inpetal(child_node)
+    if _is_match(True, "<insert-inpetal>"):
+        _insert_inpetal(node)
 
-        if _is_match(True, "<all-type-value>", node):
-            child_node = add_parse_tree_node(node, "<all-type-value>")
-            _all_type_value(child_node)
+        if _is_match(True, "<all-type-value>"):
+            _all_type_value(node)
 
-    elif _is_match(True, "<assign>", node):
-        child_node = add_parse_tree_node(node, "<assign>")
-        _assign(child_node)
+    elif _is_match(True, "<assign>"):
+        _assign(node)
 
-        if _is_match(True, "<insert-assign>", node):
-            child_node = add_parse_tree_node(node, "<insert-assign>")
-            _insert_assign(child_node)
+        if _is_match(True, "<insert-assign>"):
+            _insert_assign(node)
 
     else:
         errors.append((lexemes[index], "Syntax Error: Expecting <assignment>"))
@@ -1472,9 +1366,8 @@ def _assignment(node: classmethod) -> None:
 # #135-#136: <assign> -> <insert-inpetal> | EPSILON
 def _assign(node: classmethod) -> None:
 
-    if _is_match(True, "<insert-inpetal>", node):
-        child_node = add_parse_tree_node(node, "<insert-inpetal>")
-        _insert_inpetal(child_node)
+    if _is_match(True, "<insert-inpetal>"):
+        _insert_inpetal(node)
 
 
 # #137-#138: <insert-assign> ->
@@ -1483,30 +1376,26 @@ def _assign(node: classmethod) -> None:
 def _insert_assign(node: classmethod) -> None:
     global index
 
-    if _is_match(True, "<common-type>", node):
-        child_node = add_parse_tree_node(node, "<common-type>")
-        _common_type(child_node)
+    if _is_match(True, "<common-type>"):
+        _common_type(node)
 
         if _is_match(False, "(", node):
             pass
 
-        if _is_match(True, "<all-type-value>", node):
-            child_node = add_parse_tree_node(node, "<all-type-value>")
-            _all_type_value(child_node)
+        if _is_match(True, "<all-type-value>"):
+            _all_type_value(node)
 
         if _is_match(False, ")", node):
             pass
 
-    elif _is_match(True, "<sqnc-type>", node):
-        child_node = add_parse_tree_node(node, "<sqnc-type>")
-        _sqnc_type(child_node)
+    elif _is_match(True, "<sqnc-type>"):
+        _sqnc_type(node)
 
         if _is_match(False, "(", node):
             pass
 
-        if _is_match(True, "<all-type-value>", node):
-            child_node = add_parse_tree_node(node, "<all-type-value>")
-            _all_type_value(child_node)
+        if _is_match(True, "<all-type-value>"):
+            _all_type_value(node)
 
         if _is_match(False, ")", node):
             pass
@@ -1551,35 +1440,37 @@ def _assignment_op(node: classmethod) -> None:
 def _iterative(node: classmethod) -> None:
     global index
 
-    if _is_match(True, "fern", node):
+    if _is_match(True, "fern"):
+        fern_node = add_parse_tree_node(node, "fern")
+        fern_node.kind = "for"
 
-        if _is_match(False, "(", node):
+        if _is_match(False, "("):
             pass
 
-        if _is_match(True, "<insert-fern>", node):
-            child_node = add_parse_tree_node(node, "<insert-fern>")
-            _insert_fern(child_node)
+        if _is_match(False, "<insert-fern>"):
+            _insert_fern(fern_node)
 
-    elif _is_match(True, "willow", node):
+    elif _is_match(True, "willow"):
+        willow_node = add_parse_tree_node(node, "willow")
+        willow_node.kind = "while"
 
-        if _is_match(False, "(", node):
+        if _is_match(False, "("):
             pass
 
-        if _is_match(True, "<condition>", node):
-            child_node = add_parse_tree_node(node, "<condition>")
+        if _is_match(True, "<condition>"):
+            child_node = add_parse_tree_node(willow_node, "<condition>")
             _condition(child_node)
 
-        if _is_match(False, ")", node):
+        if _is_match(False, ")"):
             pass
 
-        if _is_match(False, "(", node):
+        if _is_match(False, "("):
             pass
 
-        if _is_match(True, "<statement>", node):
-            child_node = add_parse_tree_node(node, "<statement>")
-            _statement(child_node)
+        if _is_match(True, "<statement>"):
+            _statement(willow_node)
 
-        if _is_match(False, ")", node):
+        if _is_match(False, ")"):
             pass
 
     else:
@@ -1595,82 +1486,75 @@ def _iterative(node: classmethod) -> None:
 def _insert_fern(node: classmethod) -> None:
     global index
 
-    if _is_match(True, "tint", node):
+    if _is_match(True, "tint"):
+        child_node = add_parse_tree_node(node, "<condition>")
+        add_parse_tree_node(child_node, "tint")
 
-        if _is_match(False, "#", node):
+        if _is_match(False, "#", child_node):
             pass
 
-        if _is_match(True, "=", node):
+        if _is_match(False, "=", child_node):
             pass
 
-        if _is_match(True, "tint literal", node):
+        if _is_match(False, "tint literal", child_node):
             pass
 
-        if _is_match(False, ";", node):
+        if _is_match(False, ";", child_node):
             pass
 
-        if _is_match(True, "<condition>", node):
-            child_node = add_parse_tree_node(node, "<condition>")
+        if _is_match(False, "<condition>"):
             _condition(child_node)
 
-        if _is_match(False, ";", node):
+        if _is_match(False, ";", child_node):
             pass
 
-        if _is_match(False, "#", node):
+        if _is_match(False, "#", child_node):
             pass
 
-        if _is_match(True, "<assignment-op>", node):
-            child_node = add_parse_tree_node(node, "<assignment-op>")
+        if _is_match(False, "<assignment-op>"):
             _assignment_op(child_node)
 
-        if _is_match(True, "tint", node):
+        if _is_match(False, "tint literal", child_node):
             pass
 
-        if _is_match(False, ";", node):
+        if _is_match(False, ";", child_node):
             pass
 
-        if _is_match(False, ")", node):
+        if _is_match(False, ")"):
             pass
 
-        if _is_match(True, "(", node):
+        if _is_match(True, "("):
             pass
 
-        if _is_match(True, "<statement>", node):
-            child_node = add_parse_tree_node(node, "<statement>")
-            _statement(child_node)
+        if _is_match(True, "<statement>"):
+            _statement(node)
 
-        if _is_match(False, ")", node):
+        if _is_match(False, ")"):
             pass
 
-    elif _is_match(True, "<all-type-value>", node):
-        child_node = add_parse_tree_node(node, "<all-type-value>")
+    elif _is_match(True, "<all-type-value>"):
+        child_node = add_parse_tree_node(node, "<condition>")
         _all_type_value(child_node)
 
-        if _is_match(True, "<more-value>", node):
-            child_node = add_parse_tree_node(node, "<more-value>")
+        if _is_match(True, "<more-value>"):
             _more_value(child_node)
 
-        if _is_match(True, "at", node):
+        if _is_match(True, "at", child_node):
             pass
 
-        if _is_match(False, ";", node):
-            pass
-
-        if _is_match(True, "<sequence>", node):
-            child_node = add_parse_tree_node(node, "<sequence>")
+        if _is_match(True, "<sequence>"):
             _sequence(child_node)
 
-        if _is_match(False, ";", node):
+        if _is_match(False, ";", child_node):
             pass
 
-        if _is_match(False, "(", node):
+        if _is_match(False, "("):
             pass
 
         if _is_match(True, "<statement>", node):
-            child_node = add_parse_tree_node(node, "<statement>")
-            _statement(child_node)
+            _statement(node)
 
-        if _is_match(False, ")", node):
+        if _is_match(False, ")"):
             pass
 
     else:
@@ -1681,13 +1565,11 @@ def _insert_fern(node: classmethod) -> None:
 def _more_value(node: classmethod) -> None:
 
     if _is_match(True, ",", node):
-        if _is_match(True, "<all-type-value>", node):
-            child_node = add_parse_tree_node(node, "<all-type-value>")
-            _all_type_value(child_node)
+        if _is_match(True, "<all-type-value>"):
+            _all_type_value(node)
 
-        if _is_match(True, "<more-value>", node):
-            child_node = add_parse_tree_node(node, "<more-value>")
-            _more_value(child_node)
+        if _is_match(True, "<more-value>"):
+            _more_value(node)
 
 
 # #153-#154: <check-branch> ->
@@ -1696,23 +1578,19 @@ def _more_value(node: classmethod) -> None:
 def _check_branch(node: classmethod) -> None:
     global index
 
-    if _is_match(True, "<all-type-value>", node):
-        child_node = add_parse_tree_node(node, "<all-type-value>")
-        _all_type_value(child_node)
+    if _is_match(True, "<all-type-value>"):
+        _all_type_value(node)
 
-        if _is_match(True, "<insert-branch>", node):
-            child_node = add_parse_tree_node(node, "<insert-branch>")
-            _insert_branch(child_node)
+        if _is_match(True, "<insert-branch>"):
+            _insert_branch(node)
 
-        if _is_match(True, "<more-branch>", node):
-            child_node = add_parse_tree_node(node, "<more-branch>")
-            _more_branch(child_node)
+        if _is_match(True, "<more-branch>"):
+            _more_branch(node)
 
     elif _is_match(True, "_", node):
         if _is_match(True, ":", node):
-            if _is_match(True, "<statement>", node):
-                child_node = add_parse_tree_node(node, "<statement>")
-                _statement(child_node)
+            if _is_match(True, "<statement>"):
+                _statement(node)
 
     else:
         errors.append((lexemes[index], "Syntax Error: Expecting <check-branch>"))
@@ -1723,33 +1601,32 @@ def _insert_branch(node: classmethod) -> None:
     global index
 
     if _is_match(True, ":", node):
-        if _is_match(True, "<statement>", node):
-            child_node = add_parse_tree_node(node, "<statement>")
-            _statement(child_node)
+        if _is_match(True, "<statement>"):
+            _statement(node)
 
     elif _is_match(True, "leaf", node):
+        leaf_node = add_parse_tree_node(node, "leaf")
 
-        if _is_match(False, "(", node):
+        if _is_match(False, "("):
             pass
 
-        if _is_match(True, "<condition>", node):
-            child_node = add_parse_tree_node(node, "<condition>")
+        if _is_match(True, "<condition>"):
+            child_node = add_parse_tree_node(leaf_node, "<condition>")
             _condition(child_node)
 
-        if _is_match(False, ")", node):
+        if _is_match(False, ")"):
             pass
 
-        if _is_match(False, "(", node):
+        if _is_match(False, "("):
             pass
 
-        if _is_match(True, "<statement>", node):
-            child_node = add_parse_tree_node(node, "<statement>")
-            _statement(child_node)
+        if _is_match(True, "<statement>"):
+            _statement(leaf_node)
 
-        if _is_match(False, ")", node):
+        if _is_match(False, ")"):
             pass
 
-        if _is_match(False, ";", node):
+        if _is_match(False, ";", leaf_node):
             pass
 
     else:
@@ -1763,9 +1640,8 @@ def _more_branch(node: classmethod) -> None:
         if _is_match(True, "branch", node):
             pass
 
-        if _is_match(True, "<check-branch>", node):
-            child_node = add_parse_tree_node(node, "<check-branch>")
-            _check_branch(child_node)
+        if _is_match(True, "<check-branch>"):
+            _check_branch(node)
 
 
 # #159-#161: <argument> ->
@@ -1774,24 +1650,20 @@ def _more_branch(node: classmethod) -> None:
 # EPSILON
 def _argument(node: classmethod) -> None:
 
-    if _is_match(True, "<insert-argument>", node):
-        child_node = add_parse_tree_node(node, "<insert-argument>")
-        _insert_argument(child_node)
+    if _is_match(True, "<insert-argument>"):
+        _insert_argument(node)
 
-    elif _is_match(True, "<common-type>", node):
-        child_node = add_parse_tree_node(node, "<common-type>")
-        _common_type(child_node)
+    elif _is_match(True, "<common-type>"):
+        _common_type(node)
 
         if _is_match(True, "#", node):
             pass
 
-        if _is_match(True, "<common-data>", node):
-            child_node = add_parse_tree_node(node, "<common-data>")
-            _common_data(child_node)
+        if _is_match(True, "<common-data>"):
+            _common_data(node)
 
-        if _is_match(True, "<more**kwargs>", node):
-            child_node = add_parse_tree_node(node, "<more**kwargs>")
-            _more_kwargs(child_node)
+        if _is_match(True, "<more**kwargs>"):
+            _more_kwargs(node)
 
     elif _is_match(True, "EPSILON", node):
         pass
@@ -1803,58 +1675,50 @@ def _argument(node: classmethod) -> None:
 # EPSILON
 def _insert_argument(node: classmethod) -> None:
 
-    if _is_match(True, "<all-type-value>", node):
-        child_node = add_parse_tree_node(node, "<all-type-value>")
-        _all_type_value(child_node)
+    if _is_match(True, "<all-type-value>"):
+        _all_type_value(node)
 
-        if _is_match(True, "<add-argument>", node):
-            child_node = add_parse_tree_node(node, "<add-argument>")
-            _add_argument(child_node)
+        if _is_match(True, "<add-argument>"):
+            _add_argument(node)
 
     elif _is_match(True, "#", node):
 
         if _is_match(False, "(", node):
             pass
 
-        if _is_match(True, "<argument>", node):
-            child_node = add_parse_tree_node(node, "<argument>")
-            _argument(child_node)
+        if _is_match(True, "<argument>"):
+            _argument(node)
 
         if _is_match(False, ")", node):
             pass
 
-        if _is_match(True, "<add-argument>", node):
-            child_node = add_parse_tree_node(node, "<add-argument>")
-            _add_argument(child_node)
+        if _is_match(True, "<add-argument>"):
+            _add_argument(node)
 
 
 # #165-#166: <add-argument> -> , <argument> | EPSILON
 def _add_argument(node: classmethod) -> None:
 
     if _is_match(True, ",", node):
-        if _is_match(True, "<argument>", node):
-            child_node = add_parse_tree_node(node, "<argument>")
-            _argument(child_node)
+        if _is_match(True, "<argument>"):
+            _argument(node)
 
 
 # #167-#168: <more**kwargs> -> , <common-type> # <common-data> <more**kwargs> | EPSILON
 def _more_kwargs(node: classmethod) -> None:
 
     if _is_match(True, ",", node):
-        if _is_match(True, "<common-type>", node):
-            child_node = add_parse_tree_node(node, "<common-type>")
-            _common_type(child_node)
+        if _is_match(True, "<common-type>"):
+            _common_type(node)
 
         if _is_match(True, "#", node):
             pass
 
-        if _is_match(True, "<common-data>", node):
-            child_node = add_parse_tree_node(node, "<common-data>")
-            _common_data(child_node)
+        if _is_match(True, "<common-data>"):
+            _common_data(node)
 
-        if _is_match(True, "<more**kwargs>", node):
-            child_node = add_parse_tree_node(node, "<more**kwargs>")
-            _more_kwargs(child_node)
+        if _is_match(True, "<more**kwargs>"):
+            _more_kwargs(node)
 
 
 # #169-#171: <function> ->
@@ -1862,101 +1726,95 @@ def _more_kwargs(node: classmethod) -> None:
 # viola # ( <undefined-param> ) ( <statement> ); <function> |
 # EPSILON
 def _function(node: classmethod) -> None:
+    global index
 
-    if _is_match(True, "<common-type>", node):
-        child_node = add_parse_tree_node(node, "<common-type>")
-        _common_type(child_node)
+    func_node = add_parse_tree_node(node, "<function>")
 
-        if _is_match(True, "#", node):
+    if _is_match(True, "<common-type>"):
+        _common_type(func_node)
+
+        if _is_match(True, "#", func_node):
             pass
 
-        if _is_match(False, "(", node):
+        if _is_match(False, "("):
             pass
 
-        if _is_match(True, "<parameter>", node):
-            child_node = add_parse_tree_node(node, "<parameter>")
+        if _is_match(True, "<parameter>"):
+            child_node = add_parse_tree_node(func_node, "<parameter>")
             _parameter(child_node)
 
-        if _is_match(False, ")", node):
+        if _is_match(False, ")"):
             pass
 
-        if _is_match(False, "(", node):
+        if _is_match(False, "(", func_node):
             pass
 
-        if _is_match(True, "<statement>", node):
-            child_node = add_parse_tree_node(node, "<statement>")
-            _statement(child_node)
+        if _is_match(True, "<statement>"):
+            _statement(func_node)
 
-        if _is_match(True, "regrow", node):
+        if _is_match(True, "regrow"):
             pass
 
-        if _is_match(True, "<all-type-value>", node):
-            child_node = add_parse_tree_node(node, "<all-type-value>")
-            _all_type_value(child_node)
+        if _is_match(True, "<all-type-value>"):
+            _all_type_value(func_node)
 
-        if _is_match(True, "<add-at>", node):
-            child_node = add_parse_tree_node(node, "<add-at>")
-            _add_at(child_node)
+        if _is_match(True, "<add-at>"):
+            _add_at(node)
 
-        if _is_match(False, ";", node):
+        if _is_match(False, ";", func_node):
             pass
 
-        if _is_match(False, ")", node):
+        if _is_match(False, ")", func_node):
             pass
 
-        if _is_match(False, ";", node):
+        if _is_match(False, ";", func_node):
             pass
 
         if _is_match(True, "<function>", node):
-            child_node = add_parse_tree_node(node, "<function>")
-            _function(child_node)
+            _function(node)
 
-    elif _is_match(True, "viola", node):
+    elif _is_match(True, "viola", func_node):
 
-        if _is_match(False, "#", node):
+        if _is_match(False, "#", func_node):
             pass
 
-        if _is_match(False, "(", node):
+        if _is_match(False, "("):
             pass
 
-        if _is_match(True, "<undefined-param>", node):
-            child_node = add_parse_tree_node(node, "<undefined-param>")
+        if _is_match(True, "<undefined-param>"):
+            child_node = add_parse_tree_node(func_node, "<undefined-param>")
             _undefined_param(child_node)
 
-        if _is_match(False, ")", node):
+        if _is_match(False, ")", func_node):
             pass
 
-        if _is_match(False, "(", node):
+        if _is_match(False, "(", func_node):
             pass
 
-        if _is_match(True, "<statement>", node):
-            child_node = add_parse_tree_node(node, "<statement>")
-            _statement(child_node)
+        if _is_match(True, "<statement>"):
+            _statement(func_node)
 
-        if _is_match(False, ")", node):
+        if _is_match(False, ")", func_node):
             pass
 
-        if _is_match(False, ";", node):
+        if _is_match(False, ";", func_node):
             pass
 
-        if _is_match(True, "<function>", node):
-            child_node = add_parse_tree_node(node, "<function>")
-            _function(child_node)
+        if _is_match(True, "<function>"):
+            _function(node)
 
 
 # #172-#173: <add-at> -> <more-value> at <all-type-value> | EPSILON
 def _add_at(node: classmethod) -> None:
 
-    if _is_match(True, "<more-value>", node):
-        child_node = add_parse_tree_node(node, "<more-value>")
-        _more_value(child_node)
+    if _is_match(True, "<more-value>"):
+        _more_value(node)
 
         if _is_match(True, "at", node):
             pass
 
-        if _is_match(True, "<all-type-value>", node):
-            child_node = add_parse_tree_node(node, "<all-type-value>")
-            _all_type_value(child_node)
+        if _is_match(True, "<all-type-value>"):
+            _all_type_value(node)
 
 
 # #174-#178: <parameter> ->
@@ -1967,63 +1825,53 @@ def _add_at(node: classmethod) -> None:
 def _parameter(node: classmethod) -> None:
     global index
 
-    if _is_match(True, "<undefined-param>", node) and lexemes[index + 1] == "*":
-        child_node = add_parse_tree_node(node, "<undefined-param>")
-        _undefined_param(child_node)
+    if _is_match(True, "<undefined-param>") and lexemes[index + 1] == "*":
+        _undefined_param(node)
 
-    elif _is_match(True, "<common-type>", node):
-        child_node = add_parse_tree_node(node, "<common-type>")
-        _common_type(child_node)
+    elif _is_match(True, "<common-type>"):
+        _common_type(node)
 
         if _is_match(True, "#", node):
             pass
 
-        if _is_match(True, "<common-data>", node):
-            child_node = add_parse_tree_node(node, "<common-data>")
-            _common_data(child_node)
+        if _is_match(True, "<common-data>"):
+            _common_data(node)
 
-        if _is_match(True, "<next-parameter>", node):
-            child_node = add_parse_tree_node(node, "<next-parameter>")
-            _next_parameter(child_node)
+        if _is_match(True, "<next-parameter>"):
+            _next_parameter(node)
 
-    elif _is_match(True, "<sqnc-type>", node):
-        child_node = add_parse_tree_node(node, "<sqnc-type>")
-        _sqnc_type(child_node)
+    elif _is_match(True, "<sqnc-type>"):
+        _sqnc_type(node)
 
         if _is_match(True, "#", node):
             pass
 
-        if _is_match(True, "<sqnc-value>", node):
-            child_node = add_parse_tree_node(node, "<sqnc-value>")
-            _sqnc_value(child_node)
+        if _is_match(True, "<sqnc-value>"):
+            _sqnc_value(node)
 
-        if _is_match(True, "<next-parameter>", node):
-            child_node = add_parse_tree_node(node, "<next-parameter>")
-            _next_parameter(child_node)
+        if _is_match(True, "<next-parameter>"):
+            _next_parameter(node)
 
     elif _is_match(True, "#", node):
 
         if _is_match(False, "(", node):
             pass
 
-        if _is_match(True, "<parameter>", node):
-            child_node = add_parse_tree_node(node, "<parameter>")
-            _parameter(child_node)
+        if _is_match(True, "<parameter>"):
+            _parameter(node)
 
         if _is_match(False, ")", node):
             pass
 
-        if _is_match(True, "<next-parameter>", node):
-            child_node = add_parse_tree_node(node, "<next-parameter>")
-            _next_parameter(child_node)
+        if _is_match(True, "<next-parameter>"):
+            _next_parameter(node)
 
 
 # #179-#180: <undefined-param> -> <common-type> *# <add-kwargs>
 def _undefined_param(node: classmethod) -> None:
 
-    if _is_match(False, "<common-type>", node):
-        child_node = add_parse_tree_node(node, "<common-type>")
-        _common_type(child_node)
+    if _is_match(False, "<common-type>"):
+        _common_type(node)
 
         if _is_match(True, "*", node):
             pass
@@ -2031,9 +1879,8 @@ def _undefined_param(node: classmethod) -> None:
         if _is_match(True, "#", node):
             pass
 
-        if _is_match(True, "<add-kwargs>", node):
-            child_node = add_parse_tree_node(node, "<add-kwargs>")
-            _add_kwargs(child_node)
+        if _is_match(True, "<add-kwargs>"):
+            _add_kwargs(node)
 
 
 # #181-#182: <add-kwargs> -> , **# | EPSILON
@@ -2051,6 +1898,5 @@ def _add_kwargs(node: classmethod) -> None:
 def _next_parameter(node: classmethod) -> None:
 
     if _is_match(True, ",", node):
-        if _is_match(True, "<parameter>", node):
-            child_node = add_parse_tree_node(node, "<parameter>")
-            _parameter(child_node)
+        if _is_match(True, "<parameter>"):
+            _parameter(node)
