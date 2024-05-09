@@ -232,7 +232,7 @@ def _constant(node: classmethod) -> None:
 def _statement(node: classmethod) -> None:
     stmt_node = add_parse_tree_node(node, "<statement>")
 
-    if _is_match(True, "<constant>") or _is_match(True, "<insert-variable>"):
+    if _is_match(True, "<constant>") or _is_match(True, "<insert-variable>") and not _is_exist("inpetal"):
         stmt_node.properties["global"] = False
 
         if _is_match(True, "<constant>"):
@@ -1233,7 +1233,7 @@ def _insert_inpetal(node: classmethod) -> None:
         if _is_match(True, "#", node):
             pass
 
-        if _is_match(True, "=", node):
+        if _is_match(True, "="):
             pass
 
     elif _is_match(True, "<sqnc-type>"):

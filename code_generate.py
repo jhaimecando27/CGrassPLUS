@@ -101,6 +101,43 @@ def generate_python_code(node):
 
                 return if_stmt
 
+            if node.kind == "iterative":
+                print('test')
+                con_stmt = ""
+                var = ""
+                for child in node.children:
+                    print(child)
+                    if child.symbol == "fern":
+                        condition = child.children[0].children
+                        var = condition[1].symbol.replace("#", "")
+                        start = condition[3].symbol
+                        end = condition[7].symbol
+                        seq = condition[11].symbol
+
+                        con_stmt += f"{indent}for {var} in range({start}, {end}, {seq}):\n" + generate_python_code(child.children[1])
+                    if child.symbol == "willow":
+                        # while loop
+                        condition = child.children[0].children
+                        con = ""
+                        con += condition[0].symbol.replace("#", "")
+                        con += condition[1].symbol
+                        con += condition[2].symbol
+
+                        for new_child in child.children:
+                            if new_child.symbol == "<statement>":
+                                con_stmt += f"{indent}while {con}:\n" + generate_python_code(new_child)
+
+                return con_stmt
+
+            if node.kind == "assignment":
+                var = ""
+                for child in node.children:
+                    if child.kind == rd.ID:
+                        var = child.symbol.replace("#", "")
+                    if child.kind == "data":
+                        data = child.symbol
+                return f"{indent}{var} = {data}\n"
+
     else:
         code = (
             f"{indent}def {node.symbol}():\n"
