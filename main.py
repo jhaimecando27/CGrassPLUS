@@ -145,7 +145,7 @@ class _HeadersFrame(tk.Frame):
                 if is_semantic_valid(self.output_instance, lexer_output):
                     print(symbol_table)
                     self.output_instance.set_output("SemanticAnalyser: No Errors Found.\n")
-                    generate(self.code_editor_instance.get_text(), self.output_instance)
+                    generate(self, self.code_editor_instance.get_text(), self.output_instance)
 
 
 
