@@ -970,13 +970,14 @@ def _sqnc_value(node: classmethod) -> None:
 def _sequence(node: classmethod) -> None:
     global index
 
-    if _is_match(True, "<dirt>"):
-        _dirt(node)
+    if _is_match(True, "<dirt>") or _is_match(False, "<open>"):
+        if _is_exist(":") and _is_match(True, "<dirt>"):
+            _dirt(node)
 
         if _is_match(False, "<open>"):
             _open(node)
 
-        if _is_match(True, "<dirt>"):
+        if _is_exist(":") and _is_match(True, "<dirt>"):
             _dirt(node)
 
         if _is_match(True, "<insert-sqnc>"):
@@ -1119,8 +1120,10 @@ def _next_sqnc(node: classmethod) -> None:
 # #116-#117: <insert-next-sqnc> -> <dirt><insert-sqnc> | *# <add-kwargs>
 def _insert_next_sqnc(node: ParseTreeNode) -> None:
 
-    if _is_match(True, "<dirt>"):
-        _dirt(node)
+    if _is_match(True, "<dirt>") or _is_match(True, "<insert-sqnc>"):
+
+        if _is_exist(":") and _is_match(True, "<dirt>"):
+            _dirt(node)
 
         if _is_match(True, "<insert-sqnc>"):
             _insert_sqnc(node)
