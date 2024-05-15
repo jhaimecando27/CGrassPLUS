@@ -140,8 +140,7 @@ def generate_python_code(node):
                 if _is_print:
                     return f"{indent}print({data})\n"
                 else:
-                    return f"{indent}{var}:{node.type} = input({data[1:]})\n"
-
+                    return f"{indent}{var}:{node.type} = input({data})\n"
             if node.kind == "if":
                 if_stmt = ""
                 con = ""
@@ -206,7 +205,7 @@ def generate_python_code(node):
                         for new_child in child.children:
                             if new_child.symbol == "<statement>":
                                 con_stmt += (
-                                    f"{indent}while {con}:\n"
+                                    f"{indent}while({con}):\n"
                                     + generate_python_code(new_child)
                                 )
 
