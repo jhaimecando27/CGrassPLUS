@@ -121,19 +121,11 @@ class _HeadersFrame(tk.Frame):
 
         self.stageLbl.configure(text="Compiler Stage: Lexical Analysis")
 
-        try:
-            is_valid, lexer_output = is_lexical_valid(
-                self.output_instance,
-                self.token_instance,
-                self.code_editor_instance.get_text(),
-            )
-
-        except TypeError:
-            is_valid = is_lexical_valid(
-                self.output_instance,
-                self.token_instance,
-                self.code_editor_instance.get_text(),
-            )
+        is_valid, lexer_output = is_lexical_valid(
+            self.output_instance,
+            self.token_instance,
+            self.code_editor_instance.get_text(),
+        )
 
         if is_valid:
             self.stageLbl.configure(text="Compiler Stage: Syntax Analysis")

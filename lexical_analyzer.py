@@ -9,7 +9,7 @@ def is_lexical_valid(output_instance, token_instance, input_string):
         for error in errors:
             output_instance.set_output(f"LexicalAnalyser: {error[1]} : {error[0]}\n")
         output_instance.set_output("LexicalAnalyser: Error Found.\n")
-        return False
+        return False, output
 
     output_instance.set_output("LexicalAnalyser: No Errors Found.\n")
     token_instance.set_output(output)
