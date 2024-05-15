@@ -1,5 +1,5 @@
 import grammar as g
-from var import add_parse_tree_node, parse_tree_root
+from var import add_parse_tree_node, parse_tree_root, ParseTreeNode
 
 errors: list[list[str]] = []
 line_number: int = 1
@@ -137,9 +137,7 @@ def _is_exist(expected: str) -> True:
                 break
 
     else:
-        words: list[str] = lexemes[index:]
-
-        for word in words:
+        for word in lexemes[index:]:
             if word == "<newline>":
                 return False
 
@@ -478,17 +476,20 @@ def _insert_operation(node: classmethod) -> None:
 # "bloom literal" |
 # # <insert-func> <indexing> <start-end-step> <concatenate> <operate-number> <operate-logic> |
 # lent(<all-type-value>) <operate-number> |
-# <common-type>(<all-type-value>) <concatenate> <operate-number> <operate-logic> |
+# <common-type><typecast> |
 # <supply-dirt> ( <all-type-value> ) |
 # bare
 def _data(node: classmethod) -> None:
     global index, lexemes
 
     if _is_match(True, "tint literal", node):
-        pass
+        if _is_match(True, "<operate-number>", node):
+            _operate_number(node)
+
 
     elif _is_match(True, "flora literal", node):
-        pass
+        if _is_match(True, "<operate-number>", node):
+            _operate_number(node)
 
     elif _is_match(True, "chard literal", node):
         pass
@@ -536,20 +537,8 @@ def _data(node: classmethod) -> None:
     elif _is_match(True, "<common-type>"):
         _common_type(node)
 
-        if _is_match(False, "(", node):
-            pass
-
-        if _is_match(True, "<all-type-value>"):
-            _all_type_value(node)
-
-        if _is_match(True, "<concatenate>"):
-            _concatenate(node)
-
-        if _is_match(True, "<operate-number>"):
-            _operate_number(node)
-
-        if _is_match(True, "<operate-logic>"):
-            _operate_logic(node)
+        if _is_match(False, "<typecast>"):
+            _typecast(node)
 
     elif _is_match(True, "<supply-dirt>"):
         _supply_dirt(node)
@@ -611,22 +600,16 @@ def _arithmetic(node: classmethod) -> None:
 def _operate_number(node: classmethod) -> None:
 
     if _is_match(True, "<operator>"):
-        is_div = False
-        if lexemes[index] == "/":
-            is_div = True
         _operator(node)
 
-        if _is_match(True, "<open-parenthesis>"):
-            _open_parenthesis(node)
-
-        if is_div and lexemes[index] == "0":
-            errors.append((lexemes[index], "Syntax Error: Division by zero"))
+        if _is_match(True, "(", node):
+            pass
 
         if _is_match(True, "<arithmetic>"):
             _arithmetic(node)
 
-        if _is_match(True, "<close-parenthesis>"):
-            _close_parenthesis(node)
+        if _is_match(True, ")", node):
+            pass
 
 
 # #46-#52: <operator> -> + | - | * | / | % | ** | //
@@ -734,6 +717,7 @@ def _flora(node: classmethod) -> None:
         errors.append((lexemes[index], "Syntax Error: Expecting <flora>"))
 
 
+# #60-#61: <concatenate> -> <indexing> + <all-type-value> <concatenate> | EPSILON
 def _concatenate(node: classmethod) -> None:
     if _is_match(True, "<indexing>"):
         _indexing(node)
@@ -748,7 +732,7 @@ def _concatenate(node: classmethod) -> None:
             _concatenate(node)
 
 
-# #60-#61: <condition> ->
+# #62-#63: <condition> ->
 # <data> <operate-logic> |
 # <sequence> <operate-logic>
 def _condition(node: classmethod) -> None:
@@ -770,7 +754,7 @@ def _condition(node: classmethod) -> None:
         errors.append((lexemes[index], "Syntax Error: Expecting <condition>"))
 
 
-# #62-#63: <operate-logic> -> <cond-operator> <open-parenthesis> <condition> <close-parenthesis> | EPSILON
+# #64-#65: <operate-logic> -> <cond-operator> <open-parenthesis> <condition> <close-parenthesis> | EPSILON
 def _operate_logic(node: classmethod) -> None:
     global index
 
@@ -778,20 +762,19 @@ def _operate_logic(node: classmethod) -> None:
         _cond_operator(node)
         is_true = False
 
-        if lexemes[index] == "(":
+        if _is_match(True, "(", node):
             is_true = True
-
-        if _is_match(True, "<open-parenthesis>"):
-            _open_parenthesis(node)
+            pass
 
         if _is_match(True, "<condition>"):
             _condition(node)
 
-        if is_true and _is_match(True, "<close-parenthesis>"):
-            _close_parenthesis(node)
+        if is_true:
+            if _is_match(False, "(", node):
+                pass
 
 
-# #64-#73: <cond-operator> -> == | != | > | < | >= | <= | =& | =/ | at | nut
+# #66-#75: <cond-operator> -> == | != | > | < | >= | <= | =& | =/ | at | nut <nut-and-ats>
 def _cond_operator(node: classmethod) -> None:
     global index
 
@@ -823,13 +806,27 @@ def _cond_operator(node: classmethod) -> None:
         pass
 
     elif _is_match(True, "nut", node):
-        pass
+        if _is_match(True, "<nut-and-ats>"):
+            _nut_and_ats(node)
 
     else:
         errors.append((lexemes[index], "Syntax Error: Expecting <cond-operator>"))
 
 
-# #74-#76: <supply-dirt> -> getItems | getKeys | getValues
+# ))))))
+# #75-#78: <nut-and-ats> -> at | nut <nut-and-ats>
+def _nut_and_ats(node: ParseTreeNode) -> None:
+    global index
+
+    if _is_match(True, "at", node):
+        pass
+
+    elif _is_match(True, "nut", node):
+        if _is_match(True, "<nut-and-ats>"):
+            _nut_and_ats(node)
+
+
+# #79-#81: <supply-dirt> -> getItems | getKeys | getValues
 def _supply_dirt(node: classmethod) -> None:
     global index
 
@@ -846,7 +843,7 @@ def _supply_dirt(node: classmethod) -> None:
         errors.append((lexemes[index], "Syntax Error: Expecting <supply-dirt>"))
 
 
-# #77-#78: <insert-func> -> (<argument>) <instance-grab> | EPSILON
+# #82-#83: <insert-func> -> (<argument>) <instance-grab> | EPSILON
 def _insert_func(node: classmethod) -> None:
 
     if _is_match(True, "(", node):
@@ -860,7 +857,7 @@ def _insert_func(node: classmethod) -> None:
             _instance_grab(node)
 
 
-# #79-#80: <instance-grab> -> .# | EPSILON
+# #84-#85: <instance-grab> -> .# | EPSILON
 def _instance_grab(node: classmethod) -> None:
 
     if _is_match(True, ".", node):
@@ -868,7 +865,7 @@ def _instance_grab(node: classmethod) -> None:
             pass
 
 
-# #81-#82: <indexing> -> [<insert-index>] <indexing> | EPSILON
+# #86-#87: <indexing> -> [<insert-index>] <indexing> | EPSILON
 def _indexing(node: classmethod) -> None:
 
     if _is_match(True, "[", node):
@@ -882,7 +879,28 @@ def _indexing(node: classmethod) -> None:
             _indexing(node)
 
 
-# #83-#84: <insert-index> -> 'tint literal' | 'string literal'
+# #88-89: <typecast> -> (<all-type-value>)<concatenate><operate-number><operate-logic>
+def _typecast(node: ParseTreeNode) -> None:
+
+    if _is_match(True, "(", node):
+
+        if _is_match(True, "<all-type-value>"):
+            _all_type_value(node)
+
+        if _is_match(False, ")", node):
+            pass
+
+        if _is_match(True, "<concatenate>"):
+            _concatenate(node)
+
+        if _is_match(True, "<operate-nmmber>"):
+            _operate_number(node)
+
+        if _is_match(True, "<operate-logic>"):
+            _operate_logic(node)
+
+
+# #: <insert-index> -> 'tint literal' | 'string literal'
 def _insert_index(node: classmethod) -> None:
     global index
 
@@ -896,7 +914,7 @@ def _insert_index(node: classmethod) -> None:
         errors.append((lexemes[index], "Syntax Error: Expecting <insert-index>"))
 
 
-# #85-#86: <more-data> -> , <common-data> <more-data> # <common-data> <more-data> | EPSILON
+# #90-#91: <more-data> -> , <common-data> <more-data> # <common-data> <more-data> | EPSILON
 def _more_data(node: classmethod) -> None:
 
     if _is_match(True, ","):
@@ -916,7 +934,7 @@ def _more_data(node: classmethod) -> None:
             _more_data(node)
 
 
-# #87-#90: <sqnc-type> -> florist | tulip | dirt | stem
+# #92-#95: <sqnc-type> -> florist | tulip | dirt | stem
 def _sqnc_type(node: classmethod) -> None:
     global index
 
@@ -936,22 +954,38 @@ def _sqnc_type(node: classmethod) -> None:
         errors.append((lexemes[index], "Syntax Error: Expecting <sqnc-type>"))
 
 
-# #91-#92: <sqnc-value> -> = <sequence> | EPSILON
+# #96-#97: <sqnc-value> -> = <sequence> | EPSILON
 def _sqnc_value(node: classmethod) -> None:
 
     if _is_match(True, "=", node):
-        if _is_match(True, "<sequence>"):
+        if _is_match(False, "<sequence>"):
             _sequence(node)
 
 
-# #93-#96: <sequence> ->
+# #98-#101: <sequence> ->
+# <dirt> <open> <dirt> <insert-sqnc> <close>
 # <supply-dirt> ( <all-type-value> ) |
 # <sqnc-type> ( <all-type-value> ) |
 # # <insert-func> <indexing> <start-end-step>
 def _sequence(node: classmethod) -> None:
     global index
 
-    if _is_match(True, "<supply-dirt>"):
+    if _is_match(True, "<dirt>"):
+        _dirt(node)
+
+        if _is_match(False, "<open>"):
+            _open(node)
+
+        if _is_match(True, "<dirt>"):
+            _dirt(node)
+
+        if _is_match(True, "<insert-sqnc>"):
+            _insert_sqnc(node)
+
+        if _is_match(False, "<close>"):
+            _close(node)
+
+    elif _is_match(True, "<supply-dirt>"):
         _supply_dirt(node)
 
         if _is_match(False, "(", node):
@@ -989,7 +1023,7 @@ def _sequence(node: classmethod) -> None:
         errors.append((lexemes[index], "Syntax Error: Expecting <sequence>"))
 
 
-# #97-#98: <open> -> [ | {
+# #102-#103: <open> -> [ | {
 def _open(node: classmethod) -> None:
     global index
 
@@ -1003,17 +1037,17 @@ def _open(node: classmethod) -> None:
         errors.append((lexemes[index], "Syntax Error: Expecting <open>"))
 
 
-# #99-#100: <dirt> -> 'string literal' : | EPSILON
+# #104-#105: <dirt> -> 'string literal' : | EPSILON
 def _dirt(node: classmethod) -> None:
 
     if _is_match(True, "string literal", node):
         pass
 
-        if _is_match(True, ":", node):
+        if _is_match(False, ":", node):
             pass
 
 
-# #101-#102: <close> -> ] | }
+# #106-#107: <close> -> ] | }
 def _close(node: classmethod) -> None:
     global index
 
@@ -1027,7 +1061,7 @@ def _close(node: classmethod) -> None:
         errors.append((lexemes[index], "Syntax Error: Expecting <close>"))
 
 
-# #103-#104: <more-sqnc> -> , <sqnc-type> # <sqnc-value> <more-sqnc> | EPSILON
+# #108-#109: <more-sqnc> -> , <sqnc-type> # <sqnc-value> <more-sqnc> | EPSILON
 def _more_sqnc(node: classmethod) -> None:
 
     if _is_match(True, ",", node):
@@ -1044,9 +1078,11 @@ def _more_sqnc(node: classmethod) -> None:
             _more_sqnc(node)
 
 
-# #105-#106: <insert-sqnc> ->
+# #110-#113: <insert-sqnc> ->
 # <data> <next-sqnc> |
 # <open> <insert-sqnc> <close> <next-sqnc>
+# *# <add-kwargs>
+# EPSILON
 def _insert_sqnc(node: classmethod) -> None:
 
     if _is_match(True, "<data>"):
@@ -1067,63 +1103,79 @@ def _insert_sqnc(node: classmethod) -> None:
         if _is_match(True, "<next-sqnc>"):
             _next_sqnc(node)
 
+    elif _is_match(True, "*#", node):
+        if _is_match(True, "<add-kwargs>", node):
+            _add_kwargs(node)
 
-# #107-#108: <next-sqnc> -> , <dirt> <insert-sqnc> | EPSILON
+
+# #114-#115: <next-sqnc> -> , <insert-next-sqnc> | EPSILON
 def _next_sqnc(node: classmethod) -> None:
 
     if _is_match(True, ",", node):
-        if _is_match(True, "<dirt>"):
-            _dirt(node)
+        if _is_match(False, "<insert-next-sqnc>"):
+            _insert_next_sqnc(node)
+
+
+# #116-#117: <insert-next-sqnc> -> <dirt><insert-sqnc> | *# <add-kwargs>
+def _insert_next_sqnc(node: ParseTreeNode) -> None:
+
+    if _is_match(True, "<dirt>"):
+        _dirt(node)
 
         if _is_match(True, "<insert-sqnc>"):
             _insert_sqnc(node)
 
+    elif _is_match(True, "*#", node):
+        if _is_match(True, "<add-kwargs>", node):
+            _add_kwargs(node)
 
-# #109-#110: <start-end-step> -> [ <insert-start> | EPSILON
+
+# #118-#119: <start-end-step> -> [ <insert-start> | EPSILON
 def _start_end_step(node: classmethod) -> None:
 
     if _is_match(True, "[", node):
-        if _is_match(True, "<insert-start>"):
+        if _is_match(False, "<insert-start>"):
             _insert_start(node)
 
 
 # ]]
-# #111-#112: <insert-start> -> 'tint literal':  <close-start> | : <skip-start>
+# #120-#121: <insert-start> -> <insert-data>:<close-start> | : <skip-start>
 def _insert_start(node: classmethod) -> None:
     global index
 
-    if _is_match(True, "tint literal", node):
-        pass
+    if _is_match(True, "<insert-data>"):
+        _insert_data(node)
 
-        if _is_match(True, ":", node):
+        if _is_match(False, ":", node):
             pass
 
-        if _is_match(True, "<close-start>"):
+        if _is_match(False, "<close-start>"):
             _close_start(node)
 
     elif _is_match(True, ":", node):
         pass
 
-        if _is_match(True, "<skip-start>"):
+        if _is_match(False, "<skip-start>"):
             _skip_start(node)
 
     else:
         errors.append((lexemes[index], "Syntax Error: Expecting <insert-start>"))
 
 
-# #113-#114: <close-start> -> <close-end> | 'tint literal' <close-end>
+# #122-#123: <close-start> -> <close-end> | <insert-data><close-end>
 def _close_start(node: classmethod) -> None:
 
     if _is_match(True, "<close-end>"):
         _close_end(node)
 
-    elif _is_match(True, "tint literal", node):
+    elif _is_match(True, "<insert-data>"):
+        _insert_data(node)
 
         if _is_match(True, "<close-end>"):
             _close_end(node)
 
 
-# #115-116: <close-end> -> ] <start-end-step> | : 'tint literal' <start-end-step>
+# #124-125: <close-end> -> ] <start-end-step> | : 'tint literal' <start-end-step>
 def _close_end(node: classmethod) -> None:
 
     if _is_match(True, "]", node):
@@ -1131,17 +1183,25 @@ def _close_end(node: classmethod) -> None:
             _start_end_step(node)
 
     elif _is_match(True, ":", node):
-        if _is_match(True, "tint literal", node):
-            if _is_match(True, "<start-end-step>"):
-                _start_end_step(node)
+
+        if _is_match(True, "<insert-data>"):
+            _insert_data(node)
+
+        if _is_match(False, "]", node):
+            pass
+
+        if _is_match(True, "<start-end-step>"):
+            _start_end_step(node)
 
 
-# #117-#118: <skip-start> ->
-# 'tint literal' <close-end> <start-end-step> |
-# : 'tint literal' ] <start-end-step>
+# #126-#127: <skip-start> ->
+# <insert-data> <close-end> <start-end-step> |
+# : <insert-data> ] <start-end-step>
 def _skip_start(node: classmethod) -> None:
 
-    if _is_match(True, "tint literal", node):
+    if _is_match(True, "<insert-data>"):
+        _insert_data(node)
+
         if _is_match(True, "<close-end>"):
             _close_end(node)
 
@@ -1149,15 +1209,18 @@ def _skip_start(node: classmethod) -> None:
             _start_end_step(node)
 
     elif _is_match(True, ":", node):
-        if _is_match(True, "tint literal", node):
-            if _is_match(True, "<close-end>"):
-                _close_end(node)
 
-            if _is_match(True, "<start-end-step>"):
-                _start_end_step(node)
+        if _is_match(True, "<insert-data>"):
+            _insert_data(node)
+
+        if _is_match(True, "]", node):
+            pass
+
+        if _is_match(True, "<start-end-step>"):
+            _start_end_step(node)
 
 
-# #119-#121: <all-type-value> ->
+# #128-#130: <all-type-value> ->
 # <insert-data> |
 # <sequence> |
 # inpetal ('string literal')
@@ -1175,7 +1238,7 @@ def _all_type_value(node: classmethod) -> None:
         if _is_match(False, "(", node):
             pass
 
-        if _is_match(True, "string literal", node):
+        if _is_match(False, "string literal", node):
             pass
 
         if _is_match(False, ")", node):
@@ -1185,7 +1248,7 @@ def _all_type_value(node: classmethod) -> None:
         errors.append((lexemes[index], "Syntax Error: Expecting <all-type-value>"))
 
 
-# #122-#123: <i/o-statement> ->
+# #131-#132: <i/o-statement> ->
 # <insert-inpetal> inpetal ('string literal') |
 # mint(<all-type-value>)
 def _i_o_statement(node: classmethod) -> None:
@@ -1199,7 +1262,7 @@ def _i_o_statement(node: classmethod) -> None:
             if _is_match(False, "(", node):
                 pass
 
-            if _is_match(True, "string literal", node):
+            if _is_match(False, "string literal", node):
                 pass
 
             if _is_match(False, ")", node):
@@ -1210,7 +1273,7 @@ def _i_o_statement(node: classmethod) -> None:
         if _is_match(False, "(", node):
             pass
 
-        if _is_match(True, "<all-type-value>"):
+        if _is_match(False, "<all-type-value>"):
             _all_type_value(node)
 
         if _is_match(False, ")", node):
@@ -1220,7 +1283,7 @@ def _i_o_statement(node: classmethod) -> None:
         errors.append((lexemes[index], "Syntax Error: Expecting <i/o-statement>"))
 
 
-# #124-#126: <insert-inpetal> ->
+# #133-#134: <insert-inpetal> ->
 # <common-type> # = |
 # <sqnc-type> # = |
 # # <insert-func> <indexing> <start-end-step> <more-id> <assignment-op>
@@ -1230,22 +1293,22 @@ def _insert_inpetal(node: classmethod) -> None:
     if _is_match(True, "<common-type>"):
         _common_type(node)
 
-        if _is_match(True, "#", node):
+        if _is_match(False, "#", node):
             pass
 
-        if _is_match(True, "="):
+        if _is_match(False, "="):
             pass
 
     elif _is_match(True, "<sqnc-type>"):
         _sqnc_type(node)
 
-        if _is_match(True, "#", node):
+        if _is_match(False, "#", node):
             pass
 
-        if _is_match(True, "=", node):
+        if _is_match(False, "=", node):
             pass
 
-    elif _is_match(True, "#", node):
+    elif _is_match(False, "#", node):
         if _is_match(True, "<insert-func>"):
             _insert_func(node)
 
@@ -1265,13 +1328,13 @@ def _insert_inpetal(node: classmethod) -> None:
         errors.append((lexemes[index], "Syntax Error: Expecting <insert-inpetal>"))
 
 
-# #127-#128: <more-id> ->
+# #136-#137: <more-id> ->
 # , # <insert-func> <indexing> <start-end-step> <more-id> |
 # EPSILON
 def _more_id(node: classmethod) -> None:
 
     if _is_match(True, ",", node):
-        if _is_match(True, "#", node):
+        if _is_match(False, "#", node):
             pass
 
         if _is_match(True, "<insert-func>"):
@@ -1287,7 +1350,7 @@ def _more_id(node: classmethod) -> None:
             _more_id(node)
 
 
-# #129-#130: <eleaf> -> eleaf (<condition>) (<statement>); <eleaf> | EPSILON
+# #138-#139: <eleaf> -> eleaf (<condition>) (<statement>); <eleaf> | EPSILON
 def _eleaf(node: classmethod) -> None:
 
     if _is_match(True, "eleaf"):
@@ -1320,7 +1383,7 @@ def _eleaf(node: classmethod) -> None:
             _eleaf(node)
 
 
-# #131-#132: <else> -> moss (<statement>); | EPSILON
+# #140-#141: <else> -> moss (<statement>); | EPSILON
 def _else(node: classmethod) -> None:
 
     if _is_match(True, "moss"):
@@ -1339,11 +1402,8 @@ def _else(node: classmethod) -> None:
         if _is_match(False, ";"):
             pass
 
-    else:
-        errors.append((lexemes[index], "Syntax Error: Expecting <else>"))
 
-
-# #133-#134: <assignment> -> <insert-inpetal> <all-type-value> | <assign> <insert-assign>
+# #142-#143: <assignment> -> <insert-inpetal> <all-type-value> | <assign> <insert-assign>
 def _assignment(node: classmethod) -> None:
     global index
 
@@ -1363,14 +1423,14 @@ def _assignment(node: classmethod) -> None:
         errors.append((lexemes[index], "Syntax Error: Expecting <assignment>"))
 
 
-# #135-#136: <assign> -> <insert-inpetal> | EPSILON
+# #144-#145: <assign> -> <insert-inpetal> | EPSILON
 def _assign(node: classmethod) -> None:
 
     if _is_match(True, "<insert-inpetal>"):
         _insert_inpetal(node)
 
 
-# #137-#138: <insert-assign> ->
+# #146-#147: <insert-assign> ->
 # <common-type> (<all-type-value>) |
 # <sqnc-type> (<all-type-value>)
 def _insert_assign(node: classmethod) -> None:
@@ -1404,7 +1464,7 @@ def _insert_assign(node: classmethod) -> None:
         errors.append((lexemes[index], "Syntax Error: Expecting <insert-assign>"))
 
 
-# #139-#146: <assignment-op> -> = | += | -= | *= | /= | %= | **= | //=
+# #148-#155: <assignment-op> -> = | += | -= | *= | /= | %= | **= | //=
 def _assignment_op(node: classmethod) -> None:
     global index
 
@@ -1436,7 +1496,7 @@ def _assignment_op(node: classmethod) -> None:
         errors.append((lexemes[index], "Syntax Error: Expecting <assignment-op>"))
 
 
-# #147-#148: <iterative> -> fern(<insert-fern> | willow (<condition>)(<statement>)
+# #156-#157: <iterative> -> fern(<insert-fern> | willow (<condition>)(<statement>)
 def _iterative(node: classmethod) -> None:
     global index
 
@@ -1480,7 +1540,7 @@ def _iterative(node: classmethod) -> None:
 # )))
 
 
-# #149-#150: <insert-fern> ->
+# #158-#159: <insert-fern> ->
 # tint # = 'tint literal'; <condition>; # <assignment-op> <tint>;)(<statement>) |
 # <all-type-value> <more-value> at <sequence>;) (<statement>)
 def _insert_fern(node: classmethod) -> None:
@@ -1523,10 +1583,10 @@ def _insert_fern(node: classmethod) -> None:
         if _is_match(False, ")"):
             pass
 
-        if _is_match(True, "("):
+        if _is_match(False, "("):
             pass
 
-        if _is_match(True, "<statement>"):
+        if _is_match(False, "<statement>"):
             _statement(node)
 
         if _is_match(False, ")"):
@@ -1536,13 +1596,13 @@ def _insert_fern(node: classmethod) -> None:
         child_node = add_parse_tree_node(node, "<condition>")
         _all_type_value(child_node)
 
-        if _is_match(True, "<more-value>"):
+        if _is_match(False, "<more-value>"):
             _more_value(child_node)
 
-        if _is_match(True, "at", child_node):
+        if _is_match(False, "at", child_node):
             pass
 
-        if _is_match(True, "<sequence>"):
+        if _is_match(False, "<sequence>"):
             _sequence(child_node)
 
         if _is_match(False, ";", child_node):
@@ -1551,7 +1611,7 @@ def _insert_fern(node: classmethod) -> None:
         if _is_match(False, "("):
             pass
 
-        if _is_match(True, "<statement>", node):
+        if _is_match(False, "<statement>", node):
             _statement(node)
 
         if _is_match(False, ")"):
@@ -1561,18 +1621,18 @@ def _insert_fern(node: classmethod) -> None:
         errors.append((lexemes[index], "Syntax Error: Expecting <insert-fern>"))
 
 
-# #151-#152: <more-value> -> , <all-type-value> <more-value> | EPSILON
+# #160-#1161: <more-value> -> , <all-type-value> <more-value> | EPSILON
 def _more_value(node: classmethod) -> None:
 
     if _is_match(True, ",", node):
-        if _is_match(True, "<all-type-value>"):
+        if _is_match(False, "<all-type-value>"):
             _all_type_value(node)
 
         if _is_match(True, "<more-value>"):
             _more_value(node)
 
 
-# #153-#154: <check-branch> ->
+# #162-#163: <check-branch> ->
 # <all-type-value> <insert-branch> <more-branch> |
 # _:<statement>
 def _check_branch(node: classmethod) -> None:
@@ -1581,28 +1641,28 @@ def _check_branch(node: classmethod) -> None:
     if _is_match(True, "<all-type-value>"):
         _all_type_value(node)
 
-        if _is_match(True, "<insert-branch>"):
+        if _is_match(False, "<insert-branch>"):
             _insert_branch(node)
 
         if _is_match(True, "<more-branch>"):
             _more_branch(node)
 
     elif _is_match(True, "_", node):
-        if _is_match(True, ":", node):
-            if _is_match(True, "<statement>"):
+        if _is_match(False, ":", node):
+            if _is_match(False, "<statement>"):
                 _statement(node)
 
     else:
         errors.append((lexemes[index], "Syntax Error: Expecting <check-branch>"))
 
 
-# #155-#156: <insert-branch> -> : <statement> | leaf ( <condition> ) ( <statement> );
+# #164-#165: <insert-branch> -> : <operate-branch> | leaf ( <condition> ) ( <statement> );
 def _insert_branch(node: classmethod) -> None:
     global index
 
     if _is_match(True, ":", node):
-        if _is_match(True, "<statement>"):
-            _statement(node)
+        if _is_match(False, "<operate-branch>"):
+            _operate_branch(node)
 
     elif _is_match(True, "leaf", node):
         leaf_node = add_parse_tree_node(node, "leaf")
@@ -1610,7 +1670,7 @@ def _insert_branch(node: classmethod) -> None:
         if _is_match(False, "("):
             pass
 
-        if _is_match(True, "<condition>"):
+        if _is_match(False, "<condition>"):
             child_node = add_parse_tree_node(leaf_node, "<condition>")
             _condition(child_node)
 
@@ -1620,7 +1680,7 @@ def _insert_branch(node: classmethod) -> None:
         if _is_match(False, "("):
             pass
 
-        if _is_match(True, "<statement>"):
+        if _is_match(False, "<statement>"):
             _statement(leaf_node)
 
         if _is_match(False, ")"):
@@ -1633,18 +1693,29 @@ def _insert_branch(node: classmethod) -> None:
         errors.append((lexemes[index], "Syntax Error: Expecting <insert-branch>"))
 
 
-# #157-#158: <more-branch> -> , branch <check-branch> | EPSILON
+# #166-167: <operate-branch> -> <statement> | branch <check-branch>
+def _operate_branch(node: ParseTreeNode) -> None:
+    if _is_match(True, "<statement>"):
+        _statement(node)
+
+    elif _is_match(True, "branch", node):
+        if _is_match(True, "<check-branch>"):
+            _check_branch(node)
+
+    else:
+        errors.append((lexemes[index], "Syntax Error: Expecting <operate-branch>"))
+
+
+# #168-#169: <more-branch> -> branch <check-branch> | EPSILON
 def _more_branch(node: classmethod) -> None:
 
-    if _is_match(True, ",", node):
-        if _is_match(True, "branch", node):
-            pass
+    if _is_match(True, "branch", node):
 
         if _is_match(True, "<check-branch>"):
             _check_branch(node)
 
 
-# #159-#161: <argument> ->
+# #170-#171: <argument> ->
 # <insert-argument> |
 # <common-type> # <common-data> <more**kwargs> |
 # EPSILON
@@ -1656,7 +1727,7 @@ def _argument(node: classmethod) -> None:
     elif _is_match(True, "<common-type>"):
         _common_type(node)
 
-        if _is_match(True, "#", node):
+        if _is_match(False, "#", node):
             pass
 
         if _is_match(True, "<common-data>"):
@@ -1665,11 +1736,8 @@ def _argument(node: classmethod) -> None:
         if _is_match(True, "<more**kwargs>"):
             _more_kwargs(node)
 
-    elif _is_match(True, "EPSILON", node):
-        pass
 
-
-# #162-#164: <insert-argument> ->
+# #173-#175: <insert-argument> ->
 # <all-type-value> <add-argument> |
 # # ( <argument> ) <add-argument> |
 # EPSILON
@@ -1686,7 +1754,7 @@ def _insert_argument(node: classmethod) -> None:
         if _is_match(False, "(", node):
             pass
 
-        if _is_match(True, "<argument>"):
+        if _is_match(False, "<argument>"):
             _argument(node)
 
         if _is_match(False, ")", node):
@@ -1696,7 +1764,7 @@ def _insert_argument(node: classmethod) -> None:
             _add_argument(node)
 
 
-# #165-#166: <add-argument> -> , <argument> | EPSILON
+# #176-#177: <add-argument> -> , <argument> | EPSILON
 def _add_argument(node: classmethod) -> None:
 
     if _is_match(True, ",", node):
@@ -1704,14 +1772,14 @@ def _add_argument(node: classmethod) -> None:
             _argument(node)
 
 
-# #167-#168: <more**kwargs> -> , <common-type> # <common-data> <more**kwargs> | EPSILON
+# #178-#179: <more**kwargs> -> , <common-type> # <common-data> <more**kwargs> | EPSILON
 def _more_kwargs(node: classmethod) -> None:
 
     if _is_match(True, ",", node):
         if _is_match(True, "<common-type>"):
             _common_type(node)
 
-        if _is_match(True, "#", node):
+        if _is_match(False, "#", node):
             pass
 
         if _is_match(True, "<common-data>"):
@@ -1721,7 +1789,7 @@ def _more_kwargs(node: classmethod) -> None:
             _more_kwargs(node)
 
 
-# #169-#171: <function> ->
+# #180-#181: <function> ->
 # <common-type> # ( <parameter> ) ( <statement> regrow <all-type-value> <add-at> ; ) ; <function> |
 # viola # ( <undefined-param> ) ( <statement> ); <function> |
 # EPSILON
@@ -1733,7 +1801,7 @@ def _function(node: classmethod) -> None:
     if _is_match(True, "<common-type>"):
         _common_type(func_node)
 
-        if _is_match(True, "#", func_node):
+        if _is_match(False, "#", func_node):
             pass
 
         if _is_match(False, "("):
@@ -1749,10 +1817,10 @@ def _function(node: classmethod) -> None:
         if _is_match(False, "(", func_node):
             pass
 
-        if _is_match(True, "<statement>"):
+        if _is_match(False, "<statement>"):
             _statement(func_node)
 
-        if _is_match(True, "regrow"):
+        if _is_match(False, "regrow"):
             pass
 
         if _is_match(True, "<all-type-value>"):
@@ -1791,7 +1859,7 @@ def _function(node: classmethod) -> None:
         if _is_match(False, "(", func_node):
             pass
 
-        if _is_match(True, "<statement>"):
+        if _is_match(False, "<statement>"):
             _statement(func_node)
 
         if _is_match(False, ")", func_node):
@@ -1804,34 +1872,35 @@ def _function(node: classmethod) -> None:
             _function(node)
 
 
-# #172-#173: <add-at> -> <more-value> at <all-type-value> | EPSILON
+# #183-#184: <add-at> -> <more-value> at <all-type-value> | EPSILON
 def _add_at(node: classmethod) -> None:
 
     if _is_match(True, "<more-value>"):
         _more_value(node)
 
-        if _is_match(True, "at", node):
+        if _is_match(False, "at", node):
             pass
 
-        if _is_match(True, "<all-type-value>"):
+        if _is_match(False, "<all-type-value>"):
             _all_type_value(node)
 
 
-# #174-#178: <parameter> ->
+# #185-#189: <parameter> ->
 # <undefined-param> |
 # <common-type> # <common-data> <next-parameter> |
 # <sqnc-type> # <sqnc-value> <next-parameter> |
-# # ( <parameter> ) <next-parameter> | EPSILON
+# # ( <parameter> ) <next-parameter> |
+# EPSILON
 def _parameter(node: classmethod) -> None:
     global index
 
-    if _is_match(True, "<undefined-param>") and lexemes[index + 1] == "*":
+    if _is_match(True, "<undefined-param>") and lexemes[index + 1] == "*#":
         _undefined_param(node)
 
     elif _is_match(True, "<common-type>"):
         _common_type(node)
 
-        if _is_match(True, "#", node):
+        if _is_match(False, "#", node):
             pass
 
         if _is_match(True, "<common-data>"):
@@ -1843,7 +1912,7 @@ def _parameter(node: classmethod) -> None:
     elif _is_match(True, "<sqnc-type>"):
         _sqnc_type(node)
 
-        if _is_match(True, "#", node):
+        if _is_match(False, "#", node):
             pass
 
         if _is_match(True, "<sqnc-value>"):
@@ -1857,7 +1926,7 @@ def _parameter(node: classmethod) -> None:
         if _is_match(False, "(", node):
             pass
 
-        if _is_match(True, "<parameter>"):
+        if _is_match(False, "<parameter>"):
             _parameter(node)
 
         if _is_match(False, ")", node):
@@ -1867,34 +1936,33 @@ def _parameter(node: classmethod) -> None:
             _next_parameter(node)
 
 
-# #179-#180: <undefined-param> -> <common-type> *# <add-kwargs>
+# #190-#192: <undefined-param> ->
+# <common-type> *# <add-kwargs>
+# **#
+# EPSILON
 def _undefined_param(node: classmethod) -> None:
 
     if _is_match(False, "<common-type>"):
         _common_type(node)
 
-        if _is_match(True, "*", node):
-            pass
-
-        if _is_match(True, "#", node):
+        if _is_match(True, "*#", node):
             pass
 
         if _is_match(True, "<add-kwargs>"):
             _add_kwargs(node)
+    elif _is_match(True, "**#", node):
+        pass
 
 
-# #181-#182: <add-kwargs> -> , **# | EPSILON
+# #193-#194: <add-kwargs> -> , **# | EPSILON
 def _add_kwargs(node: classmethod) -> None:
 
     if _is_match(True, ",", node):
-        if _is_match(True, "**", node):
-            pass
-
-        if _is_match(True, "#", node):
+        if _is_match(True, "**#", node):
             pass
 
 
-# #183-#184: <next-parameter> -> , <parameter> | EPSILON
+# #195-#196: <next-parameter> -> , <parameter> | EPSILON
 def _next_parameter(node: classmethod) -> None:
 
     if _is_match(True, ",", node):
