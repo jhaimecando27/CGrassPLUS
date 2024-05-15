@@ -51,7 +51,7 @@ DELIM9 = SPC + NEWLINE
 DELIM10 = [";", " ", "\n", ","]
 DELIM11 = [";", "+", " ", ",", ")", "}", "]"]
 DELIM12 = NEWLINE + SPC + ["=", ";", ")", "}", ",", "]"]
-DELIM13 = DIG + SPC + ["("]
+DELIM13 = DIG + SPC + ["(", "#"]
 DELIM14 = ASCII
 DELIM15 = SPC + DIG + LET + NEWLINE + ['"', ")", "]", "["]
 DELIM16 = LET + HT + ["\n", " ", ")"]
