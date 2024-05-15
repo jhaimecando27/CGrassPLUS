@@ -433,10 +433,10 @@ def _common_data(node: classmethod) -> None:
 def _insert_data(node: classmethod) -> None:
     global index
 
-    if _is_match(True, "<data>", node):
+    if not _is_exist("<cond-operator>") and _is_match(True, "<data>", node):
         _data(node)
 
-    elif _is_match(True, "<open-parenthesis>"):
+    elif _is_match(True, "<open-parenthesis>") or _is_match(True, "<insert-operation>"):
         _open_parenthesis(node)
 
         if _is_match(True, "<insert-operation>"):
@@ -452,7 +452,7 @@ def _insert_data(node: classmethod) -> None:
 def _insert_operation(node: classmethod) -> None:
     global index
 
-    if _is_match(True, "<arithmetic>"):
+    if not _is_exist("<cond-operator>") and _is_match(True, "<arithmetic>"):
         _arithmetic(node)
 
         if _is_match(False, "<close-parenthesis>"):
