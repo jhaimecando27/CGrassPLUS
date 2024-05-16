@@ -436,11 +436,19 @@ def _insert_data(node: classmethod) -> None:
     if not _is_exist("<cond-operator>") and _is_match(True, "<data>", node):
         _data(node)
 
-    elif _is_match(True, "<open-parenthesis>") or _is_match(True, "<insert-operation>"):
-        _open_parenthesis(node)
+    elif _is_match(True, "(", node) or _is_match(True, "<insert-operation>"):
 
         if _is_match(True, "<insert-operation>"):
             _insert_operation(node)
+
+        elif _is_match(True, "<insert-data>"):
+            _insert_data(node)
+
+        if _is_match(True, "<operate-number>"):
+            _operate_number(node)
+
+            if _is_match(False, ")", node):
+                pass
 
     else:
         errors.append((lexemes[index], "Syntax Error: Expecting <insert-data>"))
@@ -455,7 +463,7 @@ def _insert_operation(node: classmethod) -> None:
     if not _is_exist("<cond-operator>") and _is_match(True, "<arithmetic>"):
         _arithmetic(node)
 
-        if _is_match(False, "<close-parenthesis>"):
+        if _is_match(False, ")", node):
             pass
 
     elif _is_match(True, "<condition>"):
@@ -601,15 +609,20 @@ def _operate_number(node: classmethod) -> None:
 
     if _is_match(True, "<operator>"):
         _operator(node)
+        is_true = False
 
         if _is_match(True, "(", node):
-            pass
+            is_true = True
 
-        if _is_match(True, "<arithmetic>"):
+        if _is_match(False, "<arithmetic>"):
             _arithmetic(node)
 
-        if _is_match(True, ")", node):
-            pass
+        if is_true:
+            if _is_match(False, ")", node):
+                pass
+
+        if _is_match(True, "<operate-number>"):
+            _operate_number(node)
 
 
 # #46-#52: <operator> -> + | - | * | / | % | ** | //

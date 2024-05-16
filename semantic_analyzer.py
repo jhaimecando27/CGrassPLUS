@@ -52,7 +52,7 @@ def is_semantic_valid(output_instance: object, lexer_output: object) -> bool:
                     if lexeme[col] == "<newline>":
                         row += 1
 
-                    if lexeme[col] == "(":
+                    elif lexeme[col] == "(":
                         temp -= 1
                     elif lexeme[col] == ")":
                         temp += 1
