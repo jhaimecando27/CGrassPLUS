@@ -180,7 +180,7 @@ def _program(node: classmethod) -> None:
         pass
 
     if _is_match(True, "<function>", node):
-        _function(child_node)
+        _function(node)
 
     if _is_match(False, "plant", node):
         pass
@@ -937,11 +937,13 @@ def _more_data(node: classmethod) -> None:
         if _is_match(True, "<more-data>"):
             _more_data(node)
 
-        if _is_match(True, "#", node):
+        child_node = node if lexemes[index] != "#" else add_parse_tree_node(node, lexemes[index] + lexemes[index + 1])
+
+        if _is_match(True, "#"):
             pass
 
         if _is_match(True, "<common-data>"):
-            _common_data(node)
+            _common_data(child_node)
 
         if _is_match(True, "<more-data>"):
             _more_data(node)
@@ -1823,41 +1825,43 @@ def _function(node: classmethod) -> None:
         if _is_match(False, "("):
             pass
 
+        child_node = add_parse_tree_node(func_node, "<parameter>")
         if _is_match(True, "<parameter>"):
-            child_node = add_parse_tree_node(func_node, "<parameter>")
             _parameter(child_node)
 
         if _is_match(False, ")"):
             pass
 
-        if _is_match(False, "(", func_node):
+        if _is_match(False, "("):
             pass
 
+        child_node = add_parse_tree_node(func_node, "<body>")
         if _is_match(False, "<statement>"):
-            _statement(func_node)
+            _statement(child_node)
 
-        if _is_match(False, "regrow"):
+        if _is_match(False, "regrow", child_node):
             pass
 
         if _is_match(True, "<all-type-value>"):
-            _all_type_value(func_node)
+            _all_type_value(child_node)
 
         if _is_match(True, "<add-at>"):
-            _add_at(node)
+            _add_at(child_node)
 
-        if _is_match(False, ";", func_node):
+        if _is_match(False, ";"):
             pass
 
-        if _is_match(False, ")", func_node):
+        if _is_match(False, ")"):
             pass
 
-        if _is_match(False, ";", func_node):
+        if _is_match(False, ";"):
             pass
 
         if _is_match(True, "<function>", node):
             _function(node)
 
-    elif _is_match(True, "viola", func_node):
+    elif _is_match(True, "viola"):
+        func_node.set_type("None")
 
         if _is_match(False, "#", func_node):
             pass
@@ -1865,23 +1869,24 @@ def _function(node: classmethod) -> None:
         if _is_match(False, "("):
             pass
 
+        child_node = add_parse_tree_node(func_node, "<parameter>")
         if _is_match(True, "<undefined-param>"):
-            child_node = add_parse_tree_node(func_node, "<undefined-param>")
             _undefined_param(child_node)
 
-        if _is_match(False, ")", func_node):
+        if _is_match(False, ")"):
             pass
 
-        if _is_match(False, "(", func_node):
+        if _is_match(False, "("):
             pass
 
         if _is_match(False, "<statement>"):
-            _statement(func_node)
+            child_node = add_parse_tree_node(func_node, "<body>")
+            _statement(child_node)
 
-        if _is_match(False, ")", func_node):
+        if _is_match(False, ")"):
             pass
 
-        if _is_match(False, ";", func_node):
+        if _is_match(False, ";"):
             pass
 
         if _is_match(True, "<function>"):

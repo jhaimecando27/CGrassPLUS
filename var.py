@@ -16,7 +16,12 @@ class ParseTreeNode:
 
     def add_child(self, child):
         child.level = self.level
-        if self.symbol[1:] != "<" and self.symbol[-1] != ">":
+        if self.symbol in ["garden", "<statement>", "<function>"] and self.symbol in [
+            "garden",
+            "<statement>",
+            "<function>",
+            "<body>",
+        ]:
             child.level += 1
         child.con_level = self.con_level
         child.itr_level = self.itr_level
@@ -51,8 +56,12 @@ class ParseTreeNode:
         output += "" if self.kind is None else f" (kind: {self.kind})"
         output += "" if self.type is None else f" (type: {self.type})"
         output += f" (level: {self.level})"
-        output += "" if self.line_number is None else f" (line number: {self.line_number})"
-        output += "" if len(self.properties) == 0 else f" (properties: {self.properties})"
+        output += (
+            "" if self.line_number is None else f" (line number: {self.line_number})"
+        )
+        output += (
+            "" if len(self.properties) == 0 else f" (properties: {self.properties})"
+        )
         if output != "":
             output = "-" + output
         return f"{self.symbol} {output}"
