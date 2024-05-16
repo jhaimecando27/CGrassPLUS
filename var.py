@@ -16,12 +16,13 @@ class ParseTreeNode:
 
     def add_child(self, child):
         child.level = self.level
-        if self.symbol in ["garden", "<statement>", "<function>"] and self.symbol in [
-            "garden",
-            "<statement>",
-            "<function>",
-            "<body>",
-        ]:
+        #if self.symbol in ["garden", "<statement>", "<function>"] and self.symbol in [
+        #    "garden",
+        #    "<statement>",
+        #    "<function>",
+        #    "<body>",
+        #]:
+        if self.symbol[1:] != "<" and self.symbol[-1] != ">":
             child.level += 1
         child.con_level = self.con_level
         child.itr_level = self.itr_level
