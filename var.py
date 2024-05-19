@@ -88,3 +88,14 @@ def print_parse_tree(node=parse_tree_root, level=0):
     print("  " * level + "- " + str(node))
     for child in node.children:
         print_parse_tree(child, level + 1)
+
+
+# del all parse_tree_root children
+def delete_parse_tree(node=parse_tree_root):
+    """
+    Delete the parse tree.
+    """
+    node.children = []
+    for child in node.children:
+        delete_parse_tree(child)
+
