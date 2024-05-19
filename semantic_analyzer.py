@@ -445,13 +445,31 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
 
         # store #i in the symbol table
         con_node = node.children[0].children[0]
+        con_var = []
         for child in con_node.children:
             if child.kind == redef.ID and not symbol_table.get(child.symbol):
                 errors.append(f"Semantic Error: {child.symbol} is not declared.")
                 return symbol_table
+            con_var.append(child.symbol)
 
-        # Go to if body
-        traverse_tree(node.children[0].children[1], local_symbol_table, output)
+        # name
+        for child in node.children:
+            var = []
+            print(child.symbol)
+            if child.symbol == "leaf":
+                for item in child.children[0].children:
+                    var.append(item.symbol[1:] if item.kind == redef.ID else item.symbol)
+                print(var)
+                code.append("    " * node.level + f"if {' '.join(var)}:")
+                traverse_tree(child.children[1], local_symbol_table, output)
+            if child.symbol == "eleaf":
+                for item in child.children[0].children:
+                    var.append(item.symbol[1:] if item.kind == redef.ID else item.symbol)
+                code.append("    " * node.level + f"elif {' '.join(var)}:")
+                traverse_tree(child.children[1], local_symbol_table, output)
+            if child.symbol == "moss":
+                code.append("    " * node.level + "else:")
+                traverse_tree(child.children[0], local_symbol_table, output)
 
     elif node.symbol == "<statement>" and node.kind == "i/o":
         if node.children[0].symbol == "mint":
