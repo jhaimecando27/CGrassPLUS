@@ -402,6 +402,11 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
 
             data.append(child.symbol)
 
+            code.append(
+                "    " * node.level
+                + f"{node.children[0].symbol[1:]} {node.properties['assignment-op']} {data[0] if data else 'None'}"
+            )
+
         symbol_table[node.children[0].symbol]["data"] = data
 
     elif node.symbol == "<statement>" and node.kind == "iterative":
@@ -419,18 +424,50 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
             local_symbol_table[con_node.children[1].symbol] = {
                 "kind": redef.ID,
                 "type": redef.TINT_LIT,
-                "data": [con_node.children[3].symbol],
                 "properties": {"global": False, "constant": False},
             }
 
-        if node.children[0].kind == "while":
+            # name
+            for child in node.children:
+                var = []
+                print(child.symbol)
+
+                for item in child.children[0].children:
+                    var.append(item.symbol[1:] if item.kind == redef.ID else item.symbol)
+
+                iter = var[1]
+                start = var[3]
+                end = var[7]
+
+                code.append(
+                    "    " * node.level
+
+                    + f"for {iter} in range({start}, {end}):"
+                )
+
+                for grandchild in child.children[1:]:
+                    traverse_tree(grandchild, local_symbol_table, output)
+
+        elif node.children[0].kind == "while":
+            var = []
             for child in con_node.children:
                 if child.kind == redef.ID and not symbol_table.get(child.symbol):
                     errors.append(f"Semantic Error: {child.symbol} is not declared.")
                     return symbol_table
 
-        # Go to iterative body
-        traverse_tree(node.children[0].children[1], local_symbol_table, output)
+                var.append(child.symbol[1:] if child.kind == redef.ID else child.symbol)
+
+            iter = var[0]
+            op = var[1]
+            end = var[2]
+
+            code.append(
+                "    " * node.level
+
+                + f"while {iter} {op} {end}:"
+            )
+            for child in node.children[0].children[1:]:
+                traverse_tree(child, local_symbol_table, output)
 
     elif node.symbol == "<statement>" and (
         node.kind == "if" or node.kind == "elif" or node.kind == "else"
