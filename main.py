@@ -1,9 +1,9 @@
 import tkinter as tk
 from lexical_analyzer import is_lexical_valid
 from syntax_analyzer import is_syntax_valid
-from semantic_analyzer import is_semantic_valid, symbol_table
+from semantic_analyzer import is_semantic_valid
 from code_generate import generate
-from var import print_parse_tree, parse_tree_root
+from var import print_parse_tree, parse_tree_root, delete_parse_tree, ParseTreeNode
 
 # REF(TextLineNumbers, CustomText): https://stackoverflow.com/questions/16369470/tkinter-adding-line-number-to-text-widget
 
@@ -118,6 +118,7 @@ class _HeadersFrame(tk.Frame):
         """Analyze the input code"""
         self.output_instance.clear_output()
         self.token_instance.clear_output()
+        delete_parse_tree()
 
         self.stageLbl.configure(text="Compiler Stage: Lexical Analysis")
 
@@ -134,11 +135,10 @@ class _HeadersFrame(tk.Frame):
                 lexer_output,
             ):
                 print_parse_tree()
-                if is_semantic_valid(self.output_instance, lexer_output):
-                    print(symbol_table)
-                    self.output_instance.set_output("SemanticAnalyser: No Errors Found.\n")
-                    generate(self, self.code_editor_instance.get_text(), self.output_instance)
 
+                if is_semantic_valid(self.output_instance):
+                    pass
+                    # generate(self, self.code_editor_instance.get_text(), self.output_instance)
 
 
 class OutputFrame(tk.Frame):
