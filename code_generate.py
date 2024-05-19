@@ -3,12 +3,9 @@ from tkinter import scrolledtext
 import sys
 import threading
 
-from io import StringIO
-from var import parse_tree_root, print_parse_tree
-import redef as rd
+from semantic_analyzer import code
 
 string = ""
-code = {}
 
 
 class StdRedirector:
@@ -79,9 +76,6 @@ class OutputWindow(tk.Toplevel):
 
 
 def generate(self, input_lines, output_instance):
-    code = generate_python_code(parse_tree_root)
-    code += "garden()\n"
-
     output_window = OutputWindow(self)
 
     output_window.output_text.delete("1.0", tk.END)
@@ -92,7 +86,7 @@ def generate(self, input_lines, output_instance):
 
     def run_code():
         try:
-            exec(code, {"input": output_window.custom_input.get_input})
+            exec('\n'.join(code), {"input": output_window.custom_input.get_input})
         except Exception as e:
             print(f"Error: {e}")
         finally:
@@ -102,130 +96,3 @@ def generate(self, input_lines, output_instance):
 
     # Run the code in a separate thread to avoid blocking the main thread
     threading.Thread(target=run_code).start()
-
-
-def generate_python_code(node):
-    indent = "    " * node.level  # Adjust indentation based on the node's level
-    if node.symbol in [
-        "seed",
-        "plant",
-    ]:  # Skip generating code for "seed" and "plant" nodes
-        return ""
-    elif node.kind is not None:
-        if node.symbol == "<statement>":
-            var = ""
-            if node.kind == "variable":
-                for variable in node.children:
-                    if variable.kind == rd.ID:
-                        var = variable.symbol[1:] + ":" + node.type
-                        if variable.children:
-                            var += "="
-                            for child in variable.children:
-                                var += child.symbol
-                return f"{indent}{var}\n"
-
-            if node.kind == "i/o":
-                _is_print = False
-                data = None
-                for child in node.children:
-                    if child.symbol == "mint":
-                        _is_print = True
-                        continue
-                    if child.kind == "data" or child.kind == rd.ID:
-                        data = child.symbol.replace("#", "")
-                        if child.type == "string literal":
-                            data = f"f{data}"
-                    if child.kind == rd.ID:
-                        var += child.symbol[1:]
-                if _is_print:
-                    return f"{indent}print({data})\n"
-                else:
-                    return f"{indent}{var}:{node.type} = input({data})\n"
-            if node.kind == "if":
-                if_stmt = ""
-                con = ""
-                for child in node.children:
-                    print(child)
-                    if child.symbol == "leaf":
-                        for condition in child.children[0].children:
-                            if condition.kind == rd.ID:
-                                con = condition.symbol.replace("#", "")
-                                continue
-                            if condition.type == "tint literal":
-                                con += str(condition.symbol)
-                                continue
-                            con += condition.symbol
-                        if_stmt += f"{indent}if {con}:\n" + generate_python_code(
-                            child.children[1]
-                        )
-                    elif child.symbol == "eleaf":
-                        for condition in child.children[0].children:
-                            if condition.kind == rd.ID:
-                                con = condition.symbol.replace("#", "")
-                                continue
-                            if condition.type == "tint literal":
-                                con += str(condition.symbol)
-                                continue
-                            con += condition.symbol
-                        if_stmt += f"{indent}elif {con}:\n" + generate_python_code(
-                            child.children[1]
-                        )
-                    elif child.symbol == "moss":
-                        if_stmt += f"{indent}else:\n" + generate_python_code(
-                            child.children[0]
-                        )
-
-                return if_stmt
-
-            if node.kind == "iterative":
-                print("test")
-                con_stmt = ""
-                var = ""
-                for child in node.children:
-                    print(child)
-                    if child.symbol == "fern":
-                        condition = child.children[0].children
-                        var = condition[1].symbol.replace("#", "")
-                        start = condition[3].symbol
-                        end = condition[7].symbol
-                        seq = condition[11].symbol
-
-                        con_stmt += (
-                            f"{indent}for {var} in range({start}, {end}, {seq}):\n"
-                            + generate_python_code(child.children[1])
-                        )
-                    if child.symbol == "willow":
-                        # while loop
-                        condition = child.children[0].children
-                        con = ""
-                        con += condition[0].symbol.replace("#", "")
-                        con += condition[1].symbol
-                        con += condition[2].symbol
-
-                        for new_child in child.children:
-                            if new_child.symbol == "<statement>":
-                                con_stmt += (
-                                    f"{indent}while({con}):\n"
-                                    + generate_python_code(new_child)
-                                )
-
-                return con_stmt
-
-            if node.kind == "assignment":
-                var = ""
-                for child in node.children:
-                    if child.kind == rd.ID:
-                        var = child.symbol.replace("#", "")
-                    if child.kind == "data":
-                        data = child.symbol
-                return f"{indent}{var} = {data}\n"
-
-    else:
-        code = (
-            f"{indent}def {node.symbol}():\n"
-            if node.symbol[1:] != "<" and node.symbol[-1] != ">"
-            else f"#{node.symbol}\n"
-        )
-        for child in node.children:
-            code += generate_python_code(child)
-        return code

@@ -1257,13 +1257,13 @@ def _all_type_value(node: classmethod) -> None:
 
     elif _is_match(True, "inpetal", node):
 
-        if _is_match(False, "(", node):
+        if _is_match(False, "("):
             pass
 
         if _is_match(False, "string literal", node):
             pass
 
-        if _is_match(False, ")", node):
+        if _is_match(False, ")"):
             pass
 
     else:
@@ -1281,13 +1281,13 @@ def _i_o_statement(node: classmethod) -> None:
 
         if _is_match(True, "inpetal", node):
 
-            if _is_match(False, "(", node):
+            if _is_match(False, "("):
                 pass
 
             if _is_match(False, "string literal", node):
                 pass
 
-            if _is_match(False, ")", node):
+            if _is_match(False, ")"):
                 pass
 
     elif _is_match(True, "mint", node):

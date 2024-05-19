@@ -1,7 +1,7 @@
 import tkinter as tk
 from lexical_analyzer import is_lexical_valid
 from syntax_analyzer import is_syntax_valid
-from semantic_analyzer import is_semantic_valid
+from semantic_analyzer import is_semantic_valid, code
 from code_generate import generate
 from var import print_parse_tree, parse_tree_root, delete_parse_tree, ParseTreeNode
 
@@ -119,6 +119,7 @@ class _HeadersFrame(tk.Frame):
         self.output_instance.clear_output()
         self.token_instance.clear_output()
         delete_parse_tree()
+        code.clear()
 
         self.stageLbl.configure(text="Compiler Stage: Lexical Analysis")
 
@@ -137,8 +138,7 @@ class _HeadersFrame(tk.Frame):
                 print_parse_tree()
 
                 if is_semantic_valid(self.output_instance):
-                    pass
-                    # generate(self, self.code_editor_instance.get_text(), self.output_instance)
+                    generate(self, self.code_editor_instance.get_text(), self.output_instance)
 
 
 class OutputFrame(tk.Frame):
