@@ -250,6 +250,7 @@ def _statement(node: classmethod) -> None:
 
     elif _is_match(True, "<i/o-statement>") and (_is_exist("mint") or _is_exist("inpetal")):
         stmt_node.kind = "i/o"
+        stmt_node.line_number = line_number
         _i_o_statement(stmt_node)
 
         if _is_match(False, ";"):
