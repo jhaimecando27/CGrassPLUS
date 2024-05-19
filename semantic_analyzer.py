@@ -24,6 +24,10 @@ operator: list = ["<", ">" "==", "!=", "<=", ">=", "+", "-", "*", "/", "%"]
 errors: list = []
 
 
+code: list = []
+global_code: list = []
+
+
 def is_semantic_valid(output: object) -> bool:
     global errors
     errors = []
@@ -46,14 +50,24 @@ def is_semantic_valid(output: object) -> bool:
         print(errors)
         for error in errors:
             output.set_output(error)
+
+        code.clear()
+        global_code.clear()
         return False
 
-    output.set_output("SemanticAnalyser: No Errors Found.\n")
+    code.append("garden()")
+
+    print("\n\n" + "=" * 10 + " CODE " + "=" * 10)
+    print("\n".join(code))
+    print("=" * 10 + " END CODE " + "=" * 10)
+
+    output.set_output("SemanticAnalyser: No Errors Found.")
+    global_code.clear()
     return True
 
 
 def get_initial_data(output: object, node: ParseTreeNode, symbol_table: dict) -> dict:
-    global datatype_check, errors
+    global datatype_check, errors, code, global_code
     # Get the initial data (global variables and functions)
 
     if errors:
@@ -100,6 +114,11 @@ def get_initial_data(output: object, node: ParseTreeNode, symbol_table: dict) ->
                     return symbol_table
                 data.append(grandchild.symbol)
 
+            code.append(
+                f"{child.symbol[1:]}:{node.type} = {data[0] if data else 'None'}"
+            )
+            global_code.append(f"{child.symbol[1:]}")
+
             symbol_table[child.symbol] = {
                 "kind": child.kind,
                 "type": node.type,
@@ -144,7 +163,7 @@ def get_initial_data(output: object, node: ParseTreeNode, symbol_table: dict) ->
 
 
 def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
-    global datatype_check, errors
+    global datatype_check, errors, code, global_code
 
     if errors:
         return
@@ -154,11 +173,18 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
             traverse_tree(child, symbol_table, output)
 
     elif node.symbol == "garden":
+        code.append("")
+        code.append("def garden() -> None:")
+        if global_code:
+            code.append("    global " + ", ".join(global_code))
         # Create a new symbol table for the function
         local_symbol_table = symbol_table.copy()
 
         for child in node.children:
-            local_symbol_table = traverse_tree(child, local_symbol_table, output)
+            new_local = traverse_tree(child, local_symbol_table, output)
+
+            if new_local is not None:
+                local_symbol_table.update(new_local)
 
         # DEBUG
         print("\n\n" + "=" * 10 + " SYMBOL TABLE (GARDEN w/ GLOBAL) " + "=" * 10)
@@ -223,7 +249,7 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                     # Undeclared
                     if not symbol_table.get(grandchild.symbol):
                         errors.append(
-                            f"Semantic Error: {grandchild.symbol} is not declared."
+                            f"Semantic Error: {grandchild.symbol} is not declared at line {node.line_number}"
                         )
                         return symbol_table
 
@@ -233,7 +259,7 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                         and node.type not in sqnc_types
                     ):
                         errors.append(
-                            f"Semantic Error: {grandchild.symbol} is not of type {node.type}."
+                            f"Semantic Error: {grandchild.symbol} is not of type {node.type} at line {node.line_number}"
                         )
                         return symbol_table
 
@@ -285,9 +311,6 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
 
                             return symbol_table
 
-                if data and grandchild.kind is redef.ID:
-                    print(eval(" ".join(symbol_table[grandchild.symbol]["data"])))
-
                 # Division by zero
                 if (
                     data
@@ -310,17 +333,26 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                 "properties": node.properties,
             }
 
+            code.append(
+                "    " * node.level
+                + f"{child.symbol[1:]}:{node.type} = {data[0] if data else 'None'}"
+            )
+
     elif node.symbol == "<statement>" and node.kind == "assignment":
 
         if symbol_table.get(node.children[0].symbol) is None:
-            errors.append(f"Semantic Error: {node.children[0].symbol} is not declared.")
+            errors.append(
+                f"Semantic Error: {node.children[0].symbol} is not declared at line {node.line_number}"
+            )
             return symbol_table
 
         if (
             "properties" in symbol_table[node.children[0].symbol]
             and symbol_table[node.children[0].symbol]["properties"]["constant"] is True
         ):
-            errors.append(f"Semantic Error: {node.children[0].symbol} is a immutabe.")
+            errors.append(
+                f"Semantic Error: {node.children[0].symbol} is a immutabe at line {node.line_number}"
+            )
             return symbol_table
 
         # data
@@ -331,7 +363,9 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
 
                 # Undeclared
                 if not symbol_table.get(child.symbol):
-                    errors.append(f"Semantic Error: {child.symbol} is not declared.")
+                    errors.append(
+                        f"Semantic Error: {child.symbol} is not declared at line {node.line_number}"
+                    )
                     return symbol_table
 
                 # Type mismatch (Variable and Variable)
@@ -420,8 +454,8 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
         traverse_tree(node.children[0].children[1], local_symbol_table, output)
 
     elif node.symbol == "<statement>" and node.kind == "i/o":
-        data = []
         if node.children[0].symbol == "mint":
+            data = []
             for child in node.children[1:]:
 
                 if child.kind == redef.ID:
@@ -433,12 +467,78 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                         )
                         return symbol_table
 
-                print("HERE" + symbol_table[child.symbol]["data"])
                 # Division by zero
-                if data and data[-1] == "/" and (child.symbol == "0"):
+                if (
+                    data
+                    and data[-1] == "/"
+                    and (eval(" ".join(symbol_table[child.symbol]["data"])) == 0)
+                ):
                     errors.append("Semantic Error: Division by zero.")
                     return symbol_table
-                data.append(child.symbol)
+
+                # f-string
+                if child.type == redef.STR_LIT:
+                    tmp = "f"
+                    pass_it = False
+                    var = ""
+
+                    for char in child.symbol:
+                        if char == "{":
+                            tmp += "{"
+                            pass_it = True
+                            var = ""
+                            continue
+
+                        elif pass_it and char != "}" and char != "#":
+                            tmp += char
+                            var += char
+                            continue
+
+                        elif char == "}":
+                            pass_it = False
+                            tmp += "}"
+
+                            if not symbol_table.get(var):
+                                errors.append(
+                                    f"Semantic Error: {var} is not declared at line {node.line_number}"
+                                )
+                                return symbol_table
+
+                            continue
+                        elif not pass_it:
+                            tmp += char
+                            continue
+
+                        else:
+                            var += char
+
+                    child.symbol = tmp
+
+                data.append(
+                    child.symbol[1:] if child.kind == redef.ID else child.symbol
+                )
+
+            code.append("    " * node.level + f"print({' '.join(data)})")
+
+        # inpetal (input)
+        else:
+            if node.type is None and not symbol_table.get(node.children[0].symbol):
+                errors.append(
+                    f"Semantic Error: {node.children[0].symbol} is not declared at line {node.line_number}"
+                )
+                return symbol_table
+
+            symbol_table[node.children[0].symbol] = {
+                "kind": node.kind,
+                "type": "input",
+                "data": node.children[2].symbol,
+                "properties": node.properties,
+            }
+
+            code.append(
+                "    " * node.level
+                + f"{node.children[0].symbol[1:]}{':' + node.type if node.type else ''} = input({node.children[2].symbol if node.children[2].symbol else ''})"
+            )
 
     return symbol_table
 
