@@ -615,6 +615,9 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
             for grandchild in child.children[1:]:
                 traverse_tree(grandchild, symbol_table, output)
 
+    elif node.symbol == "<statement>" and node.kind == "break":
+        code.append("    " * node.level + "break")
+
     return symbol_table
 
 

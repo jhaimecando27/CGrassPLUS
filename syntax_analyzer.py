@@ -346,7 +346,8 @@ def _statement(node: classmethod) -> None:
         if _is_match(True, "<statement>"):
             _statement(node)
 
-    elif _is_match(True, "clear", stmt_node):
+    elif _is_match(True, "clear"):
+        stmt_node.kind = "clear"
 
         if _is_match(False, ";"):
             pass
@@ -354,7 +355,8 @@ def _statement(node: classmethod) -> None:
         if _is_match(True, "<statement>"):
             _statement(node)
 
-    elif _is_match(True, "break", stmt_node):
+    elif _is_match(True, "break"):
+        stmt_node.kind = "break"
 
         if _is_match(False, ";"):
             pass
