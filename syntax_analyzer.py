@@ -385,15 +385,18 @@ def _insert_variable(node: classmethod) -> None:
 
     elif _is_match(True, "<sqnc-type>"):
         _sqnc_type(node)
+        child_node = add_parse_tree_node(node, lexemes[index] + lexemes[index + 1])
 
-        if _is_match(False, "#", node):
+        if _is_match(False, "#"):
             pass
 
+        child_node.set_kind(tokens[index - 1])
+
         if _is_match(True, "<sqnc-value>"):
-            _sqnc_value(node)
+            _sqnc_value(child_node)
 
         if _is_match(True, "<more-sqnc>"):
-            _more_sqnc(node)
+            _more_sqnc(child_node)
 
     else:
         errors.append((lexemes[index], "Syntax Error: Expecting <insert-variable>"))
@@ -493,7 +496,6 @@ def _data(node: classmethod) -> None:
     if _is_match(True, "tint literal", node):
         if _is_match(True, "<operate-number>", node):
             _operate_number(node)
-
 
     elif _is_match(True, "flora literal", node):
         if _is_match(True, "<operate-number>", node):
@@ -859,11 +861,12 @@ def _supply_dirt(node: classmethod) -> None:
 # #82-#83: <insert-func> -> (<argument>) <instance-grab> | EPSILON
 def _insert_func(node: classmethod) -> None:
 
-    if _is_match(True, "(", node):
+    if _is_match(True, "("):
         if _is_match(True, "<argument>"):
-            _argument(node)
+            child_node = add_parse_tree_node(node, "<argument>")
+            _argument(child_node)
 
-        if _is_match(False, ")", node):
+        if _is_match(False, ")"):
             pass
 
         if _is_match(True, "<instance-grab>"):
@@ -954,16 +957,16 @@ def _sqnc_type(node: classmethod) -> None:
     global index
 
     if _is_match(True, "florist", node):
-        pass
+        node.set_type("florist")
 
     elif _is_match(True, "tulip", node):
-        pass
+        node.set_type("tulip")
 
     elif _is_match(True, "dirt", node):
-        pass
+        node.set_type("dirt")
 
     elif _is_match(True, "stem", node):
-        pass
+        node.set_type("stem")
 
     else:
         errors.append((lexemes[index], "Syntax Error: Expecting <sqnc-type>"))
@@ -972,7 +975,7 @@ def _sqnc_type(node: classmethod) -> None:
 # #96-#97: <sqnc-value> -> = <sequence> | EPSILON
 def _sqnc_value(node: classmethod) -> None:
 
-    if _is_match(True, "=", node):
+    if _is_match(True, "="):
         if _is_match(False, "<sequence>"):
             _sequence(node)
 
@@ -1043,10 +1046,10 @@ def _sequence(node: classmethod) -> None:
 def _open(node: classmethod) -> None:
     global index
 
-    if _is_match(True, "[", node):
+    if _is_match(True, "["):
         pass
 
-    elif _is_match(True, "{", node):
+    elif _is_match(True, "{"):
         pass
 
     else:
@@ -1067,10 +1070,10 @@ def _dirt(node: classmethod) -> None:
 def _close(node: classmethod) -> None:
     global index
 
-    if _is_match(True, "]", node):
+    if _is_match(True, "]"):
         pass
 
-    elif _is_match(True, "}", node):
+    elif _is_match(True, "}"):
         pass
 
     else:
@@ -1127,7 +1130,7 @@ def _insert_sqnc(node: classmethod) -> None:
 # #114-#115: <next-sqnc> -> , <insert-next-sqnc> | EPSILON
 def _next_sqnc(node: classmethod) -> None:
 
-    if _is_match(True, ",", node):
+    if _is_match(True, ","):
         if _is_match(False, "<insert-next-sqnc>"):
             _insert_next_sqnc(node)
 
@@ -1288,13 +1291,13 @@ def _i_o_statement(node: classmethod) -> None:
 
     elif _is_match(True, "mint", node):
 
-        if _is_match(False, "(", node):
+        if _is_match(False, "("):
             pass
 
         if _is_match(False, "<all-type-value>"):
             _all_type_value(node)
 
-        if _is_match(False, ")", node):
+        if _is_match(False, ")"):
             pass
 
     else:
@@ -1323,7 +1326,7 @@ def _insert_inpetal(node: classmethod) -> None:
         if _is_match(False, "#", node):
             pass
 
-        if _is_match(False, "=", node):
+        if _is_match(False, "="):
             pass
 
     elif _is_match(False, "#", node):
@@ -1434,7 +1437,7 @@ def _assignment(node: classmethod) -> None:
     elif _is_match(True, "<assign>"):
         _assign(node)
 
-        if _is_match(True, "<insert-assign>"):
+        if _is_match(False, "<insert-assign>"):
             _insert_assign(node)
 
     else:
@@ -1486,28 +1489,36 @@ def _insert_assign(node: classmethod) -> None:
 def _assignment_op(node: classmethod) -> None:
     global index
 
-    if _is_match(True, "=", node):
+    if _is_match(True, "="):
+        node.set_properties({"assignment-op": "="})
         pass
 
-    elif _is_match(True, "+=", node):
+    elif _is_match(True, "+="):
+        node.set_properties({"assignment-op": "+="})
         pass
 
-    elif _is_match(True, "-=", node):
+    elif _is_match(True, "-="):
+        node.set_properties({"assignment-op": "-="})
         pass
 
-    elif _is_match(True, "*=", node):
+    elif _is_match(True, "*="):
+        node.set_properties({"assignment-op": "*="})
         pass
 
-    elif _is_match(True, "/=", node):
+    elif _is_match(True, "/="):
+        node.set_properties({"assignment-op": "/="})
         pass
 
-    elif _is_match(True, "%=", node):
+    elif _is_match(True, "%="):
+        node.set_properties({"assignment-op": "%="})
         pass
 
-    elif _is_match(True, "**=", node):
+    elif _is_match(True, "**="):
+        node.set_properties({"assignment-op": "**="})
         pass
 
-    elif _is_match(True, "//=", node):
+    elif _is_match(True, "//="):
+        node.set_properties({"assignment-op": "//="})
         pass
 
     else:
@@ -1767,7 +1778,7 @@ def _insert_argument(node: classmethod) -> None:
         if _is_match(True, "<add-argument>"):
             _add_argument(node)
 
-    elif _is_match(True, "#", node):
+    elif _is_match(True, "#"):
 
         if _is_match(False, "(", node):
             pass
@@ -1785,7 +1796,7 @@ def _insert_argument(node: classmethod) -> None:
 # #176-#177: <add-argument> -> , <argument> | EPSILON
 def _add_argument(node: classmethod) -> None:
 
-    if _is_match(True, ",", node):
+    if _is_match(True, ","):
         if _is_match(True, "<argument>"):
             _argument(node)
 
@@ -1815,6 +1826,7 @@ def _function(node: classmethod) -> None:
     global index
 
     func_node = add_parse_tree_node(node, "<function>")
+    func_node.set_line_number(line_number)
 
     if _is_match(True, "<common-type>"):
         _common_type(func_node)
@@ -1828,6 +1840,8 @@ def _function(node: classmethod) -> None:
         child_node = add_parse_tree_node(func_node, "<parameter>")
         if _is_match(True, "<parameter>"):
             _parameter(child_node)
+        else:
+            child_node.set_properties({"parameters": None})
 
         if _is_match(False, ")"):
             pass
@@ -1839,14 +1853,16 @@ def _function(node: classmethod) -> None:
         if _is_match(False, "<statement>"):
             _statement(child_node)
 
-        if _is_match(False, "regrow", child_node):
+        if _is_match(False, "regrow"):
             pass
 
+        regrow_node = add_parse_tree_node(child_node, "regrow")
+
         if _is_match(True, "<all-type-value>"):
-            _all_type_value(child_node)
+            _all_type_value(regrow_node)
 
         if _is_match(True, "<add-at>"):
-            _add_at(child_node)
+            _add_at(regrow_node)
 
         if _is_match(False, ";"):
             pass
@@ -1919,13 +1935,18 @@ def _parameter(node: classmethod) -> None:
         _undefined_param(node)
 
     elif _is_match(True, "<common-type>"):
-        _common_type(node)
+        var_node = add_parse_tree_node(node, "<variable>")
 
-        if _is_match(False, "#", node):
+        _common_type(var_node)
+        child_node = add_parse_tree_node(var_node, lexemes[index] + lexemes[index + 1])
+
+        if _is_match(False, "#"):
             pass
 
+        var_node.set_kind(tokens[index - 1])
+
         if _is_match(True, "<common-data>"):
-            _common_data(node)
+            _common_data(child_node)
 
         if _is_match(True, "<next-parameter>"):
             _next_parameter(node)
@@ -1986,6 +2007,6 @@ def _add_kwargs(node: classmethod) -> None:
 # #195-#196: <next-parameter> -> , <parameter> | EPSILON
 def _next_parameter(node: classmethod) -> None:
 
-    if _is_match(True, ",", node):
+    if _is_match(True, ","):
         if _is_match(True, "<parameter>"):
             _parameter(node)
