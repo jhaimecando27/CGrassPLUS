@@ -594,6 +594,26 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                 "    " * node.level
                 + f"{node.children[0].symbol[1:]}{':' + node.type if node.type else ''} = input({node.children[2].symbol if node.children[2].symbol else ''})"
             )
+    elif node.symbol == "<statement>" and node.kind == "tree":
+
+        if symbol_table.get(node.children[0].children[0].symbol) is None:
+            errors.append(
+                f"Semantic Error: {node.children[0].children[0].symbol} is not declared at line {node.line_number}"
+            )
+            return symbol_table
+
+        code.append(
+            "    " * node.level
+            + f"match {node.children[0].children[0].symbol[1:]}:"
+        )
+
+        for child in node.children[0].children[1:]:
+            code.append(
+                "    " * node.children[0].level
+                + f"case {child.children[0].symbol}:"
+            )
+            for grandchild in child.children[1:]:
+                traverse_tree(grandchild, symbol_table, output)
 
     return symbol_table
 

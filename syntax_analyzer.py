@@ -316,6 +316,8 @@ def _statement(node: classmethod) -> None:
 
     elif _is_match(True, "tree"):
         tree_node = add_parse_tree_node(stmt_node, "tree")
+        stmt_node.line_number = line_number
+        stmt_node.kind = "tree"
 
         if _is_match(False, "("):
             pass
@@ -329,7 +331,7 @@ def _statement(node: classmethod) -> None:
         if _is_match(False, "("):
             pass
 
-        if _is_match(False, "branch", tree_node):
+        if _is_match(False, "branch"):
             pass
 
         if _is_match(False, "<check-branch>"):
@@ -1668,19 +1670,21 @@ def _more_value(node: classmethod) -> None:
 def _check_branch(node: classmethod) -> None:
     global index
 
+    branch_node = add_parse_tree_node(node, "branch")
+
     if _is_match(True, "<all-type-value>"):
-        _all_type_value(node)
+        _all_type_value(branch_node)
 
         if _is_match(False, "<insert-branch>"):
-            _insert_branch(node)
+            _insert_branch(branch_node)
 
         if _is_match(True, "<more-branch>"):
             _more_branch(node)
 
-    elif _is_match(True, "_", node):
-        if _is_match(False, ":", node):
+    elif _is_match(True, "_", branch_node):
+        if _is_match(False, ":"):
             if _is_match(False, "<statement>"):
-                _statement(node)
+                _statement(branch_node)
 
     else:
         errors.append((lexemes[index], "Syntax Error: Expecting <check-branch>"))
@@ -1690,7 +1694,7 @@ def _check_branch(node: classmethod) -> None:
 def _insert_branch(node: classmethod) -> None:
     global index
 
-    if _is_match(True, ":", node):
+    if _is_match(True, ":"):
         if _is_match(False, "<operate-branch>"):
             _operate_branch(node)
 
@@ -1739,7 +1743,7 @@ def _operate_branch(node: ParseTreeNode) -> None:
 # #168-#169: <more-branch> -> branch <check-branch> | EPSILON
 def _more_branch(node: classmethod) -> None:
 
-    if _is_match(True, "branch", node):
+    if _is_match(True, "branch"):
 
         if _is_match(True, "<check-branch>"):
             _check_branch(node)
