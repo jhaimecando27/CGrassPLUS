@@ -7,8 +7,8 @@ datatype_check: dict = {
     "bloom literal": "bool",
     "chard literal": "char",
     "string literal": "string",
-    "tulip": "list",
-    "florist": "tuple",
+    "tulip": "tuple",
+    "florist": "list",
     "dirt": "dict",
     "stem": "set",
 }
@@ -19,6 +19,10 @@ conv_to_comp_type: dict = {
     "bool": "bloom literal",
     "char": "chard literal",
     "string": "string literal",
+    "tulip": "tulip",
+    "florist": "florist",
+    "dirt": "dirt",
+    "stem": "stem",
 }
 
 sqnc_types: list = ["tulip", "florist", "stem", "dirt"]
@@ -259,6 +263,7 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
 
             # data
             data = []
+            sqnc = []
             prms = []
             for grandchild in child.children:
 
@@ -331,6 +336,8 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                         prms.append(
                             arg.symbol[1:] if arg.kind == redef.ID else arg.symbol
                         )
+                elif node.type in sqnc_types:
+                    sqnc.append(grandchild.symbol)
 
                 # Division by zero
                 if (
@@ -349,7 +356,11 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                     errors.append("Semantic Error: Division by zero.")
                     return symbol_table
 
-                data.append(grandchild.symbol[1:] if grandchild.kind == redef.ID else grandchild.symbol)
+                    data.append(
+                        grandchild.symbol[1:]
+                        if grandchild.kind == redef.ID
+                        else grandchild.symbol
+                    )
 
             symbol_table[child.symbol] = {
                 "kind": child.kind,
@@ -359,19 +370,55 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
             }
             prms = ", ".join(prms)
 
-            if (
-                data
-                and data[-1] == "<argument>"
-            ):
+            if data and data[-1] == "<argument>" and node.type not in sqnc_types:
                 code.append(
                     "    " * node.level
                     + f"{child.symbol[1:]}:{node.type} = {data[0]}({prms})"
                 )
-            else:
+            elif node.type not in sqnc_types:
                 code.append(
                     "    " * node.level
                     + f"{child.symbol[1:]}:{node.type} = {' '.join(data) if data else 'None'}"
                 )
+            elif node.type in sqnc_types:
+                # Check if the sequence is correct
+                if (
+                    (sqnc[0] == "[" and sqnc[-1] == "]")
+                    and node.type in ["dirt", "stem"]
+                ) or (
+                    (sqnc[0] == "{" and sqnc[-1] == "}")
+                    and node.type in ["tulip", "florist"]
+                ):
+                    errors.append(
+                        f"Semantic Error: {node.children[0].symbol} requires a {node.type} of values."
+                    )
+
+                # Check if the pair is correct
+                if (sqnc[0] == "{" and sqnc[-1] != "}") or (
+                    sqnc[0] == "[" and sqnc[-1] != "]"
+                ):
+                    errors.append(
+                        f"Semantic Error: {node.children[0].symbol} requires a proper closing bracket at line {node.line_number}"
+                    )
+
+                if node.type == "dirt":
+                    data = ", ".join(sqnc[1:-1]).replace(", :, ", ":")
+                    code.append(
+                        "    " * node.level
+                        + f"{child.symbol[1:]}:{datatype_check[node.type]}"
+                        + f"= {sqnc[0]}{data}{sqnc[-1]}"
+                    )
+                elif node.type == "stem":
+                    data = ", ".join(sqnc[1:-1])
+                    code.append(
+                        "    " * node.level
+                        + f"{child.symbol[1:]}:{datatype_check[node.type]} = set({sqnc[0]}{data}{sqnc[-1]})"
+                    )
+                else:
+                    code.append(
+                        "    " * node.level
+                        + f"{child.symbol[1:]}:{datatype_check[node.type]} = {sqnc[0]}{', '.join(sqnc[1:-1])}{sqnc[-1]}"
+                    )
 
     elif node.symbol == "<statement>" and node.kind == "assignment":
 
@@ -383,7 +430,8 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
 
         if (
             "properties" in symbol_table[node.children[0].symbol]
-            and symbol_table[node.children[0].symbol]["properties"]["constant"] is True
+            and (symbol_table[node.children[0].symbol]["properties"]["constant"] is True
+                 or symbol_table[node.children[0].symbol]["type"] == "tulip")
         ):
             errors.append(
                 f"Semantic Error: {node.children[0].symbol} is a immutabe at line {node.line_number}"
@@ -438,7 +486,7 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
             data.append(child.symbol)
 
             tmp = data[0][1:] if data[0][0] == "#" else data[0]
-            print(data[0][1:] if data[0][0] == '#' else data[0])
+            print(data[0][1:] if data[0][0] == "#" else data[0])
 
             code.append(
                 "    " * node.level
@@ -446,10 +494,7 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
             )
 
         if symbol_table[node.children[0].symbol]["kind"] == "function":
-            code.append(
-                "    " * node.level
-                + f"{node.children[0].symbol[1:]}()"
-            )
+            code.append("    " * node.level + f"{node.children[0].symbol[1:]}()")
 
         symbol_table[node.children[0].symbol]["data"] = data
 
