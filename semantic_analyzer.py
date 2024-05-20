@@ -174,7 +174,7 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
     global datatype_check, errors, code, global_code
 
     if errors:
-        return
+        return symbol_table
 
     if node.symbol == "<program>":
         for child in node.children:
