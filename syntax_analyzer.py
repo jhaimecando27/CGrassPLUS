@@ -296,6 +296,7 @@ def _statement(node: classmethod) -> None:
 
     elif _is_match(True, "<assignment>"):
         stmt_node.kind = "assignment"
+        stmt_node.line_number = line_number
         _assignment(stmt_node)
 
         if _is_match(False, ";"):
@@ -890,7 +891,7 @@ def _instance_grab(node: classmethod) -> None:
 def _indexing(node: classmethod) -> None:
 
     if _is_match(True, "[", node):
-        if _is_match(True, "<insert-index>"):
+        if _is_match(False, "<insert-index>"):
             _insert_index(node)
 
         if _is_match(True, "]", node):
@@ -961,16 +962,16 @@ def _more_data(node: classmethod) -> None:
 def _sqnc_type(node: classmethod) -> None:
     global index
 
-    if _is_match(True, "florist", node):
+    if _is_match(True, "florist"):
         node.set_type("florist")
 
-    elif _is_match(True, "tulip", node):
+    elif _is_match(True, "tulip"):
         node.set_type("tulip")
 
-    elif _is_match(True, "dirt", node):
+    elif _is_match(True, "dirt"):
         node.set_type("dirt")
 
-    elif _is_match(True, "stem", node):
+    elif _is_match(True, "stem"):
         node.set_type("stem")
 
     else:
@@ -998,6 +999,7 @@ def _sequence(node: classmethod) -> None:
             _dirt(node)
 
         if _is_match(False, "<open>"):
+            add_parse_tree_node(node, lexemes[index])
             _open(node)
 
         if _is_match(True, "<dirt>") and _is_exist(":"):
@@ -1007,6 +1009,7 @@ def _sequence(node: classmethod) -> None:
             _insert_sqnc(node)
 
         if _is_match(False, "<close>"):
+            add_parse_tree_node(node, lexemes[index])
             _close(node)
 
     elif _is_match(True, "<supply-dirt>"):
@@ -1065,7 +1068,6 @@ def _open(node: classmethod) -> None:
 def _dirt(node: classmethod) -> None:
 
     if _is_match(True, "string literal", node):
-        pass
 
         if _is_match(False, ":", node):
             pass
