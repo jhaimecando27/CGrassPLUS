@@ -505,7 +505,7 @@ FIRST_SET = {
         "stem",
         "#",
     ],
-    "<undefined-param>": ["tint", "flora", "chard", "string", "bloom", "**", "EPSILON"],
+    "<undefined-param>": ["tint", "flora", "chard", "string", "bloom", "**", "#", "EPSILON"],
     "<add-kwargs>": [",", "EPSILON"],
     "<next-parameter>": [",", "EPSILON"],
 }
