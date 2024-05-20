@@ -1994,13 +1994,18 @@ def _parameter(node: classmethod) -> None:
 def _undefined_param(node: classmethod) -> None:
 
     if _is_match(False, "<common-type>"):
-        _common_type(node)
+        var_node = add_parse_tree_node(node, "<variable>")
+        _common_type(var_node)
 
-        if _is_match(True, "*#", node):
+        child_node = add_parse_tree_node(var_node, lexemes[index] + lexemes[index + 1])
+
+        if _is_match(True, "#"):
             pass
 
+        var_node.set_kind(tokens[index - 1])
+
         if _is_match(True, "<add-kwargs>"):
-            _add_kwargs(node)
+            _add_kwargs(var_node)
     elif _is_match(True, "**#", node):
         pass
 
