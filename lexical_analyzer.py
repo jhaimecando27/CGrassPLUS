@@ -2149,25 +2149,25 @@ def tokenize(input_string):
                             char_index = skip(char_index, line)
                             break
 
-                        tmp_word += line[char_index]
+                        tmp_word += line[char_index] if line[char_index] != "\\" else ""
                         char_index += 1
 
                         if line[char_index - 1] == "\\":
-                            tmp_esc = "\\"
+                            print(line[char_index - 1])
                             if line[char_index] == "n":
-                                tmp_esc += "n"
+                                tmp_word += "\\n"
                                 char_index += 1
                             elif line[char_index] == "\\":
-                                tmp_esc += "\\"
+                                tmp_word += "\\\\"
                                 char_index += 1
                             elif line[char_index] == '"':
-                                tmp_esc += '"'
+                                tmp_word += '\\"'
                                 char_index += 1
                             elif line[char_index] == "t":
-                                tmp_esc += "t"
+                                tmp_word += "\\t"
                                 char_index += 1
                             elif line[char_index] == "'":
-                                tmp_esc += "\\'"
+                                tmp_word += "\\'"
                                 char_index += 1
 
                         if line[char_index] == '"':
