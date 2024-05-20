@@ -196,7 +196,15 @@ FIRST_SET = {
         "EPSILON",
     ],
     "<next-sqnc>": [",", "EPSILON"],
-    "<insert-next-sqnc>": ["tint literal", "string literal", "EPSILON", "*"],
+    "<insert-next-sqnc>": [
+        "tint literal",
+        "flora literal",
+        "chard literal",
+        "string literal",
+        "bloom literal",
+        "EPSILON",
+        "*",
+    ],
     "<start-end-step>": ["[", "EPSILON"],
     "<insert-start>": [
         "tint literal",
