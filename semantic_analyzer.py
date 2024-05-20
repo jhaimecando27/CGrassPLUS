@@ -239,20 +239,21 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
         for child in body_node.children:
             local_symbol_table = traverse_tree(child, local_symbol_table, output)
 
-        tmp = []
         # Check return type
-        for var in body_node.children[-1].children:
-            if var.kind == redef.ID:
-                if not local_symbol_table.get(var.symbol):
-                    errors.append(f"Semantic Error: {var.symbol} is not declared.")
-                    return symbol_table
+        if node.type != "None":
+            tmp = []
+            for var in body_node.children[-1].children:
+                if var.kind == redef.ID:
+                    if local_symbol_table.get(var.symbol) is None:
+                        errors.append(f"Semantic Error: {var.symbol} is not declared at line {node.line_number}")
+                        return symbol_table
 
-                if local_symbol_table[var.symbol]["type"] != node.type:
-                    errors.append(
-                        f"Semantic Error: {var.symbol} is not of type {node.type}."
-                    )
-                    return symbol_table
-            tmp.append(var.symbol[1:] if var.kind == redef.ID else var.symbol)
+                    if local_symbol_table[var.symbol]["type"] != node.type:
+                        errors.append(
+                            f"Semantic Error: {var.symbol} is not of type {node.type} at line {node.line_number}"
+                        )
+                        return symbol_table
+                tmp.append(var.symbol[1:] if var.kind == redef.ID else var.symbol)
 
         if node.type != "None":
             code.append("    " * body_node.level + f"return " + " ".join(tmp))
