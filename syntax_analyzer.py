@@ -1000,7 +1000,7 @@ def _sequence(node: classmethod) -> None:
         if _is_match(False, "<open>"):
             _open(node)
 
-        if _is_exist(":") and _is_match(True, "<dirt>"):
+        if _is_match(True, "<dirt>") and _is_exist(":"):
             _dirt(node)
 
         if _is_match(True, "<insert-sqnc>"):
