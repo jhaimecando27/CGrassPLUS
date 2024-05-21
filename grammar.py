@@ -410,7 +410,7 @@ FIRST_SET = {
         "dirt",
         "stem",
         "inpetal",
-        "_:",
+        "_",
     ],
     "<insert-branch>": [":", "leaf"],
     "<operate-branch>": [
