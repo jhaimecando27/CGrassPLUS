@@ -118,6 +118,7 @@ def _is_match(_continue: bool, expected: str, node: classmethod = None) -> bool:
     errors.append((lexemes[index], f"Syntax Error: Expecting {expected}"))
     return False
 
+
 def _is_exist(expected: str) -> True:
     """
     Check if the expected token is in the current line
@@ -230,7 +231,11 @@ def _constant(node: classmethod) -> None:
 def _statement(node: classmethod) -> None:
     stmt_node = add_parse_tree_node(node, "<statement>")
 
-    if _is_match(True, "<constant>") or _is_match(True, "<insert-variable>") and not _is_exist("inpetal"):
+    if (
+        _is_match(True, "<constant>")
+        or _is_match(True, "<insert-variable>")
+        and not _is_exist("inpetal")
+    ):
         stmt_node.properties["global"] = False
 
         if _is_match(True, "<constant>"):
@@ -248,7 +253,9 @@ def _statement(node: classmethod) -> None:
         if _is_match(True, "<statement>"):
             _statement(node)
 
-    elif _is_match(True, "<i/o-statement>") and (_is_exist("mint") or _is_exist("inpetal")):
+    elif _is_match(True, "<i/o-statement>") and (
+        _is_exist("mint") or _is_exist("inpetal")
+    ):
         stmt_node.kind = "i/o"
         stmt_node.line_number = line_number
         _i_o_statement(stmt_node)
@@ -947,7 +954,11 @@ def _more_data(node: classmethod) -> None:
         if _is_match(True, "<more-data>"):
             _more_data(node)
 
-        child_node = node if lexemes[index] != "#" else add_parse_tree_node(node, lexemes[index] + lexemes[index + 1])
+        child_node = (
+            node
+            if lexemes[index] != "#"
+            else add_parse_tree_node(node, lexemes[index] + lexemes[index + 1])
+        )
 
         if _is_match(True, "#"):
             pass

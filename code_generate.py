@@ -13,9 +13,9 @@ class StdRedirector:
         self.widget = widget
 
     def write(self, string):
-        self.widget.configure(state='normal')
+        self.widget.configure(state="normal")
         self.widget.insert(tk.END, string)
-        self.widget.configure(state='disabled')
+        self.widget.configure(state="disabled")
         self.widget.see(tk.END)
 
     def flush(self):
@@ -29,10 +29,10 @@ class CustomInput:
         self.input_ready = threading.Event()
 
     def prompt(self, prompt_text=""):
-        self.parent.output_text.configure(state='normal')
+        self.parent.output_text.configure(state="normal")
         self.parent.output_text.insert(tk.END, prompt_text)
         self.parent.output_text.see(tk.END)
-        self.parent.output_text.configure(state='disabled')
+        self.parent.output_text.configure(state="disabled")
         self.parent.input_text.set("")
         self.parent.input_entry.pack()
         self.parent.input_button.pack()
@@ -43,12 +43,12 @@ class CustomInput:
         self.input_ready.wait()  # Wait until input is submitted
         self.parent.input_entry.pack_forget()
         self.parent.input_button.pack_forget()
-        self.parent.output_text.configure(state='normal')
+        self.parent.output_text.configure(state="normal")
         self.parent.output_text.insert(
             tk.END, self.input_value + "\n"
         )  # Display the entered input
         self.parent.output_text.see(tk.END)
-        self.parent.output_text.configure(state='disabled')
+        self.parent.output_text.configure(state="disabled")
         return self.input_value
 
     def submit_input(self):
@@ -86,7 +86,7 @@ def generate(self, input_lines, output_instance):
 
     def run_code():
         try:
-            exec('\n'.join(code), {"input": output_window.custom_input.get_input})
+            exec("\n".join(code), {"input": output_window.custom_input.get_input})
         except Exception as e:
             print(f"Error: {e}")
         finally:

@@ -16,7 +16,12 @@ class ParseTreeNode:
 
     def add_child(self, child):
         child.level = self.level
-        if self.symbol in ["garden", "<statement>", "<function>", "tree"] and self.symbol in [
+        if self.symbol in [
+            "garden",
+            "<statement>",
+            "<function>",
+            "tree",
+        ] and self.symbol in [
             "garden",
             "<statement>",
             "<function>",
@@ -99,4 +104,3 @@ def delete_parse_tree(node=parse_tree_root):
     node.children = []
     for child in node.children:
         delete_parse_tree(child)
-

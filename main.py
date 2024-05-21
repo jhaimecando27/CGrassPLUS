@@ -138,7 +138,9 @@ class _HeadersFrame(tk.Frame):
                 print_parse_tree()
 
                 if is_semantic_valid(self.output_instance):
-                    generate(self, self.code_editor_instance.get_text(), self.output_instance)
+                    generate(
+                        self, self.code_editor_instance.get_text(), self.output_instance
+                    )
 
 
 class OutputFrame(tk.Frame):
