@@ -1,3 +1,15 @@
+# escape char to string
+def convert_esc_char(s):
+    if s == "\n":
+        return "\\n"
+    elif s == "\t":
+        return "\\t"
+    elif s == " ":
+        return "<space>"
+    else:
+        return s
+
+
 # skip remaining characters
 def skip(i, program):
     AVOID = [" ", "\n"]

@@ -890,11 +890,12 @@ def _instance_grab(node: classmethod) -> None:
 # #86-#87: <indexing> -> [<insert-index>] <indexing> | EPSILON
 def _indexing(node: classmethod) -> None:
 
-    if _is_match(True, "[", node):
+    if _is_match(True, "["):
         if _is_match(False, "<insert-index>"):
-            _insert_index(node)
+            child_node = add_parse_tree_node(node, "<index>")
+            _insert_index(child_node)
 
-        if _is_match(True, "]", node):
+        if _is_match(True, "]"):
             pass
 
         if _is_match(True, "<indexing>"):
