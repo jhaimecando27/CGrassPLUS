@@ -1442,6 +1442,9 @@ def _assignment(node: classmethod) -> None:
         if _is_match(True, "<all-type-value>"):
             _all_type_value(node)
 
+            if _is_match(True, "<more-value>"):
+                _more_value(node)
+
     elif _is_match(True, "<assign>"):
         _assign(node)
 
