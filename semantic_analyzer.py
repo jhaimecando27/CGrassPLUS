@@ -25,6 +25,18 @@ conv_to_comp_type: dict = {
     "stem": "stem",
 }
 
+test: dict = {
+    "int": ["tint literal", "florist"],
+    "float": "flora literal",
+    "bool": "bloom literal",
+    "char": "chard literal",
+    "string": "string literal",
+    "tulip": "tulip",
+    "florist": "florist",
+    "dirt": "dirt",
+    "stem": "stem",
+}
+
 sqnc_types: list = ["tulip", "florist", "stem", "dirt"]
 
 operator: list = ["<", ">" "==", "!=", "<=", ">=", "+", "-", "*", "/", "%"]
@@ -385,7 +397,9 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                 )
             elif node.type in sqnc_types:
                 # Check if the sequence is correct
-                if (
+                if sqnc == []:
+                    pass
+                elif (
                     (sqnc[0] == "[" and sqnc[-1] == "]")
                     and node.type in ["dirt", "stem"]
                 ) or (
@@ -397,7 +411,7 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                     )
 
                 # Check if the pair is correct
-                if (sqnc[0] == "{" and sqnc[-1] != "}") or (
+                elif (sqnc[0] == "{" and sqnc[-1] != "}") or (
                     sqnc[0] == "[" and sqnc[-1] != "]"
                 ):
                     errors.append(
@@ -418,9 +432,12 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                         + f"{child.symbol[1:]}:{datatype_check[node.type]} = set({sqnc[0]}{data}{sqnc[-1]})"
                     )
                 else:
+                    data = (
+                        f" = {sqnc[0]}{', '.join(sqnc[1:-1])}{sqnc[-1]}" if sqnc else ""
+                    )
                     code.append(
                         "    " * node.level
-                        + f"{child.symbol[1:]}:{datatype_check[node.type]} = {sqnc[0]}{', '.join(sqnc[1:-1])}{sqnc[-1]}"
+                        + f"{child.symbol[1:]}:{datatype_check[node.type]}{data}"
                     )
 
     elif node.symbol == "<statement>" and node.kind == "assignment":
@@ -432,7 +449,11 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
             return symbol_table
 
         if "properties" in symbol_table[node.children[0].symbol] and (
-            symbol_table[node.children[0].symbol]["properties"]["constant"] is True
+            (
+                "constant" in symbol_table[node.children[0].symbol]["properties"]
+                and symbol_table[node.children[0].symbol]["properties"]["constant"]
+                is True
+            )
             or symbol_table[node.children[0].symbol]["type"] == "tulip"
         ):
             errors.append(
@@ -443,8 +464,10 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
         # data
         data = []
         index = []
+        prms = []
+        fnc = False
+        id = None
         slice = 2 if node.children[1] and node.children[1].symbol == "<index>" else 1
-        print(f"SLICE: {slice}")
         for child in node.children[slice:]:
 
             if child.kind == redef.ID:
@@ -460,21 +483,31 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                 if (
                     symbol_table[child.symbol]["type"]
                     != symbol_table[node.children[0].symbol]["type"]
-                ):
+                ) and symbol_table[child.symbol]["type"] not in sqnc_types:
                     expected_type = conv_to_comp_type[
                         symbol_table[node.children[0].symbol]["type"]
                     ]
                     errors.append(
-                        f"Semantic Error: {child.symbol} is not of type {expected_type}."
+                        f"Semantic Error: {child.symbol} is not of type {expected_type} at line {node.line_number}"
                     )
                     return symbol_table
+
             elif slice == 2:
                 index = node.children[1].children[0].symbol
-                print(f"HERE: {index}")
+
+            elif child.symbol == "<argument>":
+                for i, arg in enumerate(child.children):
+                    prms.append(arg.symbol[1:] if arg.kind == redef.ID else arg.symbol)
+
+            elif child.symbol == "<index>":
+                tmp = child.children[0]
+                shet = tmp.symbol[1:] if tmp.kind == redef.ID else tmp.symbol
+                prms.append("[" + shet + "]")
 
             # Type mismatch (Variable and Literal)
             elif (
                 child.symbol not in operator
+                and child.type is not None
                 and datatype_check[child.type]
                 != symbol_table[node.children[0].symbol]["type"]
             ):
@@ -482,7 +515,7 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                     symbol_table[node.children[0].symbol]["type"]
                 ]
                 errors.append(
-                    f"Semantic Error: {child.symbol} is not of type {expected_type}."
+                    f"Semantic Error: {child.symbol} is not of type {expected_type} at line {node.line_number}"
                 )
                 return symbol_table
 
@@ -491,17 +524,46 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                 errors.append("Semantic Error: Division by zero.")
                 return symbol_table
 
+            if child.symbol in symbol_table:
+                if symbol_table[child.symbol]["kind"] == "function":
+                    fnc = True
+                id = child.symbol[1:]
+
             data.append(child.symbol)
 
-            tmp = data[0][1:] if data[0][0] == "#" else data[0]
-            print(data[0][1:] if data[0][0] == "#" else data[0])
+        tmp = []
+        for num in data:
+            tmp += num[1:] if num[0] == "#" else num
+            print(num[1:] if num[0] == "#" else num)
 
+        print(prms)
+        print(node.type)
+
+        print(data)
+        print(prms)
+        new_data = []
+        if prms != []:
+            for i in data:
+                if i == "<index>":
+                    new_data.append(prms[0])
+                    continue
+                new_data.append(i[1:] if i[0] == "#" else i)
+            if fnc:
+                prms = id + "(" + ", ".join(prms) + ")" if fnc else id + ", ".join(prms)
+            else:
+                prms = "".join(new_data)
             code.append(
                 "    " * node.level
-                + f"{node.children[0].symbol[1:]}{'[' + index + ']' if index != [] else ''} {node.properties['assignment-op']} {tmp}"
+                + f"{node.children[0].symbol[1:]}{'[' + index + ']' if index != [] else ''} {node.properties['assignment-op']} {''.join(prms)}"
+            )
+        else:
+            code.append(
+                "    " * node.level
+                + f"{node.children[0].symbol[1:]}{'[' + index + ']' if index != [] else ''} {node.properties['assignment-op']} {''.join(tmp)}"
             )
 
         if symbol_table[node.children[0].symbol]["kind"] == "function":
+            print("ERE")
             code.append("    " * node.level + f"{node.children[0].symbol[1:]}()")
 
         symbol_table[node.children[0].symbol]["data"] = data
@@ -509,7 +571,9 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
     elif node.symbol == "<statement>" and node.kind == "iterative":
         # Exceeds the maximum number of nested loops
         if node.level >= 4:
-            errors.append("Semantic Error: Exceeds the maximum number of nested loops.")
+            errors.append(
+                f"Semantic Error: Exceeds the maximum number of nested loops at line {node.line_number}"
+            )
             return symbol_table
 
         # Create a new symbol table for the iterative statements
@@ -549,7 +613,9 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
             var = []
             for child in con_node.children:
                 if child.kind == redef.ID and not symbol_table.get(child.symbol):
-                    errors.append(f"Semantic Error: {child.symbol} is not declared.")
+                    errors.append(
+                        f"Semantic Error: {child.symbol} is not declared at line {node.line_number}"
+                    )
                     return symbol_table
 
                 var.append(child.symbol[1:] if child.kind == redef.ID else child.symbol)
@@ -567,7 +633,9 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
     ):
         # Exceeds the maximum number of nested loops
         if node.level >= 4:
-            errors.append("Semantic Error: Exceeds the maximum number of nested loops.")
+            errors.append(
+                f"Semantic Error: Exceeds the maximum number of nested loops at line {node.line_number}"
+            )
             return symbol_table
 
         # Create a new symbol table for the if statements
@@ -578,21 +646,31 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
         con_var = []
         for child in con_node.children:
             if child.kind == redef.ID and not symbol_table.get(child.symbol):
-                errors.append(f"Semantic Error: {child.symbol} is not declared.")
+                errors.append(
+                    f"Semantic Error: {child.symbol} is not declared at line {node.line_number}"
+                )
                 return symbol_table
             con_var.append(child.symbol)
 
         # name
         for child in node.children:
             var = []
+            index = []
             print(child.symbol)
             if child.symbol == "leaf":
                 for item in child.children[0].children:
-                    var.append(
-                        item.symbol[1:] if item.kind == redef.ID else item.symbol
-                    )
+                    if item.symbol == "<index>":
+                        index = item.children[0]
+                        shet = (
+                            index.symbol[1:] if index.kind == redef.ID else index.symbol
+                        )
+                        var.append("[" + shet + "]")
+                    else:
+                        var.append(
+                            item.symbol[1:] if item.kind == redef.ID else item.symbol
+                        )
                 print(var)
-                code.append("    " * node.level + f"if {' '.join(var)}:")
+                code.append("    " * node.level + f"if {''.join(var)}:")
                 traverse_tree(child.children[1], local_symbol_table, output)
             if child.symbol == "eleaf":
                 for item in child.children[0].children:
@@ -616,7 +694,7 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                     # Undeclared
                     if not symbol_table.get(child.symbol):
                         errors.append(
-                            f"Semantic Error: {child.symbol} is not declared."
+                            f"Semantic Error: {child.symbol} is not declared at line {node.line_number}"
                         )
                         return symbol_table
 
@@ -626,7 +704,9 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                     and data[-1] == "/"
                     and (eval(" ".join(symbol_table[child.symbol]["data"])) == 0)
                 ):
-                    errors.append("Semantic Error: Division by zero.")
+                    errors.append(
+                        f"Semantic Error: Division by zero. at line {node.line_number}"
+                    )
                     return symbol_table
 
                 # f-string
@@ -653,7 +733,7 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
 
                             if not symbol_table.get(var):
                                 errors.append(
-                                    f"Semantic Error: {var} is not declared at line {node.line_number}"
+                                    f"Semantic Error: {var} is not declared at line {node.line_number} at line {node.line_number}"
                                 )
                                 return symbol_table
 

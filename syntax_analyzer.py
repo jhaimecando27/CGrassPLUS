@@ -891,9 +891,9 @@ def _instance_grab(node: classmethod) -> None:
 def _indexing(node: classmethod) -> None:
 
     if _is_match(True, "["):
-        if _is_match(False, "<insert-index>"):
+        if _is_match(False, "<insert-data>"):
             child_node = add_parse_tree_node(node, "<index>")
-            _insert_index(child_node)
+            _insert_data(child_node)
 
         if _is_match(True, "]"):
             pass
