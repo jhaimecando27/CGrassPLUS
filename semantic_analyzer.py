@@ -357,11 +357,11 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                     errors.append("Semantic Error: Division by zero.")
                     return symbol_table
 
-                    data.append(
-                        grandchild.symbol[1:]
-                        if grandchild.kind == redef.ID
-                        else grandchild.symbol
-                    )
+                data.append(
+                    grandchild.symbol[1:]
+                    if grandchild.kind == redef.ID
+                    else grandchild.symbol
+                )
 
             symbol_table[child.symbol] = {
                 "kind": child.kind,
