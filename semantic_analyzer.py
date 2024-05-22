@@ -206,6 +206,8 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
             if new_local is not None:
                 local_symbol_table.update(new_local)
 
+        code.append("    pass")
+
         # DEBUG
         print("\n\n" + "=" * 10 + " SYMBOL TABLE (GARDEN w/ GLOBAL) " + "=" * 10)
         if local_symbol_table:
@@ -235,7 +237,7 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                     "kind": grandchild.kind,
                     "type": grandchild.type,
                     "data": data if data else None,
-                    "properties": {"global": False, "constant": False},
+                    "properties": {"global": False, "constant": False, "pass": True},
                 }
                 vars.append(
                     f"{greatgrandchild.symbol[1:]}:{grandchild.type}{' = ' + data[0] if data else ''}"
@@ -290,6 +292,14 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                             f"Semantic Error: 6: {grandchild.symbol} is not declared at line {node.line_number}"
                         )
                         return symbol_table
+
+                    # Uninitialized
+                    if "data" in symbol_table[grandchild.symbol] and symbol_table[grandchild.symbol]["data"] is None:
+                        if "pass" not in symbol_table[grandchild.symbol]["properties"]:
+                            errors.append(
+                                f"Semantic Error: 32: {grandchild.symbol} is not initialized at line {node.line_number}"
+                            )
+                            return symbol_table
 
                     # Type mismatch (Variable and Variable)
                     if (
@@ -480,6 +490,14 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                         f"Semantic Error: 16: {child.symbol} is not declared at line {node.line_number}"
                     )
                     return symbol_table
+
+                # Uninitialized
+                if "data" in symbol_table[child.symbol] and symbol_table[child.symbol]["data"] is None:
+                    if "pass" not in symbol_table[child.symbol]["properties"]:
+                        errors.append(
+                            f"Semantic Error: 33: {child.symbol} is not initialized at line {node.line_number}"
+                        )
+                        return symbol_table
 
                 # Type mismatch (Variable and Variable)
                 if (
@@ -744,7 +762,7 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                 if (
                     data
                     and data[-1] == "/"
-                    and (eval(" ".join(symbol_table[child.symbol]["data"])) == 0)
+                    and (child.symbol == "0")
                 ):
                     errors.append(
                         f"Semantic Error: 28: Division by zero. at line {node.line_number}"
