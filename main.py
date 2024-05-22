@@ -147,7 +147,7 @@ class OutputFrame(tk.Frame):
     def __init__(self, *args, **kwargs):
         tk.Frame.__init__(self, *args, **kwargs)
 
-        self.outputLabel = tk.Label(self, text="Ouput", font=("Arial", 14, "bold"))
+        self.outputLabel = tk.Label(self, text="Output", font=("Arial", 14, "bold"))
         self.outputLabel.pack(anchor="w")
 
         self.outputText = tk.Text(
@@ -200,7 +200,7 @@ class TokenTableFrame(tk.Frame):
         for token in output:
             if token[1] == "<newline>":
                 continue
-            self.tokenText.insert(tk.END, f"{token[0]}\t\t:    {token[1]}\n")
+            self.tokenText.insert(tk.END, f"{token[0]}\t:    {token[1]}\n")
 
         self.tokenText.configure(state="disabled")
 

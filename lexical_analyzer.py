@@ -7,12 +7,14 @@ def is_lexical_valid(output_instance, token_instance, input_string):
 
     if errors:
         for error in errors:
-            output_instance.set_output(f"LexicalAnalyser: {error[1]} : {error[0]}\n")
+            output_instance.set_output(f"Lexical Error: {error[1]} : {error[0]}\n")
         output_instance.set_output("LexicalAnalyser: Error Found.\n")
         return False, output
 
     output_instance.set_output("LexicalAnalyser: No Errors Found.\n")
-    token_instance.set_output(output)
+
+    new_output = [(output[i][1], output[i][1]) for i in range(len(output))]
+    token_instance.set_output(new_output)
 
     return True, output
 
