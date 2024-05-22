@@ -595,13 +595,7 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
         tmp = []
         for num in data:
             tmp += num[1:] if num[0] == "#" else num
-            print(num[1:] if num[0] == "#" else num)
 
-        print(prms)
-        print(node.type)
-
-        print(data)
-        print(prms)
         new_data = []
         if prms != []:
             for i in data:
@@ -624,7 +618,6 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
             )
 
         if symbol_table[node.children[0].symbol]["kind"] == "function":
-            print("ERE")
             code.append("    " * node.level + f"{node.children[0].symbol[1:]}()")
 
         symbol_table[node.children[0].symbol]["data"] = data
@@ -652,7 +645,6 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
             # name
             for child in node.children:
                 var = []
-                print(child.symbol)
 
                 for item in child.children[0].children:
                     var.append(
@@ -723,7 +715,6 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
         for child in node.children:
             var = []
             index = []
-            print(child.symbol)
 
             if child.symbol == "leaf":
                 for item in child.children[0].children:
@@ -738,7 +729,7 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                         var.append(
                             item.symbol[1:] if item.kind == redef.ID else item.symbol
                         )
-                print(var)
+
                 code.append("    " * node.level + f"if {''.join(var)}:")
                 for grandchild in child.children[1:]:
                     traverse_tree(grandchild, local_symbol_table, output)
