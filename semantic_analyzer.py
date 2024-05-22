@@ -203,6 +203,9 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
         for child in node.children:
             new_local = traverse_tree(child, local_symbol_table, output)
 
+            if errors:
+                return symbol_table
+
             if new_local is not None:
                 local_symbol_table.update(new_local)
 
@@ -243,15 +246,15 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                     f"{greatgrandchild.symbol[1:]}:{grandchild.type}{' = ' + data[0] if data else ''}"
                 )
 
-        if errors:
-            return symbol_table
-
         code.append(
             f"def {node.children[0].symbol[1:]}({', '.join(vars)}) -> {node.type}:"
         )
 
         for child in body_node.children:
             local_symbol_table = traverse_tree(child, local_symbol_table, output)
+
+            if errors:
+                return symbol_table
 
         # Check return type
         if node.type != "None":
@@ -666,6 +669,9 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                 for grandchild in child.children[1:]:
                     traverse_tree(grandchild, local_symbol_table, output)
 
+                    if errors:
+                        return symbol_table
+
         elif node.children[0].kind == "while":
             var = []
             for child in con_node.children:
@@ -684,6 +690,9 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
             code.append("    " * node.level + f"while {iter} {op} {end}:")
             for child in node.children[0].children[1:]:
                 traverse_tree(child, local_symbol_table, output)
+
+                if errors:
+                    return symbol_table
 
     elif node.symbol == "<statement>" and (
         node.kind == "if" or node.kind == "elif" or node.kind == "else"
@@ -729,7 +738,11 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                         )
                 print(var)
                 code.append("    " * node.level + f"if {''.join(var)}:")
-                traverse_tree(child.children[1], local_symbol_table, output)
+                for grandchild in child.children[1:]:
+                    traverse_tree(grandchild, local_symbol_table, output)
+
+                    if errors:
+                        return symbol_table
 
             if child.symbol == "eleaf":
                 for item in child.children[0].children:
@@ -737,11 +750,19 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                         item.symbol[1:] if item.kind == redef.ID else item.symbol
                     )
                 code.append("    " * node.level + f"elif {' '.join(var)}:")
-                traverse_tree(child.children[1], local_symbol_table, output)
+                for grandchild in child.children[1:]:
+                    traverse_tree(grandchild, local_symbol_table, output)
+
+                    if errors:
+                        return symbol_table
 
             if child.symbol == "moss":
                 code.append("    " * node.level + "else:")
-                traverse_tree(child.children[0], local_symbol_table, output)
+                for grandchild in child.children:
+                    traverse_tree(grandchild, local_symbol_table, output)
+
+                    if errors:
+                        return symbol_table
 
     elif node.symbol == "<statement>" and node.kind == "i/o":
         if node.children[0].symbol == "mint":
@@ -870,6 +891,9 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                 if grandchild.kind == "break":
                     continue
                 traverse_tree(grandchild, symbol_table, output)
+
+                if errors:
+                    return symbol_table
 
     elif node.symbol == "<statement>" and node.kind == "break":
         code.append("    " * node.level + "break")
