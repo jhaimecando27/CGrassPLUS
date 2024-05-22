@@ -519,8 +519,9 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                 index = node.children[1].children[0].symbol
 
             elif child.symbol == "<index>":
-                tmp = child.children[0]
-                shet = tmp.symbol[1:] if tmp.kind == redef.ID else tmp.symbol
+                shet = my_variable(child.children, symbol_table)
+                if errors:
+                    return symbol_table
                 prms.append("[" + shet + "]")
 
             # Type mismatch (Variable and Literal)
@@ -727,10 +728,11 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
             if child.symbol == "leaf":
                 for item in child.children[0].children:
                     if item.symbol == "<index>":
-                        index = item.children[0]
-                        shet = (
-                            index.symbol[1:] if index.kind == redef.ID else index.symbol
+                        shet = my_variable(
+                            index_node=item.children, symbol_table=local_symbol_table
                         )
+                        if errors:
+                            return symbol_table
                         var.append("[" + shet + "]")
                     else:
                         var.append(
@@ -746,9 +748,19 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
 
             if child.symbol == "eleaf":
                 for item in child.children[0].children:
-                    var.append(
-                        item.symbol[1:] if item.kind == redef.ID else item.symbol
-                    )
+                    if item.symbol == "<index>":
+                        shet = my_variable(
+                            index_node=item.children, symbol_table=local_symbol_table
+                        )
+
+                        if errors:
+                            return symbol_table
+
+                        var.append("[" + shet + "]")
+                    else:
+                        var.append(
+                            item.symbol[1:] if item.kind == redef.ID else item.symbol
+                        )
                 code.append("    " * node.level + f"elif {' '.join(var)}:")
                 for grandchild in child.children[1:]:
                     traverse_tree(grandchild, local_symbol_table, output)
@@ -908,3 +920,42 @@ def pretty(d, indent=0):
             pretty(value, indent + 1)
         else:
             print("  " * (indent + 1) + "- " + str(value))
+
+
+def my_variable(index_node: ParseTreeNode, symbol_table: dict) -> str:
+    global errors
+
+    stmt = ""
+
+    for value in index_node:
+
+        if value.kind == redef.ID:
+
+            # Undeclared
+            if not symbol_table.get(value.symbol):
+                errors.append(
+                    f"Semantic Error: 34: {value.symbol} is not declared at line {value.line_number}"
+                )
+                return symbol_table
+
+            # Uninitialized
+            if (
+                "data" in symbol_table[value.symbol]
+                and symbol_table[value.symbol]["data"] is None
+            ):
+                if "pass" not in symbol_table[value.symbol]["properties"]:
+                    errors.append(
+                        f"Semantic Error: 35: {value.symbol} is not initialized at line {value.line_number}"
+                    )
+                    return symbol_table
+
+            # Type mismatch (Variable and Variable)
+            if symbol_table[value.symbol]["type"] != "int":
+                errors.append(
+                    f"Semantic Error: 36: {value.symbol} is not of type int at line {value.line_number}"
+                )
+                return symbol_table
+
+        stmt += value.symbol[1:] if value.kind == redef.ID else value.symbol
+
+    return stmt
