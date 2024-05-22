@@ -804,44 +804,81 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
 
                 # f-string
                 if child.type == redef.STR_LIT:
-                    tmp = "f"
+                    tmp = ""
                     pass_it = False
                     var = ""
+                    tmp2 = ""
 
                     for char in child.symbol:
                         if char == "{":
                             tmp += "{"
                             pass_it = True
                             var = ""
-                            continue
-
                         elif pass_it and char != "}" and char != "#":
                             tmp += char
                             var += char
-                            continue
 
-                        elif char == "}":
+                        elif pass_it and char == "}":
                             pass_it = False
                             tmp += "}"
 
-                            if not symbol_table.get(var):
+                            # Multiple # not allowed
+                            if var.count('#') > 1:
                                 errors.append(
-                                    f"Semantic Error: 29: {var} is not declared at line {node.line_number} at line {node.line_number}"
+                                    f"Semantic Error: 29: {var} invalid string interpolation multiple identifier not allowed at line {node.line_number}"
                                 )
+
+                            elif not symbol_table.get(var):
+
+                                # Undeclared
+                                if var[0] == "#":
+
+                                    errors.append(
+                                        f"Semantic Error: 29: {var} is not declared at line {node.line_number} at line {node.line_number}"
+                                    )
+
+                                # Not an identifier
+                                else:
+                                    errors.append(
+                                        f"Semantic Error: 29: {var} invalid string interpolation expecting identifier at line {node.line_number}"
+                                    )
                                 return symbol_table
 
-                            continue
                         elif not pass_it:
                             tmp += char
-                            continue
 
                         else:
                             var += char
 
+                        # Invalid character
+                        if pass_it and char in redef.DELIMi:
+                            errors.append(
+                                f"Semantic Error: 29: invalid string interpolation found at line {node.line_number}. {char} is not allowed."
+                            )
+                            return symbol_table
+
+                        tmp2 += char
+
+                    closed = True
+                    opened = False
+                    is_string = True
+                    for c in tmp:
+                        if c == "{" and closed:
+                            is_string = False
+                            opened = True
+                            closed = False
+                        elif c == "}" and opened:
+                            opened = False
+                            closed = True
+
+                    if opened and not closed:
+                        is_string = True
+
+                    tmp = tmp2 if is_string else "f" + tmp
+
                     child.symbol = tmp
 
                 if child.symbol == "<index>":
-                    print(child.children[0])
                     index = child.children[0].symbol
 
                 else:
