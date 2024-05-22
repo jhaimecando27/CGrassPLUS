@@ -270,7 +270,7 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                 tmp.append(var.symbol[1:] if var.kind == redef.ID else var.symbol)
 
         if node.type != "None":
-            code.append("    " * body_node.level + f"return " + " ".join(tmp))
+            code.append("    " * body_node.level + "return " + " ".join(tmp))
 
     elif node.symbol == "<statement>" and node.kind == "variable":
         # variable name
@@ -331,7 +331,7 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                                     symbol_table[child.children[0].symbol]["parameters"]
                                 )[i]
                             ]["type"]
-                            != symbol_table[arg.symbol]["type"]
+                            != (symbol_table[arg.symbol]["type"] if arg.symbol in symbol_table else datatype_check[arg.type])
                         ):
                             expected_type = conv_to_comp_type[
                                 symbol_table[child.children[0].symbol]["parameters"][
@@ -363,7 +363,7 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                         grandchild.kind == redef.ID
                         and (
                             "data" in symbol_table[grandchild.symbol]
-                            and eval(" ".join(symbol_table[grandchild.symbol]["data"]))
+                            and symbol_table[grandchild.symbol]["data"]
                             == 0
                         )
                     )
@@ -495,10 +495,6 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
             elif slice == 2:
                 index = node.children[1].children[0].symbol
 
-            elif child.symbol == "<argument>":
-                for i, arg in enumerate(child.children):
-                    prms.append(arg.symbol[1:] if arg.kind == redef.ID else arg.symbol)
-
             elif child.symbol == "<index>":
                 tmp = child.children[0]
                 shet = tmp.symbol[1:] if tmp.kind == redef.ID else tmp.symbol
@@ -518,6 +514,52 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                     f"Semantic Error: {child.symbol} is not of type {expected_type} at line {node.line_number}"
                 )
                 return symbol_table
+
+            # Parameter mismatch
+            elif child.symbol == "<argument>":
+
+                if symbol_table[node.children[1].symbol]["num_parameters"] != len(
+                    child.children
+                ):
+                    errors.append(
+                        f"Semantic Error: {node.children[1].symbol} requires {symbol_table[node.children[1].symbol]['num_parameters']} parameters."
+                    )
+                    return symbol_table
+
+                for i, arg in enumerate(child.children):
+                    if arg.kind == redef.ID and  arg.symbol not in symbol_table:
+                        errors.append(
+                            f"Semantic Error: {arg.symbol} is not declared at line {node.line_number}"
+                        )
+                        return symbol_table
+                    elif (
+                        symbol_table[node.children[1].symbol]["parameters"][
+                            list(
+                                symbol_table[node.children[1].symbol][
+                                    "parameters"
+                                ]
+                            )[i]
+                        ]["type"]
+                        != ((symbol_table[arg.symbol]["type"]) if arg.kind == redef.ID else datatype_check[arg.type])
+                    ):
+                        expected_type = conv_to_comp_type[
+                            symbol_table[node.children[1].symbol]["parameters"][
+                                list(
+                                    symbol_table[node.children[1].symbol][
+                                        "parameters"
+                                    ]
+                                )[i]
+                            ]["type"]
+                        ]
+
+                        errors.append(
+                            f"Semantic Error: {node.children[1].symbol} requires {expected_type} for parameter {i + 1}."
+                        )
+
+                        return symbol_table
+                    prms.append(
+                        arg.symbol[1:] if arg.kind == redef.ID else arg.symbol
+                    )
 
             # Division by zero
             if data and data[-1] == "/" and child.symbol == "0":
@@ -755,9 +797,12 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                     index = child.children[0].symbol
 
                 else:
-                    data.append(
-                        child.symbol[1:] if child.kind == redef.ID else child.symbol
-                    )
+                    if child.symbol in symbol_table and symbol_table[child.symbol]["kind"] == "function":
+                        data.append(child.symbol[1:] + "()")
+                    else:
+                        data.append(
+                            child.symbol[1:] if child.kind == redef.ID else child.symbol
+                        )
 
             code.append(
                 "    " * node.level
