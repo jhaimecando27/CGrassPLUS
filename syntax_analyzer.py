@@ -237,6 +237,7 @@ def _statement(node: classmethod) -> None:
         and not _is_exist("inpetal")
     ):
         stmt_node.properties["global"] = False
+        stmt_node.set_line_number(line_number)
 
         if _is_match(True, "<constant>"):
             _constant(stmt_node)
@@ -268,6 +269,7 @@ def _statement(node: classmethod) -> None:
 
     elif _is_match(True, "leaf"):
         stmt_node.kind = "if"
+        stmt_node.set_line_number(line_number)
         leaf_node = add_parse_tree_node(stmt_node, "leaf")
 
         if _is_match(False, "("):
@@ -314,6 +316,7 @@ def _statement(node: classmethod) -> None:
 
     elif _is_match(True, "<iterative>"):
         stmt_node.kind = "iterative"
+        stmt_node.set_line_number(line_number)
         _iterative(stmt_node)
 
         if _is_match(False, ";"):
@@ -356,6 +359,7 @@ def _statement(node: classmethod) -> None:
 
     elif _is_match(True, "clear"):
         stmt_node.kind = "clear"
+        stmt_node.set_line_number(line_number)
 
         if _is_match(False, ";"):
             pass
@@ -365,6 +369,7 @@ def _statement(node: classmethod) -> None:
 
     elif _is_match(True, "break"):
         stmt_node.kind = "break"
+        stmt_node.set_line_number(line_number)
 
         if _is_match(False, ";"):
             pass
