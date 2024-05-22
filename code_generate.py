@@ -88,7 +88,7 @@ def generate(self, input_lines, output_instance):
         try:
             exec("\n".join(code), {"input": output_window.custom_input.get_input})
         except Exception as e:
-            print(f"Error: {e}")
+            output_instance.set_output(f"\nError: {str(e)}")
         finally:
             # Restore stdout and stdin
             sys.stdout = sys.__stdout__
