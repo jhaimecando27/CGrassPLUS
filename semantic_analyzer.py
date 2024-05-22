@@ -277,6 +277,18 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
         if node.type != "None":
             code.append("    " * body_node.level + "return " + " ".join(tmp))
 
+        # DEBUG
+        print(
+            "\n\n"
+            + "=" * 10
+            + f" SYMBOL TABLE {node.children[0].symbol} w/ GLOBAL)"
+            + "=" * 10
+        )
+        if local_symbol_table:
+            pretty(local_symbol_table, 0)
+        else:
+            print("No symbol table created.")
+
     elif node.symbol == "<statement>" and node.kind == "variable":
         # variable name
         for child in node.children:
@@ -297,7 +309,10 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                         return symbol_table
 
                     # Uninitialized
-                    if "data" in symbol_table[grandchild.symbol] and symbol_table[grandchild.symbol]["data"] is None:
+                    if (
+                        "data" in symbol_table[grandchild.symbol]
+                        and symbol_table[grandchild.symbol]["data"] is None
+                    ):
                         if "pass" not in symbol_table[grandchild.symbol]["properties"]:
                             errors.append(
                                 f"Semantic Error: 32: {grandchild.symbol} is not initialized at line {node.line_number}"
@@ -495,7 +510,10 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                     return symbol_table
 
                 # Uninitialized
-                if "data" in symbol_table[child.symbol] and symbol_table[child.symbol]["data"] is None:
+                if (
+                    "data" in symbol_table[child.symbol]
+                    and symbol_table[child.symbol]["data"] is None
+                ):
                     if "pass" not in symbol_table[child.symbol]["properties"]:
                         errors.append(
                             f"Semantic Error: 33: {child.symbol} is not initialized at line {node.line_number}"
@@ -783,11 +801,7 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                         return symbol_table
 
                 # Division by zero
-                if (
-                    data
-                    and data[-1] == "/"
-                    and (child.symbol == "0")
-                ):
+                if data and data[-1] == "/" and (child.symbol == "0"):
                     errors.append(
                         f"Semantic Error: 28: Division by zero. at line {node.line_number}"
                     )
@@ -814,7 +828,7 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                             tmp += "}"
 
                             # Multiple # not allowed
-                            if var.count('#') > 1:
+                            if var.count("#") > 1:
                                 errors.append(
                                     f"Semantic Error: 29: {var} invalid string interpolation multiple identifier not allowed at line {node.line_number}"
                                 )
