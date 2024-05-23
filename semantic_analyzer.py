@@ -353,6 +353,13 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                         return symbol_table
 
                     for i, arg in enumerate(grandchild.children):
+
+                        if arg.kind == redef.ID and arg.symbol not in symbol_table:
+                            errors.append(
+                                f"Semantic Error: 20: {arg.symbol} is not declared at line {node.line_number}"
+                            )
+                            return symbol_table
+
                         # parameter type mismatch
                         if symbol_table[child.children[0].symbol]["parameters"][
                             list(symbol_table[child.children[0].symbol]["parameters"])[

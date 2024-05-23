@@ -894,8 +894,9 @@ def _supply_dirt(node: classmethod) -> None:
 def _insert_func(node: classmethod) -> None:
 
     if _is_match(True, "("):
+        child_node = add_parse_tree_node(node, "<argument>")
+
         if _is_match(True, "<argument>"):
-            child_node = add_parse_tree_node(node, "<argument>")
             _argument(child_node)
 
         if _is_match(False, ")"):
