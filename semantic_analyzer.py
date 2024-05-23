@@ -42,6 +42,7 @@ test2: dict = {
     "float": ["int", "float"],
     "char": ["string", "char"],
     "string": ["string", "char"],
+    "florist": ["florist", "int", "float"],
 }
 
 sqnc_types: list = ["tulip", "florist", "stem", "dirt"]
@@ -133,7 +134,6 @@ def get_initial_data(output: object, node: ParseTreeNode, symbol_table: dict) ->
                 elif (
                     grandchild.symbol not in operator
                     and datatype_check[grandchild.type] != node.type
-                    and node.type not in sqnc_types
                 ):
                     errors.append(
                         f"Semantic Error: 3: {child.symbol} is not of type {node.type} at {node.line_number}"
@@ -323,7 +323,6 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                     # Type mismatch (Variable and Variable)
                     if (
                         symbol_table[grandchild.symbol]["type"] != node.type
-                        and node.type not in sqnc_types
                     ):
                         errors.append(
                             f"Semantic Error: 7: {grandchild.symbol} is not of type {node.type} at line {node.line_number}"
@@ -335,10 +334,11 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                     grandchild.type is not None
                     and grandchild.symbol not in operator
                     and datatype_check[grandchild.type] != node.type
-                    and node.type not in sqnc_types
+                    and child.children[0].symbol != "["
                 ):
+                    print(child.children[0].symbol)
                     errors.append(
-                        f"Semantic Error: 8: {child.symbol} is not of type {node.type}."
+                        f"Semantic Error: 8: {child.symbol} is not of type {node.type} at line {node.line_number}"
                     )
                     return symbol_table
 
@@ -525,6 +525,7 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                 if (
                     symbol_table[child.symbol]["type"]
                     != symbol_table[node.children[0].symbol]["type"]
+                    and node.children[1].symbol != "[" and node.children[-1].symbol != "]"
                 ) and symbol_table[child.symbol]["type"] not in sqnc_types:
                     expected_type = conv_to_comp_type[
                         symbol_table[node.children[0].symbol]["type"]
@@ -548,7 +549,8 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                 child.symbol not in operator
                 and child.type is not None
                 and datatype_check[child.type]
-                != symbol_table[node.children[0].symbol]["type"]
+                and symbol_table[node.children[0].symbol]["type"] != datatype_check[child.type]
+                and node.children[1].symbol != "[" and node.children[-1].symbol != "]"
             ):
                 expected_type = conv_to_comp_type[
                     symbol_table[node.children[0].symbol]["type"]
