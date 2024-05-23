@@ -1664,18 +1664,17 @@ def _insert_fern(node: classmethod) -> None:
 
     elif _is_match(True, "<all-type-value>"):
         child_node = add_parse_tree_node(node, "<condition>")
-        _all_type_value(child_node)
 
-        if _is_match(False, "<more-value>"):
+        if _is_match(False, "<all-type-value>"):
+            _all_type_value(child_node)
+
+        if _is_match(True, "<more-value>"):
             _more_value(child_node)
 
-        if _is_match(False, "at", child_node):
+        if _is_match(False, ";", child_node):
             pass
 
-        if _is_match(False, "<sequence>"):
-            _sequence(child_node)
-
-        if _is_match(False, ";", child_node):
+        if _is_match(False, ")"):
             pass
 
         if _is_match(False, "("):
