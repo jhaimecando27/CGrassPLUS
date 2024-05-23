@@ -23,6 +23,7 @@ FIRST_SET = {
         "tree",
         "clear",
         "break",
+        "regrow",
         "EPSILON",
     ],
     "<insert-variable>": [

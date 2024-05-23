@@ -377,6 +377,20 @@ def _statement(node: classmethod) -> None:
         if _is_match(True, "<statement>"):
             _statement(node)
 
+    elif _is_match(True, "regrow"):
+        stmt_node.set_kind("regrow")
+        stmt_node.set_line_number(line_number)
+        stmt_node.set_type(node.type)
+
+        if _is_match(True, "<all-type-value>"):
+            _all_type_value(stmt_node)
+
+        if _is_match(True, "<add-at>"):
+            _add_at(stmt_node)
+
+        if _is_match(False, ";"):
+            pass
+
 
 # #15,#16: <insert-variable> ->
 # <common-type> # <common-data> <more-data> |
@@ -1879,22 +1893,10 @@ def _function(node: classmethod) -> None:
             pass
 
         child_node = add_parse_tree_node(func_node, "<body>")
+        child_node.set_type(func_node.type)
+
         if _is_match(False, "<statement>"):
             _statement(child_node)
-
-        if _is_match(False, "regrow"):
-            pass
-
-        regrow_node = add_parse_tree_node(child_node, "regrow")
-
-        if _is_match(True, "<all-type-value>"):
-            _all_type_value(regrow_node)
-
-        if _is_match(True, "<add-at>"):
-            _add_at(regrow_node)
-
-        if _is_match(False, ";"):
-            pass
 
         if _is_match(False, ")"):
             pass

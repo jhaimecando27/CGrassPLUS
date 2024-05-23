@@ -27,14 +27,21 @@ conv_to_comp_type: dict = {
 
 test: dict = {
     "int": ["tint literal", "florist"],
-    "float": "flora literal",
+    "float": ["tint literal", "florist"],
+    "char": ["string literal", "chard literal"],
+    "string": ["string literal", "chard literal"],
     "bool": "bloom literal",
-    "char": "chard literal",
-    "string": "string literal",
     "tulip": "tulip",
     "florist": "florist",
     "dirt": "dirt",
     "stem": "stem",
+}
+
+test2: dict = {
+    "int": ["int", "float"],
+    "float": ["int", "float"],
+    "char": ["string", "char"],
+    "string": ["string", "char"],
 }
 
 sqnc_types: list = ["tulip", "florist", "stem", "dirt"]
@@ -255,27 +262,6 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
 
             if errors:
                 return symbol_table
-
-        # Check return type
-        if node.type != "None":
-            tmp = []
-            for var in body_node.children[-1].children:
-                if var.kind == redef.ID:
-                    if local_symbol_table.get(var.symbol) is None:
-                        errors.append(
-                            f"Semantic Error: 4: {var.symbol} is not declared at line {node.line_number}"
-                        )
-                        return symbol_table
-
-                    if local_symbol_table[var.symbol]["type"] != node.type:
-                        errors.append(
-                            f"Semantic Error: 5: {var.symbol} is not of type {node.type} at line {node.line_number}"
-                        )
-                        return symbol_table
-                tmp.append(var.symbol[1:] if var.kind == redef.ID else var.symbol)
-
-        if node.type != "None":
-            code.append("    " * body_node.level + "return " + " ".join(tmp))
 
         # DEBUG
         print(
@@ -951,6 +937,44 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
 
     elif node.symbol == "<statement>" and node.kind == "break":
         code.append("    " * node.level + "break")
+
+    elif node.symbol == "<statement>" and node.kind == "regrow":
+
+        tmp = ""
+
+        for val in node.children:
+
+            if val.kind == redef.ID:
+
+                # Unititialized
+                if (
+                    "data" in symbol_table[val.symbol]
+                    and symbol_table[val.symbol]["data"] is None
+                    and "pass" not in symbol_table[val.symbol]["properties"]
+                ):
+                    errors.append(
+                        f"Semantic Error: 32: {val.symbol} is not initialized at line {node.line_number}"
+                    )
+                    return symbol_table
+
+                # Undeclared
+                if symbol_table.get(val.symbol) is None:
+                    errors.append(
+                        f"Semantic Error: 4: {val.symbol} is not declared at line {node.line_number}"
+                    )
+                    return symbol_table
+
+                # type mismatch
+                print(symbol_table[val.symbol]["type"])
+                if symbol_table[val.symbol]["type"] not in test2[node.type]:
+                    errors.append(
+                        f"Semantic Error: 5: {val.symbol} is not of type {node.type} at line {node.line_number}"
+                    )
+                    return symbol_table
+
+            tmp += val.symbol[1:] if val.kind == redef.ID else val.symbol
+
+        code.append("    " * node.level + f"return {tmp}")
 
     return symbol_table
 
