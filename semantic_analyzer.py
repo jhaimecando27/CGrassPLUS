@@ -655,24 +655,25 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                         item.symbol[1:] if item.kind == redef.ID else item.symbol
                     )
 
-                iter_var_type = var[0]
-                iter_var = var[1]
-                start = var[3]
-
-                cond_op = var[6]
-                end = var[7]
-
-                inc_op = child.children[0].properties["assignment-op"]
-                inc_num = var[10]
-
                 for i in range(0, len(var)):
                     print(f"var[{i}]: {var[i]}")
 
-                init_var_loop = "    " * node.level + f"{iter_var}:{iter_var_type} = {start}"
-                loop_stmt = "    " * node.level + f"while {iter_var} {cond_op} {end}:"
+                if var[1] == "at":
+                    local_symbol_table['#' + var[0]] = {
+                        "kind": redef.ID,
+                        "type": "pass",
+                        "data": None,
+                    }
+                    print(symbol_table)
+                    code.append("    " * node.level + f"for {var[0]} in {var[2]}:")
 
-                code.append(init_var_loop)
-                code.append(loop_stmt)
+                else:
+
+                    init_var_loop = "    " * node.level + f"{var[1]}:{var[0]} = {var[3]}"
+                    loop_stmt = "    " * node.level + f"while {var[1]} {var[6]} {var[7]}:"
+
+                    code.append(init_var_loop)
+                    code.append(loop_stmt)
 
                 for grandchild in child.children[1:]:
                     traverse_tree(grandchild, local_symbol_table, output)
@@ -680,8 +681,9 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                     if errors:
                         return symbol_table
 
-                increment = "    " * node.level + f"    {iter_var} {inc_op} {inc_num}"
-                code.append(increment)
+                if var[1] != "at":
+                    increment = "    " * node.level + f"    {var[1]} {child.children[0].properties['assignment-op']} {var[10]}"
+                    code.append(increment)
 
         elif node.children[0].kind == "while":
             var = []
