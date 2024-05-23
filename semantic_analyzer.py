@@ -498,7 +498,7 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
         prms = []
         fnc = False
         id = None
-        slice = 2 if node.children[1] and node.children[1].symbol == "<index>" else 1
+        slice = 2 if 1 in node.children and node.children[1].symbol == "<index>" else 1
         for child in node.children[slice:]:
 
             if child.kind == redef.ID:
