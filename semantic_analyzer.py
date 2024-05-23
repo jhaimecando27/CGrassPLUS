@@ -928,18 +928,24 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                 )
                 return symbol_table
 
-            symbol_table[node.children[0].symbol] = {
-                "kind": node.kind,
-                "type": node.type,
-                "data": node.children[2].symbol,
-                "properties": node.properties,
-            }
+            if not symbol_table.get(node.children[0].symbol):
+                symbol_table[node.children[0].symbol] = {
+                    "kind": node.kind,
+                    "type": node.type,
+                    "data": node.children[2].symbol,
+                    "properties": node.properties,
+                }
+            else:
+                symbol_table[node.children[0].symbol]["properties"] = node.properties,
+                symbol_table[node.children[0].symbol]["data"] = node.children[2].symbol
+
+            var = symbol_table[node.children[0].symbol]
 
             code.append(
                 "    " * node.level
                 + f"{node.children[0].symbol[1:]}"
                 + f"{':' + node.type if node.type else ''}"
-                + f"= {node.type}"
+                + f" = {var['type']}"
                 + f"(input({node.children[2].symbol if node.children[2].symbol else ''}))"
             )
     elif node.symbol == "<statement>" and node.kind == "tree":
