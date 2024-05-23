@@ -178,6 +178,21 @@ def get_initial_data(output: object, node: ParseTreeNode, symbol_table: dict) ->
                     "properties": {"global": False, "constant": False},
                 }
 
+        # Check it has return type
+        if node.type != "None":
+            has_return = False
+            for child in node.children[2].children:
+                if child.kind == "regrow":
+                    has_return = True
+                    break
+
+            if not has_return:
+                errors.append(
+                    f"Semantic Error: 4: {node.children[0].symbol} requires a regrow type at line {node.line_number}"
+                )
+                return symbol_table
+
+
         symbol_table[node.children[0].symbol] = {
             "kind": "function",
             "type": node.type,
