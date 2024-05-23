@@ -655,19 +655,33 @@ def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
                         item.symbol[1:] if item.kind == redef.ID else item.symbol
                     )
 
-                iter = var[1]
+                iter_var_type = var[0]
+                iter_var = var[1]
                 start = var[3]
+
+                cond_op = var[6]
                 end = var[7]
 
-                code.append(
-                    "    " * node.level + f"for {iter} in range({start}, {end}):"
-                )
+                inc_op = child.children[0].properties["assignment-op"]
+                inc_num = var[10]
+
+                for i in range(0, len(var)):
+                    print(f"var[{i}]: {var[i]}")
+
+                init_var_loop = "    " * node.level + f"{iter_var}:{iter_var_type} = {start}"
+                loop_stmt = "    " * node.level + f"while {iter_var} {cond_op} {end}:"
+
+                code.append(init_var_loop)
+                code.append(loop_stmt)
 
                 for grandchild in child.children[1:]:
                     traverse_tree(grandchild, local_symbol_table, output)
 
                     if errors:
                         return symbol_table
+
+                increment = "    " * node.level + f"    {iter_var} {inc_op} {inc_num}"
+                code.append(increment)
 
         elif node.children[0].kind == "while":
             var = []
