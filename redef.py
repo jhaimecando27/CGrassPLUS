@@ -63,7 +63,7 @@ DELIM17 = (
 )
 DELIM18 = [";", ",", "]", "),", "}", "."]
 DELIM19 = NUM + SPC + HT + ["("]
-DELIM20 = LET
+DELIM20 = ASCII
 DELIM21 = SPC + [":", "("]
 DELIM22 = NUM + [" ", "(", "#"]
 DELIM23 = SPC + NEWLINE + ['"', "}", "(", "'"] + DIG
