@@ -1,6 +1,7 @@
 import grammar as g
 import redef
 from var import add_parse_tree_node, parse_tree_root, ParseTreeNode
+from semantic_analyzer import symbol_table, translate
 
 errors: list[list[str]] = []
 line_number: int = 1
@@ -1721,6 +1722,7 @@ def _check_branch(node: classmethod) -> None:
     global index
 
     branch_node = add_parse_tree_node(node, "branch")
+    branch_node.set_line_number(line_number)
 
     if _is_match(True, "<all-type-value>"):
         _all_type_value(branch_node)
@@ -1886,6 +1888,9 @@ def _function(node: classmethod) -> None:
     if _is_match(True, "<common-type>"):
         _common_type(func_node)
 
+        func_name = lexemes[index + 1]
+        func_type = translate[func_node.type]
+
         if _is_match(False, "#", func_node):
             pass
 
@@ -1897,6 +1902,18 @@ def _function(node: classmethod) -> None:
             _parameter(child_node)
         else:
             child_node.set_properties({"parameters": None})
+
+        param_table = []
+        for param in child_node.children:
+            param_table.append(translate[param.type])
+
+        param_num = len(param_table)
+
+        symbol_table[func_name] = {
+            "type": func_type,
+            "param_num": param_num,
+            "param": param_table,
+        }
 
         if _is_match(False, ")"):
             pass

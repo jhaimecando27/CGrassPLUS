@@ -1,7 +1,7 @@
 import tkinter as tk
 from lexical_analyzer import is_lexical_valid
 from syntax_analyzer import is_syntax_valid
-from semantic_analyzer import is_semantic_valid, code
+from semantic_analyzer import semantic_analysis, errors as semantic_errors, symbol_table
 from code_generate import generate
 from var import print_parse_tree, parse_tree_root, delete_parse_tree, ParseTreeNode
 
@@ -119,7 +119,6 @@ class _HeadersFrame(tk.Frame):
         self.output_instance.clear_output()
         self.token_instance.clear_output()
         delete_parse_tree()
-        code.clear()
 
         self.stageLbl.configure(text="Compiler Stage: Lexical Analysis")
 
@@ -137,8 +136,23 @@ class _HeadersFrame(tk.Frame):
             ):
                 print_parse_tree()
 
-                # if is_semantic_valid(self.output_instance):
-                generate(self, self.output_instance)
+                print("=" * 10 + " Symbol Table " + "=" * 10)
+                print(symbol_table)
+
+                if semantic_analysis(parse_tree_root):
+                    self.stageLbl.configure(text="Compiler Stage: Code Generation")
+                    self.output_instance.set_output("Semantic Analysis No Errors Found.\n")
+
+                    print("=" * 10 + " Symbol Table " + "=" * 10)
+                    print(symbol_table)
+
+                    generate(self, self.output_instance)
+                else:
+                    for error in semantic_errors:
+                        self.output_instance.set_output(error)
+
+        semantic_errors.clear()
+        symbol_table.clear()
 
 
 class OutputFrame(tk.Frame):

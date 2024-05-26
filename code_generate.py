@@ -118,41 +118,31 @@ def to_python_code(node: ParseTreeNode, stmt="") -> str:
         if node.kind in ["variable", "assignment"]:
 
             # Initialize or update the variable
-            if len(node.children) == 1:
-                for var_node in node.children:
-                    var_name = var_node.symbol[1:]
-                    type_cast = translate[var_node.type] if var_node.type else var_type
-                    var_op = (
-                        node.properties["assignment-op"]
-                        if "assignment-op" in node.properties
-                        else None
-                    )
+            for var_node in node.children:
+                var_name = var_node.symbol[1:]
+                type_cast = translate[var_node.type] if var_node.type else None
+                var_op = (
+                    node.properties["assignment-op"]
+                    if "assignment-op" in node.properties
+                    else None
+                )
 
-                    # Set the value of the variable if any
-                    tmp_val = ""
-                    for val in var_node.children:
-                        if val.symbol in ["<sqnc>", "<index>", "<argument>"]:
-                            tmp_val += to_python_code(val)
-                            continue
-                        tmp_val += (
-                            val.symbol[1:] if val.kind == redef.ID else val.symbol
-                        )
-                    var_val = tmp_val
+                # Set the value of the variable if any
+                tmp_val = ""
+                for val in var_node.children:
+                    if val.symbol in ["<sqnc>", "<index>", "<argument>"]:
+                        tmp_val += to_python_code(val)
+                        continue
+                    tmp_val += val.symbol[1:] if val.kind == redef.ID else val.symbol
+                var_val = tmp_val
 
-                    # Add the type to the variable if any
-                    var_val = type_cast + "(" + var_val + ")" if type_cast else var_val
+                # Add the type to the variable if any
+                var_val = type_cast + "(" + var_val + ")" if type_cast else var_val
 
-                    stmt += (
-                        indent * node.level
-                        + f"{var_name} {var_op if var_op else '='} {var_val}\n"
-                    )
-
-                # Function call
-            else:
-                func_name = node.children[0].symbol[1:]
-                print(func_name)
-                func_params = to_python_code(node.children[1])
-                stmt += indent * node.level + f"{func_name}{func_params}\n"
+                stmt += (
+                    indent * node.level
+                    + f"{var_name} {var_op if var_op else '='} {var_val}\n"
+                )
 
         elif node.kind == "i/o":
 
@@ -266,23 +256,42 @@ def to_python_code(node: ParseTreeNode, stmt="") -> str:
                         + f"{iter_v1_name} {iter_con.properties['assignment-op']} {iter_step}\n"
                     )
             else:
-                iter_v1 = iter_con.children[0].symbol[1:]
+                iter_v1 = (
+                    iter_con.children[0].symbol[1:]
+                    if iter_con.children[0].kind == redef.ID
+                    else iter_con.children[0].symbol
+                )
                 iter_op = iter_con.children[1].symbol
-                iter_v2 = iter_con.children[2].symbol[1:]
+                iter_v2 = (
+                    iter_con.children[2].symbol[1:]
+                    if iter_con.children[2].kind == redef.ID
+                    else iter_con.children[2].symbol
+                )
 
                 iter_con = f"while {iter_v1} {iter_op} {iter_v2}:\n"
                 stmt += indent * node.level + iter_con
                 stmt += iter_body
 
         elif node.kind == "tree":
-            tree_con = indent * node.level + f"match {node.children[0].symbol}:\n"
+            tree_con_var = node.children[0].children[0]
+            tree_var = (
+                tree_con_var.symbol[1:]
+                if tree_con_var.kind == redef.ID
+                else tree_con_var.symbol
+            )
+
+            tree_con = indent * node.level + f"match {tree_var}:\n"
             tree_body = ""
 
             for branch in node.children[0].children[1:]:
                 tree_body += (
                     indent * (node.level + 1) + f"case {branch.children[0].symbol}:\n"
                 )
-                tree_body += to_python_code(branch.children[1])
+                tree_body += (
+                    indent * (node.level + 2) + "while True:\n"
+                )
+                for stmt_nodes in branch.children[1:]:
+                    tree_body += indent + to_python_code(stmt_nodes)
 
             stmt += tree_con + tree_body
 
@@ -297,6 +306,9 @@ def to_python_code(node: ParseTreeNode, stmt="") -> str:
             var_val = tmp_val
 
             stmt += indent * node.level + f"return {var_val}\n"
+
+        elif node.kind == "break":
+            stmt += indent * node.level + "break\n"
 
     elif node.symbol == "<function>":
         func_name = node.children[0].symbol[1:]

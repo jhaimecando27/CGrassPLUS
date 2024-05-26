@@ -1,1073 +1,535 @@
 import redef
-from var import ParseTreeNode, parse_tree_root
+import re
+from var import ParseTreeNode
 
-datatype_check: dict = {
+
+symbol_table = {}
+
+translate = {
+    "tint": "int",
+    "flora": "float",
+    "chard": "char",
+    "string": "str",
+    "bloom": "bool",
+    "florist": "list",
+    "tulip": "tuple",
+    "stem": "set",
+    "dirt": "dict",
+    "fern": "for",
+    "willow": "while",
     "tint literal": "int",
     "flora literal": "float",
-    "bloom literal": "bool",
     "chard literal": "char",
-    "string literal": "string",
-    "tulip": "tuple",
-    "florist": "list",
-    "dirt": "dict",
-    "stem": "set",
+    "string literal": "str",
+    "bloom literal": "bool",
 }
 
-conv_to_comp_type: dict = {
-    "int": "tint literal",
-    "float": "flora literal",
-    "bool": "bloom literal",
-    "char": "chard literal",
-    "string": "string literal",
-    "tulip": "tulip",
-    "florist": "florist",
-    "dirt": "dirt",
-    "stem": "stem",
-}
+arith_ops = ["+", "-", "*", "/", "%", "(", ")"]
+sqnc_ops = ["{", "}", "[", "]"]
 
-test: dict = {
-    "int": ["tint literal", "florist"],
-    "float": ["tint literal", "florist"],
-    "char": ["string literal", "chard literal"],
-    "string": ["string literal", "chard literal"],
-    "bool": "bloom literal",
-    "tulip": "tulip",
-    "florist": "florist",
-    "dirt": "dirt",
-    "stem": "stem",
-}
-
-test2: dict = {
-    "int": ["int", "float"],
-    "float": ["int", "float"],
-    "char": ["string", "char"],
-    "string": ["string", "char"],
-    "florist": ["florist", "int", "float"],
-}
-
-sqnc_types: list = ["tulip", "florist", "stem", "dirt"]
-
-operator: list = ["<", ">" "==", "!=", "<=", ">=", "+", "-", "*", "/", "%"]
-
-errors: list = []
+errors = []
 
 
-code: list = []
-global_code: list = []
-
-
-def is_semantic_valid(output: object) -> bool:
-    global errors
-    errors = []
-
-    symbol_table: dict = {}
-
-    # Get the initial data (global variables and functions)
-    symbol_table = get_initial_data(output, parse_tree_root, symbol_table)
-
-    # DEBUG
-    print("\n\n" + "=" * 10 + " SYMBOL TABLE (GLOBAL) " + "=" * 10)
-    if symbol_table:
-        pretty(symbol_table, 0)
-    else:
-        print("No symbol table created.")
-
-    traverse_tree(parse_tree_root, symbol_table, output)
-
-    if errors:
-        print(errors)
-        for error in errors:
-            output.set_output(error)
-
-        code.clear()
-        global_code.clear()
-        return False
-
-    code.append("garden()")
-
-    print("\n\n" + "=" * 10 + " CODE " + "=" * 10)
-    print("\n".join(code))
-    print("=" * 10 + " END CODE " + "=" * 10)
-
-    output.set_output("SemanticAnalyser: No Errors Found.")
-    global_code.clear()
-    return True
-
-
-def get_initial_data(output: object, node: ParseTreeNode, symbol_table: dict) -> dict:
-    global datatype_check, errors, code, global_code
-    # Get the initial data (global variables and functions)
-
-    if errors:
-        return symbol_table
+def semantic_analysis(node: ParseTreeNode, local_table={}) -> bool:
 
     if node.symbol == "<program>":
         for child in node.children:
-            get_initial_data(output, child, symbol_table)
+            if not semantic_analysis(child):
+                return False
 
-    elif node.symbol == "<variable>" and node.properties["global"] is True:
+        local_table.clear()
 
-        # variable name
+    elif node.symbol in ["garden", "<body>"]:
         for child in node.children:
+            if not semantic_analysis(child, local_table):
+                return False
 
-            # data
-            data = []
-            for grandchild in child.children:
+    elif node.symbol == "<statement>":
 
-                if grandchild.kind == redef.ID:
+        if node.kind in ["variable", "assignment"]:
 
-                    # Undeclared
-                    if not symbol_table.get(grandchild.symbol):
-                        errors.append(
-                            f"Semantic Error: 1: {grandchild.symbol} is not declared at {node.line_number}"
-                        )
-                        return symbol_table
+            # Initialize or update the variable
+            for var_node in node.children:
 
-                    # Type mismatch (Variable and Variable)
-                    if symbol_table[grandchild.symbol]["type"] != node.type:
-                        errors.append(
-                            f"Semantic Error: 2: {grandchild.symbol} is not of type {node.type} at {node.line_number}"
-                        )
-                        return symbol_table
-
-                # Type mismatch (Variable and Literal)
-                elif (
-                    grandchild.symbol not in operator
-                    and datatype_check[grandchild.type] != node.type
-                ):
-                    errors.append(
-                        f"Semantic Error: 3: {child.symbol} is not of type {node.type} at {node.line_number}"
-                    )
-                    return symbol_table
-                data.append(grandchild.symbol)
-
-            code.append(
-                f"{child.symbol[1:]}:{node.type} = {data[0] if data else 'None'}"
-            )
-            global_code.append(f"{child.symbol[1:]}")
-
-            symbol_table[child.symbol] = {
-                "kind": child.kind,
-                "type": node.type,
-                "data": data if data else None,
-                "properties": node.properties,
-            }
-
-    elif node.symbol == "<function>":
-        # count the number of parameters
-        parms = {}
-        num_parameters = 0
-        param_node = node.children[1]
-
-        # <variable>
-        for grandchild in param_node.children:
-            num_parameters += 1
-
-            # variable name
-            for greatgrandchild in grandchild.children:
-
-                # data
-                data = []
-                for greatgreatgrandchild in greatgrandchild.children:
-                    data.append(greatgreatgrandchild.symbol)
-
-                parms[greatgrandchild.symbol] = {
-                    "kind": grandchild.kind,
-                    "type": grandchild.type,
-                    "data": data if data else None,
-                    "properties": {"global": False, "constant": False},
-                }
-
-        # Check it has return type
-        if node.type != "None":
-            has_return = False
-            for child in node.children[2].children:
-                if child.kind == "regrow":
-                    has_return = True
-                    break
-
-            if not has_return:
-                errors.append(
-                    f"Semantic Error: 4: {node.children[0].symbol} requires a regrow type at line {node.line_number}"
+                # Invalid Variable
+                var_name = var_node.symbol[1:]
+                var_type = translate[node.type] if node.type else None
+                type_cast = translate[var_node.type] if var_node.type else None
+                var_is_global = (
+                    node.properties["global"] if "global" in node.properties else False
                 )
-                return symbol_table
-
-
-        symbol_table[node.children[0].symbol] = {
-            "kind": "function",
-            "type": node.type,
-            "line_number": node.line_number,
-            "num_parameters": num_parameters,
-            "parameters": parms if parms else None,
-        }
-
-    return symbol_table
-
-
-def traverse_tree(node: ParseTreeNode, symbol_table: dict, output: object):
-    global datatype_check, errors, code, global_code
-
-    if errors:
-        return symbol_table
-
-    if node.symbol == "<program>":
-        for child in node.children:
-            traverse_tree(child, symbol_table, output)
-
-    elif node.symbol == "garden":
-        code.append("")
-        code.append("def garden() -> None:")
-        if global_code:
-            code.append("    global " + ", ".join(global_code))
-        # Create a new symbol table for the function
-        local_symbol_table = symbol_table.copy()
-
-        for child in node.children:
-            new_local = traverse_tree(child, local_symbol_table, output)
-
-            if errors:
-                return symbol_table
-
-            if new_local is not None:
-                local_symbol_table.update(new_local)
-
-        code.append("    pass")
-
-        # DEBUG
-        print("\n\n" + "=" * 10 + " SYMBOL TABLE (GARDEN w/ GLOBAL) " + "=" * 10)
-        if local_symbol_table:
-            pretty(local_symbol_table, 0)
-        else:
-            print("No symbol table created.")
-
-    elif node.symbol == "<function>":
-        # count the number of parameters
-        param_node = node.children[1]
-        body_node = node.children[2]
-        local_symbol_table = symbol_table.copy()
-        vars = []
-
-        # <variable>
-        for grandchild in param_node.children:
-
-            # variable name
-            for greatgrandchild in grandchild.children:
-
-                # data
-                data = []
-                for greatgreatgrandchild in greatgrandchild.children:
-                    data.append(greatgreatgrandchild.symbol)
-
-                local_symbol_table[greatgrandchild.symbol] = {
-                    "kind": grandchild.kind,
-                    "type": grandchild.type,
-                    "data": data if data else None,
-                    "properties": {"global": False, "constant": False, "pass": True},
-                }
-                vars.append(
-                    f"{greatgrandchild.symbol[1:]}:{grandchild.type}{' = ' + data[0] if data else ''}"
+                var_is_const = (
+                    node.properties["constant"]
+                    if "constant" in node.properties
+                    else False
                 )
 
-        code.append(
-            f"def {node.children[0].symbol[1:]}({', '.join(vars)}) -> {node.type}:"
-        )
-
-        for child in body_node.children:
-            local_symbol_table = traverse_tree(child, local_symbol_table, output)
-
-            if errors:
-                return symbol_table
-
-        # DEBUG
-        print(
-            "\n\n"
-            + "=" * 10
-            + f" SYMBOL TABLE {node.children[0].symbol} w/ GLOBAL)"
-            + "=" * 10
-        )
-        if local_symbol_table:
-            pretty(local_symbol_table, 0)
-        else:
-            print("No symbol table created.")
-
-    elif node.symbol == "<statement>" and node.kind == "variable":
-        # variable name
-        for child in node.children:
-
-            # data
-            data = []
-            sqnc = []
-            prms = []
-            for grandchild in child.children:
-
-                if grandchild.kind == redef.ID:
-
-                    # Undeclared
-                    if not symbol_table.get(grandchild.symbol):
+                # Using Undefined variable (if var_type is None)
+                if node.kind == "assignment":
+                    if var_name not in local_table and var_name not in symbol_table:
                         errors.append(
-                            f"Semantic Error: 6: {grandchild.symbol} is not declared at line {node.line_number}"
+                            f"Semantic Error: Undefined variable {var_name} at line {node.line_number}.\n"
                         )
-                        return symbol_table
+                        return False
 
-                    # Uninitialized
+                    # Update var_type
+                    if var_name in symbol_table:
+                        var_type = symbol_table[var_name]["type"]
+                    elif var_name in local_table:
+                        var_type = local_table[var_name]["type"]
+
+                prev_val: ParseTreeNode = None
+                for val in var_node.children:
+
+                    # Assigning Invalid Type
                     if (
-                        "data" in symbol_table[grandchild.symbol]
-                        and symbol_table[grandchild.symbol]["data"] is None
+                        val.symbol not in arith_ops
+                        and val.symbol not in sqnc_ops
+                        and val.symbol not in ["<sqnc>", "<index>", "<argument>"]
+                        and val.type
+                        and var_type != translate[val.type]
+                        and translate[node.type] not in ["list", "tuple", "set", "dict"]
                     ):
-                        if "pass" not in symbol_table[grandchild.symbol]["properties"]:
-                            errors.append(
-                                f"Semantic Error: 32: {grandchild.symbol} is not initialized at line {node.line_number}"
-                            )
-                            return symbol_table
-
-                    # Type mismatch (Variable and Variable)
-                    if (
-                        symbol_table[grandchild.symbol]["type"] != node.type
-                    ):
-                        errors.append(
-                            f"Semantic Error: 7: {grandchild.symbol} is not of type {node.type} at line {node.line_number}"
-                        )
-                        return symbol_table
-
-                # Type mismatch (Variable and Literal)
-                elif (
-                    grandchild.type is not None
-                    and grandchild.symbol not in operator
-                    and datatype_check[grandchild.type] != node.type
-                    and child.children[0].symbol != "["
-                ):
-                    print(child.children[0].symbol)
-                    errors.append(
-                        f"Semantic Error: 8: {child.symbol} is not of type {node.type} at line {node.line_number}"
-                    )
-                    return symbol_table
-
-                # Parameter mismatch
-                elif grandchild.symbol == "<argument>":
-                    if symbol_table[child.children[0].symbol]["num_parameters"] != len(
-                        grandchild.children
-                    ):
-                        errors.append(
-                            f"Semantic Error: 9: {child.children[0].symbol} requires {symbol_table[child.children[0].symbol]['num_parameters']} parameters at line {node.line_number}"
-                        )
-                        return symbol_table
-
-                    for i, arg in enumerate(grandchild.children):
-
-                        if arg.kind == redef.ID and arg.symbol not in symbol_table:
-                            errors.append(
-                                f"Semantic Error: 20: {arg.symbol} is not declared at line {node.line_number}"
-                            )
-                            return symbol_table
-
-                        # parameter type mismatch
-                        if symbol_table[child.children[0].symbol]["parameters"][
-                            list(symbol_table[child.children[0].symbol]["parameters"])[
-                                i
-                            ]
-                        ]["type"] != (
-                            symbol_table[arg.symbol]["type"]
-                            if arg.symbol in symbol_table
-                            else datatype_check[arg.type]
-                        ):
-                            expected_type = conv_to_comp_type[
-                                symbol_table[child.children[0].symbol]["parameters"][
-                                    list(
-                                        symbol_table[child.children[0].symbol][
-                                            "parameters"
-                                        ]
-                                    )[i]
-                                ]["type"]
-                            ]
-
-                            errors.append(
-                                f"Semantic Error: 10: {child.children[0].symbol} requires {expected_type} for parameter {i + 1} at line {node.line_number}"
-                            )
-
-                            return symbol_table
-                        prms.append(
-                            arg.symbol[1:] if arg.kind == redef.ID else arg.symbol
-                        )
-                elif node.type in sqnc_types:
-                    sqnc.append(grandchild.symbol)
-
-                # Division by zero
-                if (
-                    data
-                    and data[-1] == "/"
-                    and grandchild.symbol == "0"
-                    or (
-                        grandchild.kind == redef.ID
-                        and (
-                            "data" in symbol_table[grandchild.symbol]
-                            and symbol_table[grandchild.symbol]["data"] == 0
-                        )
-                    )
-                ):
-                    errors.append(
-                        f"Semantic Error: 11: Division by zero. at line {node.line_number}"
-                    )
-                    return symbol_table
-
-                data.append(
-                    grandchild.symbol[1:]
-                    if grandchild.kind == redef.ID
-                    else grandchild.symbol
-                )
-
-            symbol_table[child.symbol] = {
-                "kind": child.kind,
-                "type": node.type,
-                "data": data if data else None,
-                "properties": node.properties,
-            }
-            prms = ", ".join(prms)
-
-            if data and data[-1] == "<argument>" and node.type not in sqnc_types:
-                code.append(
-                    "    " * node.level
-                    + f"{child.symbol[1:]}:{node.type} = {data[0]}({prms})"
-                )
-            elif node.type not in sqnc_types:
-                code.append(
-                    "    " * node.level
-                    + f"{child.symbol[1:]}:{node.type} = {' '.join(data) if data else 'None'}"
-                )
-            elif node.type in sqnc_types:
-                # Check if the sequence is correct
-                if sqnc == []:
-                    pass
-                elif (
-                    (sqnc[0] == "[" and sqnc[-1] == "]")
-                    and node.type in ["dirt", "stem"]
-                ) or (
-                    (sqnc[0] == "{" and sqnc[-1] == "}")
-                    and node.type in ["tulip", "florist"]
-                ):
-                    errors.append(
-                        f"Semantic Error: 12: {node.children[0].symbol} requires a {node.type} of values."
-                    )
-
-                # Check if the pair is correct
-                elif (sqnc[0] == "{" and sqnc[-1] != "}") or (
-                    sqnc[0] == "[" and sqnc[-1] != "]"
-                ):
-                    errors.append(
-                        f"Semantic Error: 13: {node.children[0].symbol} requires a proper closing bracket at line {node.line_number}"
-                    )
-
-                if node.type == "dirt":
-                    data = ", ".join(sqnc[1:-1]).replace(", :, ", ":")
-                    code.append(
-                        "    " * node.level
-                        + f"{child.symbol[1:]}:{datatype_check[node.type]}"
-                        + f"= {sqnc[0]}{data}{sqnc[-1]}"
-                    )
-                elif node.type == "stem":
-                    data = ", ".join(sqnc[1:-1])
-                    code.append(
-                        "    " * node.level
-                        + f"{child.symbol[1:]}:{datatype_check[node.type]} = set({sqnc[0]}{data}{sqnc[-1]})"
-                    )
-                else:
-                    data = (
-                        f" = {sqnc[0]}{', '.join(sqnc[1:-1])}{sqnc[-1]}" if sqnc else ""
-                    )
-                    code.append(
-                        "    " * node.level
-                        + f"{child.symbol[1:]}:{datatype_check[node.type]}{data}"
-                    )
-
-    elif node.symbol == "<statement>" and node.kind == "assignment":
-
-        if symbol_table.get(node.children[0].symbol) is None:
-            errors.append(
-                f"Semantic Error: 14: {node.children[0].symbol} is not declared at line {node.line_number}"
-            )
-            return symbol_table
-
-        if "properties" in symbol_table[node.children[0].symbol] and (
-            (
-                "constant" in symbol_table[node.children[0].symbol]["properties"]
-                and symbol_table[node.children[0].symbol]["properties"]["constant"]
-                is True
-            )
-            or symbol_table[node.children[0].symbol]["type"] == "tulip"
-        ):
-            errors.append(
-                f"Semantic Error: 15: {node.children[0].symbol} is a immutabe at line {node.line_number}"
-            )
-            return symbol_table
-
-        # data
-        data = []
-        index = []
-        prms = []
-        fnc = False
-        id = None
-        slice = 2 if 1 in node.children and node.children[1].symbol == "<index>" else 1
-        for child in node.children[slice:]:
-
-            if child.kind == redef.ID:
-
-                # Undeclared
-                if not symbol_table.get(child.symbol):
-                    errors.append(
-                        f"Semantic Error: 16: {child.symbol} is not declared at line {node.line_number}"
-                    )
-                    return symbol_table
-
-                # Uninitialized
-                if (
-                    "data" in symbol_table[child.symbol]
-                    and symbol_table[child.symbol]["data"] is None
-                ):
-                    if "pass" not in symbol_table[child.symbol]["properties"]:
-                        errors.append(
-                            f"Semantic Error: 33: {child.symbol} is not initialized at line {node.line_number}"
-                        )
-                        return symbol_table
-
-                # Type mismatch (Variable and Variable)
-                if (
-                    symbol_table[child.symbol]["type"]
-                    != symbol_table[node.children[0].symbol]["type"]
-                    and node.children[1].symbol != "[" and node.children[-1].symbol != "]"
-                ) and symbol_table[child.symbol]["type"] not in sqnc_types:
-                    expected_type = conv_to_comp_type[
-                        symbol_table[node.children[0].symbol]["type"]
-                    ]
-                    errors.append(
-                        f"Semantic Error: 17: {child.symbol} is not of type {expected_type} at line {node.line_number}"
-                    )
-                    return symbol_table
-
-            elif slice == 2:
-                index = node.children[1].children[0].symbol
-
-            elif child.symbol == "<index>":
-                shet = my_variable(child.children, symbol_table)
-                if errors:
-                    return symbol_table
-                prms.append("[" + shet + "]")
-
-            # Type mismatch (Variable and Literal)
-            elif (
-                child.symbol not in operator
-                and child.type is not None
-                and datatype_check[child.type]
-                and symbol_table[node.children[0].symbol]["type"] != datatype_check[child.type]
-                and node.children[1].symbol != "[" and node.children[-1].symbol != "]"
-            ):
-                expected_type = conv_to_comp_type[
-                    symbol_table[node.children[0].symbol]["type"]
-                ]
-                errors.append(
-                    f"Semantic Error: 18: {child.symbol} is not of type {expected_type} at line {node.line_number}"
-                )
-                return symbol_table
-
-            # Parameter mismatch
-            elif child.symbol == "<argument>":
-
-                if symbol_table[node.children[1].symbol]["num_parameters"] != len(
-                    child.children
-                ):
-                    errors.append(
-                        f"Semantic Error: 19: {node.children[1].symbol} requires {symbol_table[node.children[1].symbol]['num_parameters']} parameters at line {node.line_number}"
-                    )
-                    return symbol_table
-
-                for i, arg in enumerate(child.children):
-                    if arg.kind == redef.ID and arg.symbol not in symbol_table:
-                        errors.append(
-                            f"Semantic Error: 20: {arg.symbol} is not declared at line {node.line_number}"
-                        )
-                        return symbol_table
-                    elif symbol_table[node.children[1].symbol]["parameters"][
-                        list(symbol_table[node.children[1].symbol]["parameters"])[i]
-                    ]["type"] != (
-                        (symbol_table[arg.symbol]["type"])
-                        if arg.kind == redef.ID
-                        else datatype_check[arg.type]
-                    ):
-                        expected_type = conv_to_comp_type[
-                            symbol_table[node.children[1].symbol]["parameters"][
-                                list(
-                                    symbol_table[node.children[1].symbol]["parameters"]
-                                )[i]
-                            ]["type"]
-                        ]
-
-                        errors.append(
-                            f"Semantic Error: 21: {node.children[1].symbol} requires {expected_type} for parameter {i + 1} at line {node.line_number}"
-                        )
-
-                        return symbol_table
-                    prms.append(arg.symbol[1:] if arg.kind == redef.ID else arg.symbol)
-
-            # Division by zero
-            if data and data[-1] == "/" and child.symbol == "0":
-                errors.append(
-                    f"Semantic Error: 22:  Division by zero at line {node.line_number}"
-                )
-                return symbol_table
-
-            if child.symbol in symbol_table:
-                if symbol_table[child.symbol]["kind"] == "function":
-                    fnc = True
-                id = child.symbol[1:]
-
-            data.append(child.symbol)
-
-        tmp = []
-        for num in data:
-            tmp += num[1:] if num[0] == "#" else num
-
-        new_data = []
-        if prms != []:
-            for i in data:
-                if i == "<index>":
-                    new_data.append(prms[0])
-                    continue
-                new_data.append(i[1:] if i[0] == "#" else i)
-            if fnc:
-                prms = id + "(" + ", ".join(prms) + ")" if fnc else id + ", ".join(prms)
-            else:
-                prms = "".join(new_data)
-            code.append(
-                "    " * node.level
-                + f"{node.children[0].symbol[1:]}{'[' + index + ']' if index != [] else ''} {node.properties['assignment-op']} {''.join(prms)}"
-            )
-        else:
-            code.append(
-                "    " * node.level
-                + f"{node.children[0].symbol[1:]}{'[' + index + ']' if index != [] else ''} {node.properties['assignment-op']} {''.join(tmp)}"
-            )
-
-        if symbol_table[node.children[0].symbol]["kind"] == "function":
-            code.append("    " * node.level + f"{node.children[0].symbol[1:]}()")
-
-        symbol_table[node.children[0].symbol]["data"] = data
-
-    elif node.symbol == "<statement>" and node.kind == "iterative":
-        # Exceeds the maximum number of nested loops
-        if node.level >= 4:
-            errors.append(
-                f"Semantic Error: 23: Exceeds the maximum number of nested loops at line {node.line_number}"
-            )
-            return symbol_table
-
-        # Create a new symbol table for the iterative statements
-        local_symbol_table = symbol_table.copy()
-
-        # store #i in the symbol table
-        con_node = node.children[0].children[0]
-        if node.children[0].kind == "for":
-            local_symbol_table[con_node.children[1].symbol] = {
-                "kind": redef.ID,
-                "type": "int",
-                "properties": {"global": False, "constant": False},
-            }
-
-            # name
-            for child in node.children:
-                var = []
-
-                for item in child.children[0].children:
-                    var.append(
-                        item.symbol[1:] if item.kind == redef.ID else item.symbol
-                    )
-
-                for i in range(0, len(var)):
-                    print(f"var[{i}]: {var[i]}")
-
-                if var[1] == "at":
-                    local_symbol_table['#' + var[0]] = {
-                        "kind": redef.ID,
-                        "type": "pass",
-                        "data": None,
-                    }
-                    print(symbol_table)
-                    code.append("    " * node.level + f"for {var[0]} in {var[2]}:")
-
-                else:
-
-                    init_var_loop = "    " * node.level + f"{var[1]}:{var[0]} = {var[3]}"
-                    loop_stmt = "    " * node.level + f"while {var[1]} {var[6]} {var[7]}:"
-
-                    code.append(init_var_loop)
-                    code.append(loop_stmt)
-
-                for grandchild in child.children[1:]:
-                    traverse_tree(grandchild, local_symbol_table, output)
-
-                    if errors:
-                        return symbol_table
-
-                if var[1] != "at":
-                    increment = "    " * node.level + f"    {var[1]} {child.children[0].properties['assignment-op']} {var[10]}"
-                    code.append(increment)
-
-        elif node.children[0].kind == "while":
-            var = []
-            for child in con_node.children:
-                if child.kind == redef.ID and not symbol_table.get(child.symbol):
-                    errors.append(
-                        f"Semantic Error: 24: {child.symbol} is not declared at line {node.line_number}"
-                    )
-                    return symbol_table
-
-                var.append(child.symbol[1:] if child.kind == redef.ID else child.symbol)
-
-            iter = var[0]
-            op = var[1]
-            end = var[2]
-
-            code.append("    " * node.level + f"while {iter} {op} {end}:")
-            for child in node.children[0].children[1:]:
-                traverse_tree(child, local_symbol_table, output)
-
-                if errors:
-                    return symbol_table
-
-    elif node.symbol == "<statement>" and (
-        node.kind == "if" or node.kind == "elif" or node.kind == "else"
-    ):
-        # Exceeds the maximum number of nested loops
-        if node.level >= 4:
-            errors.append(
-                f"Semantic Error: 25: Exceeds the maximum number of nested loops at line {node.line_number}"
-            )
-            return symbol_table
-
-        # Create a new symbol table for the if statements
-        local_symbol_table = symbol_table.copy()
-
-        # store #i in the symbol table
-        con_node = node.children[0].children[0]
-        con_var = []
-        for child in con_node.children:
-            if child.kind == redef.ID and not symbol_table.get(child.symbol):
-                errors.append(
-                    f"Semantic Error: 26: {child.symbol} is not declared at line {node.line_number}"
-                )
-                return symbol_table
-            con_var.append(child.symbol)
-
-        # name
-        for child in node.children:
-            var = []
-            index = []
-
-            if child.symbol == "leaf":
-                for item in child.children[0].children:
-                    if item.symbol == "<index>":
-                        shet = my_variable(
-                            index_node=item.children, symbol_table=local_symbol_table
-                        )
-                        if errors:
-                            return symbol_table
-                        var.append("[" + shet + "]")
-                    else:
-                        var.append(
-                            item.symbol[1:] if item.kind == redef.ID else item.symbol
-                        )
-
-                code.append("    " * node.level + f"if {''.join(var)}:")
-                for grandchild in child.children[1:]:
-                    traverse_tree(grandchild, local_symbol_table, output)
-
-                    if errors:
-                        return symbol_table
-
-            if child.symbol == "eleaf":
-                for item in child.children[0].children:
-                    if item.symbol == "<index>":
-                        shet = my_variable(
-                            index_node=item.children, symbol_table=local_symbol_table
-                        )
-
-                        if errors:
-                            return symbol_table
-
-                        var.append("[" + shet + "]")
-                    else:
-                        var.append(
-                            item.symbol[1:] if item.kind == redef.ID else item.symbol
-                        )
-                code.append("    " * node.level + f"elif {' '.join(var)}:")
-                for grandchild in child.children[1:]:
-                    traverse_tree(grandchild, local_symbol_table, output)
-
-                    if errors:
-                        return symbol_table
-
-            if child.symbol == "moss":
-                code.append("    " * node.level + "else:")
-                for grandchild in child.children:
-                    traverse_tree(grandchild, local_symbol_table, output)
-
-                    if errors:
-                        return symbol_table
-
-    elif node.symbol == "<statement>" and node.kind == "i/o":
-        if node.children[0].symbol == "mint":
-            data = []
-            index = None
-            for child in node.children[1:]:
-
-                if child.kind == redef.ID:
-
-                    # Undeclared
-                    if not symbol_table.get(child.symbol):
-                        errors.append(
-                            f"Semantic Error: 27: {child.symbol} is not declared at line {node.line_number}"
-                        )
-                        return symbol_table
-
-                # Division by zero
-                if data and data[-1] == "/" and (child.symbol == "0"):
-                    errors.append(
-                        f"Semantic Error: 28: Division by zero. at line {node.line_number}"
-                    )
-                    return symbol_table
-
-                # f-string
-                if child.type == redef.STR_LIT:
-                    tmp = ""
-                    pass_it = False
-                    var = ""
-                    tmp2 = ""
-
-                    for char in child.symbol:
-                        if char == "{":
-                            tmp += "{"
-                            pass_it = True
-                            var = ""
-                        elif pass_it and char != "}" and char != "#":
-                            tmp += char
-                            var += char
-
-                        elif pass_it and char == "}":
-                            pass_it = False
-                            tmp += "}"
-
-                            # Multiple # not allowed
-                            if var.count("#") > 1:
+                        if type_cast:
+                            if var_type != type_cast:
                                 errors.append(
-                                    f"Semantic Error: 29: {var} invalid string interpolation multiple identifier not allowed at line {node.line_number}"
+                                    f"Semantic Error: Invalid type for variable {var_name} at line {node.line_number}.\n"
                                 )
-
-                            elif not symbol_table.get(var):
-
-                                # Undeclared
-                                if var[0] == "#":
-
-                                    errors.append(
-                                        f"Semantic Error: 29: {var} is not declared at line {node.line_number} at line {node.line_number}"
-                                    )
-
-                                # Not an identifier
-                                else:
-                                    errors.append(
-                                        f"Semantic Error: 29: {var} invalid string interpolation expecting identifier at line {node.line_number}"
-                                    )
-                                return symbol_table
-
-                        elif not pass_it:
-                            tmp += char
-
+                                return False
                         else:
-                            var += char
-
-                        # Invalid character
-                        if pass_it and char in redef.DELIMi:
+                            print(val.symbol, var_type)
                             errors.append(
-                                f"Semantic Error: 29: invalid string interpolation found at line {node.line_number}. {char} is not allowed."
+                                f"Semantic Error: Invalid type for variable {var_name} at line {node.line_number}.\n"
                             )
-                            return symbol_table
+                            return False
 
-                        tmp2 += char
+                    # Assigning Undefined variable
+                    if val.kind == redef.ID:
+                        if (
+                            val.symbol[1:] not in local_table
+                            and val.symbol[1:] not in symbol_table
+                        ):
+                            errors.append(
+                                f"Semantic Error: Undefined variable {val.symbol} at line {node.line_number}.\n"
+                            )
+                            return False
 
-                    closed = True
-                    opened = False
-                    is_string = True
-                    for c in tmp:
-                        if c == "{" and closed:
-                            is_string = False
-                            opened = True
-                            closed = False
-                        elif c == "}" and opened:
-                            opened = False
-                            closed = True
+                    # <sqnc> node
+                    if val.symbol == "<sqnc>":
+                        for sqnc_val in val.children:
+                            if sqnc_val.kind == redef.ID:
 
-                    if opened and not closed:
-                        is_string = True
+                                # Using Undefined variable
+                                if (
+                                    sqnc_val.symbol[1:] not in local_table
+                                    and val.symbol[1:] not in symbol_table
+                                ):
+                                    errors.append(
+                                        f"Semantic Error: Undefined variable {sqnc_val.symbol} at line {node.line_number}.\n"
+                                    )
+                                    return False
 
-                    tmp = tmp2 if is_string else "f" + tmp
+                    if val.symbol == "{" or val.symbol == "[":
+                        # Mismatch opening and closing brackets
+                        if (
+                            val.symbol == "[" and var_node.children[-1].symbol != "]"
+                        ) or (
+                            val.symbol == "{" and var_node.children[-1].symbol != "}"
+                        ):
+                            errors.append(
+                                f"Semantic Error: Mismatch opening and closing brackets at line {node.line_number}.\n"
+                            )
+                            return False
 
-                    child.symbol = tmp
+                        # Invalid type for sequence
+                        if (
+                            val.symbol == "[" and var_type not in ["list", "tuple"]
+                        ) or (val.symbol == "{" and var_type not in ["set", "dict"]):
+                            errors.append(
+                                f"Semantic Error: Invalid type for sequence at line {node.line_number}.\n"
+                            )
+                            return False
 
-                if child.symbol == "<index>":
-                    index = child.children[0].symbol
+                    # <index> node
+                    if val.symbol == "<index>":
+                        for index_val in val.children:
+                            if index_val.kind == redef.ID:
+                                # Using Undefined variable
+                                if (
+                                    index_val.symbol[1:] not in local_table
+                                    and index_val.symbol[1:] not in symbol_table
+                                ):
+                                    errors.append(
+                                        f"Semantic Error: Undefined variable {index_val.symbol} at line {index_node.line_number}.\n"
+                                    )
+                                    return False
 
-                else:
-                    if (
-                        child.symbol in symbol_table
-                        and symbol_table[child.symbol]["kind"] == "function"
-                    ):
-                        data.append(child.symbol[1:] + "()")
+                    # <argument> node
+                    if val.symbol == "<argument>":
+                        for arg_val in val.children:
+                            # Using Undefined Variables
+                            if arg_val.kind == redef.ID:
+                                if (
+                                    arg_val.symbol[1:] not in local_table
+                                    and arg_val.symbol[1:] not in symbol_table
+                                ):
+                                    errors.append(
+                                        f"Semantic Error: Undefined variable {arg_val.symbol} at line {node.line_number}.\n"
+                                    )
+                                    return False
+
+                        # Invalid number of arguments
+                        if (
+                            len(val.children)
+                            != symbol_table[prev_val.symbol[1:]]["param_num"]
+                        ):
+                            errors.append(
+                                f"Semantic Error: Invalid number of arguments for function {var_name} at line {node.line_number}.\n"
+                            )
+                            return False
+
+                        # Invalid argument type
+                        for i, arg in enumerate(val.children):
+                            arg_type = (
+                                local_table[arg.symbol[1:]]["type"]
+                                if arg.kind == redef.ID
+                                else translate[arg.type]
+                            )
+                            func_param_type = symbol_table[prev_val.symbol[1:]][
+                                "param"
+                            ][i]
+
+                            if arg_type != func_param_type:
+                                errors.append(
+                                    f"Semantic Error: Invalid type for argument {arg.symbol} at line {node.line_number}.\n"
+                                )
+                                return False
+
+                    # Updating Constant variable
+                    if var_is_const:
+                        errors.append(
+                            f"Semantic Error: Cannot update constant variable {var_name} at line {node.line_number}.\n"
+                        )
+                        return False
+
+                    # Update Symbol Table for Global Variables and Local Variables
+                    if var_is_global:
+                        if var_name not in symbol_table:
+                            symbol_table[var_name] = {
+                                "type": var_type,
+                                "kind": node.kind,
+                                "global": True,
+                                "constant": var_is_const,
+                            }
                     else:
-                        data.append(
-                            child.symbol[1:] if child.kind == redef.ID else child.symbol
+                        local_table[var_name] = {
+                            "type": var_type,
+                            "kind": node.kind,
+                            "constant": var_is_const,
+                        }
+
+                    prev_val = val
+
+        elif node.kind == "i/o":
+            if len(node.children) > 2 and node.children[1].symbol == "inpetal":
+                # No prompt message
+                if node.children[2].type != redef.STR_LIT:
+                    errors.append(
+                        f"Semantic Error: Missing prompt message for input at line {node.line_number}.\n"
+                    )
+                    return False
+
+                var_name = node.children[0].symbol[1:]
+                var_type = translate[node.type] if node.type in translate else None
+
+                # Using Undefined variable
+                if var_type is None:
+                    if var_name not in local_table and var_name not in symbol_table:
+                        errors.append(
+                            f"Semantic Error: Undefined variable {var_name} at line {node.line_number}.\n"
+                        )
+                        return False
+
+                # Store the variable in the local table
+                else:
+                    local_table[var_name] = {
+                        "type": var_type,
+                        "kind": node.kind,
+                        "constant": False,
+                    }
+
+            else:
+
+                for data in node.children:
+                    if data.symbol in ["<sqnc>", "<index>"]:
+                        # <sqnc> node
+                        if data.symbol == "<sqnc>":
+                            for sqnc_val in data.children:
+                                if sqnc_val.kind == redef.ID:
+
+                                    # Using Undefined variable
+                                    if (
+                                        sqnc_val.symbol[1:] not in local_table
+                                        and val.symbol[1:] not in symbol_table
+                                    ):
+                                        errors.append(
+                                            f"Semantic Error: Undefined variable {sqnc_val.symbol} at line {node.line_number}.\n"
+                                        )
+                                        return False
+
+                            # Mismatch opening and closing brackets
+                            if len(val.children) % 2 != 0:
+                                errors.append(
+                                    f"Semantic Error: Mismatch opening and closing brackets at line {node.line_number}.\n"
+                                )
+                                return False
+
+                        # <index> node
+                        if data.symbol == "<index>":
+                            for index_val in data.children:
+                                if index_val.kind == redef.ID:
+                                    # Using Undefined variable
+                                    if (
+                                        index_val.symbol[1:] not in local_table
+                                        and index_val.symbol[1:] not in symbol_table
+                                    ):
+                                        errors.append(
+                                            f"Semantic Error: Undefined variable {index_val.symbol} at line {node.line_number}.\n"
+                                        )
+                                        return False
+
+                    # String Interpolation
+                    elif data.type == redef.STR_LIT:
+                        open_braces = data.symbol.count("{")
+                        tmp_str = data.symbol.replace("{#", "{")
+                        close_braces = data.symbol.count("}")
+                        # }}}}
+
+                        is_formatted = open_braces == close_braces and (
+                            open_braces > 0 and close_braces > 0
                         )
 
-            code.append(
-                "    " * node.level
-                + f"print({' '.join(data)}"
-                + f"{'[' + index + ']' if index is not None else ''})"
-            )
+                        if is_formatted:
+                            vars = re.findall(r"{(.*?)}", tmp_str)
+                            for var in vars:
+                                # Check if varaible is defined
+                                if var not in local_table and var not in symbol_table:
+                                    # Check if variable is valid variable
+                                    if [
+                                        char for char in var if char not in redef.DELIMi
+                                    ]:
+                                        errors.append(
+                                            f"Semantic Error: Invalid String Interpolation {var} at line {node.line_number}.\n"
+                                        )
+                                    else:
+                                        errors.append(
+                                            f"Semantic Error: Undefined variable {var} at line {node.line_number}.\n"
+                                        )
+                                    return False
 
-        # inpetal (input)
-        else:
-            if node.type is None and not symbol_table.get(node.children[0].symbol):
+        elif node.kind == "if":
+
+            # Max nested
+            if node.leaf_level > 3 or node.eleaf_level > 3:
                 errors.append(
-                    f"Semantic Error: 30:  {node.children[0].symbol} is not declared at line {node.line_number}"
+                    f"Semantic Error: Maximum nested leaf/eleaf statements at line {node.line_number}.\n"
                 )
-                return symbol_table
+                return False
 
-            if not symbol_table.get(node.children[0].symbol):
-                symbol_table[node.children[0].symbol] = {
-                    "kind": node.kind,
-                    "type": node.type,
-                    "data": node.children[2].symbol,
-                    "properties": node.properties,
-                }
+            for con_node in node.children:
+                # Get the body of the con statement
+                if not semantic_analysis(con_node.children[0], local_table.copy()):
+                    return False
+
+                # Validate the condition
+                if con_node.symbol in ["leaf", "eleaf"]:
+                    if_con = con_node.children[1]
+                    for val in if_con.children:
+                        # <sqnc> node
+                        if val.symbol == "<sqnc>":
+                            for sqnc_val in val.children:
+                                if sqnc_val.kind == redef.ID:
+
+                                    # Using Undefined variable
+                                    if (
+                                        sqnc_val.symbol[1:] not in local_table
+                                        and val.symbol[1:] not in symbol_table
+                                    ):
+                                        errors.append(
+                                            f"Semantic Error: Undefined variable {sqnc_val.symbol} at line {node.line_number}.\n"
+                                        )
+                                        return False
+
+                        if val.symbol == "{" or val.symbol == "[":
+                            # Mismatch opening and closing brackets
+                            if (
+                                val.symbol == "["
+                                and var_node.children[-1].symbol != "]"
+                            ) or (
+                                val.symbol == "{"
+                                and var_node.children[-1].symbol != "}"
+                            ):
+                                errors.append(
+                                    f"Semantic Error: Mismatch opening and closing brackets at line {node.line_number}.\n"
+                                )
+                                return False
+
+                            # Invalid type for sequence
+                            if (
+                                val.symbol == "[" and var_type not in ["list", "tuple"]
+                            ) or (
+                                val.symbol == "{" and var_type not in ["set", "dict"]
+                            ):
+                                errors.append(
+                                    f"Semantic Error: Invalid type for sequence at line {node.line_number}.\n"
+                                )
+                                return False
+
+                        # <index> node
+                        if val.symbol == "<index>":
+                            for index_val in val.children:
+                                if index_val.kind == redef.ID:
+                                    # Using Undefined variable
+                                    if (
+                                        index_val.symbol[1:] not in local_table
+                                        and index_val.symbol[1:] not in symbol_table
+                                    ):
+                                        errors.append(
+                                            f"Semantic Error: Undefined variable {index_val.symbol} at line {index_node.line_number}.\n"
+                                        )
+                                        return False
+
+                        # Undefined Variable
+                        if val.kind == redef.ID:
+                            if (
+                                val.symbol[1:] not in local_table
+                                and val.symbol[1:] not in symbol_table
+                            ):
+                                errors.append(
+                                    f"Semantic Error: Undefined variable {val.symbol} at line {node.line_number}.\n"
+                                )
+                                return False
+
+        elif node.kind == "iterative":
+
+            # Max nested
+            if node.fern_level > 3 or node.willow_level > 3:
+                errors.append(
+                    f"Semantic Error: Maximum nested fern/willow statements at line {node.line_number}.\n"
+                )
+                return False
+
+            iter_node = node.children[0]
+            iter_type = iter_node.symbol
+            iter_con = iter_node.children[1]
+            iter_local_table = local_table.copy()
+
+            if iter_type == "fern":
+                if iter_con.children[1].symbol == "at":
+                    iter_v1 = iter_con.children[0].symbol[1:]
+                    iter_v2 = iter_con.children[2].symbol[1:]
+
+                    if iter_v1 not in local_table and iter_v1 not in symbol_table:
+                        errors.append(
+                            f"Semantic Error: Undefined variable {iter_v1} at line {node.line_number}.\n"
+                        )
+                        return False
+
+                    if iter_v2 not in local_table and iter_v2 not in symbol_table:
+                        errors.append(
+                            f"Semantic Error: Undefined variable {iter_v2} at line {node.line_number}.\n"
+                        )
+                        return False
+
+                else:
+                    iter_local_table[iter_con.children[1].symbol[1:]] = {
+                        "type": translate[iter_con.children[0].symbol],
+                        "kind": "variable",
+                        "constant": False,
+                    }
+
+                    iter_v = iter_con.children[6].symbol[1:]
+                    if iter_v[0] == "#":
+                        iter_v = iter_v[1:]
+
+                        if (
+                            iter_v not in iter_local_table
+                            and iter_v not in symbol_table
+                        ):
+                            errors.append(
+                                f"Semantic Error: Undefined variable {iter_v} at line {node.line_number}.\n"
+                            )
+                            return False
+
             else:
-                symbol_table[node.children[0].symbol]["properties"] = node.properties,
-                symbol_table[node.children[0].symbol]["data"] = node.children[2].symbol
+                iter_v1 = iter_con.children[0]
+                iter_v2 = iter_con.children[2]
 
-            var = symbol_table[node.children[0].symbol]
+                if iter_v1.kind == redef.ID:
+                    if (
+                        iter_v1.symbol[1:] not in local_table
+                        and iter_v1.symbol[1:] not in symbol_table
+                    ):
+                        errors.append(
+                            f"Semantic Error: Undefined variable {iter_v1.symbol} at line {node.line_number}.\n"
+                        )
+                        return False
 
-            code.append(
-                "    " * node.level
-                + f"{node.children[0].symbol[1:]}"
-                + f"{':' + node.type if node.type else ''}"
-                + f" = {var['type']}"
-                + f"(input({node.children[2].symbol if node.children[2].symbol else ''}))"
-            )
-    elif node.symbol == "<statement>" and node.kind == "tree":
+                if iter_v2.kind == redef.ID:
+                    if (
+                        iter_v2.symbol[1:] not in local_table
+                        and iter_v2.symbol[1:] not in symbol_table
+                    ):
+                        errors.append(
+                            f"Semantic Error: Undefined variable {iter_v2.symbol} at line {node.line_number}.\n"
+                        )
+                        return False
 
-        if symbol_table.get(node.children[0].children[0].symbol) is None:
-            errors.append(
-                f"Semantic Error: 31: {node.children[0].children[0].symbol} is not declared at line {node.line_number}"
-            )
-            return symbol_table
+            if not semantic_analysis(iter_node.children[0], iter_local_table):
+                return False
 
-        code.append(
-            "    " * node.level + f"match {node.children[0].children[0].symbol[1:]}:"
-        )
-
-        for child in node.children[0].children[1:]:
-            code.append(
-                "    " * node.children[0].level + f"case {child.children[0].symbol}:"
-            )
-            for grandchild in child.children[1:]:
-                if grandchild.kind == "break":
-                    continue
-                traverse_tree(grandchild, symbol_table, output)
-
-                if errors:
-                    return symbol_table
-
-    elif node.symbol == "<statement>" and node.kind == "break":
-        code.append("    " * node.level + "break")
-
-    elif node.symbol == "<statement>" and node.kind == "regrow":
-
-        tmp = ""
-
-        for val in node.children:
-
-            if val.kind == redef.ID:
-
-                # Unititialized
+        elif node.kind == "tree":
+            tree_con_var = node.children[0].children[0]
+            if tree_con_var.kind == redef.ID:
                 if (
-                    "data" in symbol_table[val.symbol]
-                    and symbol_table[val.symbol]["data"] is None
-                    and "pass" not in symbol_table[val.symbol]["properties"]
+                    tree_con_var.symbol[1:] not in local_table
+                    and tree_con_var.symbol[1:] not in symbol_table
                 ):
                     errors.append(
-                        f"Semantic Error: 32: {val.symbol} is not initialized at line {node.line_number}"
+                        f"Semantic Error: Undefined variable {tree_con_var.symbol} at line {node.line_number}.\n"
                     )
-                    return symbol_table
+                    return False
 
-                # Undeclared
-                if symbol_table.get(val.symbol) is None:
+            for branch in node.children[0].children[1:]:
+
+                have_break = False
+
+                for stmt_nodes in branch.children[1:]:
+                    if not semantic_analysis(stmt_nodes, local_table):
+                        return False
+                    if stmt_nodes.kind == "break":
+                        have_break = True
+
+                if not have_break:
                     errors.append(
-                        f"Semantic Error: 4: {val.symbol} is not declared at line {node.line_number}"
+                        f"Semantic Error: Missing break statement at line {branch.line_number}.\n"
                     )
-                    return symbol_table
+                    return False
 
-                # type mismatch
-                print(symbol_table[val.symbol]["type"])
-                if symbol_table[val.symbol]["type"] not in test2[node.type]:
-                    errors.append(
-                        f"Semantic Error: 5: {val.symbol} is not of type {node.type} at line {node.line_number}"
-                    )
-                    return symbol_table
+    elif node.symbol == "<function>":
+        func_name = node.children[0].symbol[1:]
+        func_type = translate[node.type] if node.type else None
 
-            tmp += val.symbol[1:] if val.kind == redef.ID else val.symbol
+        # Return type for function
+        if func_type is None and node.children[2].children[-1].kind != "regrow":
+            errors.append(
+                f"Semantic Error: Missing return type for function {func_name} at line {node.line_number}.\n"
+            )
+            return False
 
-        code.append("    " * node.level + f"return {tmp}")
+        return True
 
-    return symbol_table
+    elif node.symbol == "<parameter>":
+        pass
 
-
-def pretty(d, indent=0):
-    for key, value in d.items():
-        print(" " * indent + "- " + str(key))
-        if isinstance(value, dict):
-            pretty(value, indent + 1)
-        else:
-            print("  " * (indent + 1) + "- " + str(value))
-
-
-def my_variable(index_node: ParseTreeNode, symbol_table: dict) -> str:
-    global errors
-
-    stmt = ""
-
-    for value in index_node:
-
-        if value.kind == redef.ID:
-
-            # Undeclared
-            if not symbol_table.get(value.symbol):
-                errors.append(
-                    f"Semantic Error: 34: {value.symbol} is not declared at line {value.line_number}"
-                )
-                return symbol_table
-
-            # Uninitialized
-            if (
-                "data" in symbol_table[value.symbol]
-                and symbol_table[value.symbol]["data"] is None
-            ):
-                if "pass" not in symbol_table[value.symbol]["properties"]:
-                    errors.append(
-                        f"Semantic Error: 35: {value.symbol} is not initialized at line {value.line_number}"
-                    )
-                    return symbol_table
-
-            # Type mismatch (Variable and Variable)
-            if symbol_table[value.symbol]["type"] != "int":
-                errors.append(
-                    f"Semantic Error: 36: {value.symbol} is not of type int at line {value.line_number}"
-                )
-                return symbol_table
-
-        stmt += value.symbol[1:] if value.kind == redef.ID else value.symbol
-
-    return stmt
+    return True
