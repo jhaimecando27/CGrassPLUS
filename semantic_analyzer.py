@@ -43,6 +43,7 @@ def semantic_analysis(node: ParseTreeNode, local_table={}) -> bool:
         for child in node.children:
             if not semantic_analysis(child, local_table):
                 return False
+        local_table.clear()
 
     elif node.symbol == "<statement>":
 
@@ -50,6 +51,9 @@ def semantic_analysis(node: ParseTreeNode, local_table={}) -> bool:
 
             # Initialize or update the variable
             for var_node in node.children:
+
+                if var_node.symbol == "<argument>":
+                    continue
 
                 # Invalid Variable
                 var_name = var_node.symbol[1:]
@@ -78,7 +82,7 @@ def semantic_analysis(node: ParseTreeNode, local_table={}) -> bool:
                     elif var_name in local_table:
                         var_type = local_table[var_name]["type"]
 
-                prev_val: ParseTreeNode = None
+                prev_val = None
                 for val in var_node.children:
 
                     # Assigning Invalid Type
@@ -518,18 +522,27 @@ def semantic_analysis(node: ParseTreeNode, local_table={}) -> bool:
 
     elif node.symbol == "<function>":
         func_name = node.children[0].symbol[1:]
-        func_type = translate[node.type] if node.type else None
+        func_type = None if node.type not in translate else translate[node.type]
+
+        # add param to local table
+        for param in node.children[1].children:
+            param_name = param.children[0].symbol[1:]
+            param_type = translate[param.type]
+            local_table[param_name] = {
+                "type": param_type,
+                "kind": "variable",
+                "constant": False,
+            }
+
+        if not semantic_analysis(node.children[2], local_table):
+            return False
 
         # Return type for function
-        if func_type is None and node.children[2].children[-1].kind != "regrow":
+        if func_type is not None and node.children[2].children[-1].kind != "regrow":
             errors.append(
                 f"Semantic Error: Missing return type for function {func_name} at line {node.line_number}.\n"
             )
             return False
-
-        return True
-
-    elif node.symbol == "<parameter>":
-        pass
+        local_table.clear()
 
     return True

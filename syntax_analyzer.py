@@ -1939,6 +1939,9 @@ def _function(node: classmethod) -> None:
     elif _is_match(True, "viola"):
         func_node.set_type("None")
 
+        func_name = lexemes[index + 1]
+        func_type = None
+
         if _is_match(False, "#", func_node):
             pass
 
@@ -1948,6 +1951,21 @@ def _function(node: classmethod) -> None:
         child_node = add_parse_tree_node(func_node, "<parameter>")
         if _is_match(True, "<undefined-param>"):
             _undefined_param(child_node)
+        else:
+            child_node.set_properties({"parameters": None})
+
+        param_table = []
+        for param in child_node.children:
+            param_table.append(translate[param.type])
+
+        param_num = len(param_table)
+
+        symbol_table[func_name] = {
+            "type": func_type,
+            "kind": "function",
+            "param_num": param_num,
+            "param": param_table,
+        }
 
         if _is_match(False, ")"):
             pass

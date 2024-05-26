@@ -4,6 +4,7 @@ import sys
 import threading
 
 from var import ParseTreeNode, parse_tree_root
+from semantic_analyzer import symbol_table
 import redef
 
 
@@ -118,7 +119,18 @@ def to_python_code(node: ParseTreeNode, stmt="") -> str:
         if node.kind in ["variable", "assignment"]:
 
             # Initialize or update the variable
+            prev_var_node: ParseTreeNode = None
             for var_node in node.children:
+
+                if var_node.symbol == "<argument>":
+                    stmt += (
+                        indent * prev_var_node.level
+                        + prev_var_node.symbol[1:]
+                        + to_python_code(var_node)
+                        + "\n"
+                    )
+                    continue
+
                 var_name = var_node.symbol[1:]
                 type_cast = translate[var_node.type] if var_node.type else None
                 var_op = (
@@ -126,6 +138,10 @@ def to_python_code(node: ParseTreeNode, stmt="") -> str:
                     if "assignment-op" in node.properties
                     else None
                 )
+
+                if symbol_table[var_name] if var_name in symbol_table else None:
+                    prev_var_node = var_node
+                    continue
 
                 # Set the value of the variable if any
                 tmp_val = ""
@@ -287,9 +303,7 @@ def to_python_code(node: ParseTreeNode, stmt="") -> str:
                 tree_body += (
                     indent * (node.level + 1) + f"case {branch.children[0].symbol}:\n"
                 )
-                tree_body += (
-                    indent * (node.level + 2) + "while True:\n"
-                )
+                tree_body += indent * (node.level + 2) + "while True:\n"
                 for stmt_nodes in branch.children[1:]:
                     tree_body += indent + to_python_code(stmt_nodes)
 
