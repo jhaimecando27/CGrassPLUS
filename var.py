@@ -26,11 +26,7 @@ class ParseTreeNode:
 
     def add_child(self, child):
         child.level = self.level
-        if child.symbol in [
-            "<statement>",
-            "branch",
-            "tree"
-        ] and self.symbol in [
+        if child.symbol in ["<statement>", "branch", "tree"] and self.symbol in [
             "tree",
             "branch",
             "garden",

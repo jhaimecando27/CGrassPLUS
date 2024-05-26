@@ -48,7 +48,7 @@ class CustomInput:
         self.parent.output_text.see(tk.END)
         self.parent.output_text.configure(state="disabled")
         self.parent.input_text.set("")
-        self.parent.input_frame.pack(expand=True, fill=tk.X)
+        self.parent.input_frame.pack(expand=False, fill=tk.X)
         self.input_ready.clear()
 
     def get_input(self, prompt_text=""):
@@ -81,11 +81,11 @@ class OutputWindow(tk.Toplevel):
 
         # Input Frame
         self.input_frame = tk.Frame(self)
-        self.input_frame.pack(fill=tk.X, pady=5)
+        self.input_frame.pack(fill=tk.X)
 
         self.input_text = tk.StringVar()
         self.input_entry = tk.Entry(self.input_frame, textvariable=self.input_text)
-        self.input_entry.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(0, 5))
+        self.input_entry.pack(side=tk.LEFT, expand=True, fill=tk.X)
 
         self.input_button = tk.Button(
             self.input_frame, text="Enter", command=self.submit_input
@@ -102,7 +102,6 @@ class OutputWindow(tk.Toplevel):
         self.output_text.configure(state="normal")
         self.output_text.delete("1.0", tk.END)
         self.output_text.configure(state="disabled")
-
 
 
 def to_python_code(node: ParseTreeNode, stmt="") -> str:

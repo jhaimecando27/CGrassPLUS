@@ -205,7 +205,7 @@ FIRST_SET = {
         "bloom literal",
         "EPSILON",
         "#",
-        "["
+        "[",
     ],
     "<start-end-step>": ["[", "EPSILON"],
     "<insert-start>": [

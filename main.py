@@ -3,7 +3,7 @@ from lexical_analyzer import is_lexical_valid
 from syntax_analyzer import is_syntax_valid
 from semantic_analyzer import semantic_analysis, errors as semantic_errors, symbol_table
 from code_generate import generate
-from var import print_parse_tree, parse_tree_root, delete_parse_tree, ParseTreeNode
+from var import print_parse_tree, parse_tree_root, delete_parse_tree
 
 # REF(TextLineNumbers, CustomText): https://stackoverflow.com/questions/16369470/tkinter-adding-line-number-to-text-widget
 
@@ -109,18 +109,11 @@ class _HeadersFrame(tk.Frame):
         )
         self.lexBtn.pack(side="left", padx=5, pady=5)
 
-        self.stageLbl = tk.Label(
-            self, text="Compiler Stage: ", font=("Arial", 12, "bold")
-        )
-        self.stageLbl.pack(side="left", padx=100, pady=5)
-
     def _analyze(self):
         """Analyze the input code"""
         self.output_instance.clear_output()
         self.token_instance.clear_output()
         delete_parse_tree()
-
-        self.stageLbl.configure(text="Compiler Stage: Lexical Analysis")
 
         is_valid, lexer_output = is_lexical_valid(
             self.output_instance,
@@ -129,19 +122,18 @@ class _HeadersFrame(tk.Frame):
         )
 
         if is_valid:
-            self.stageLbl.configure(text="Compiler Stage: Syntax Analysis")
             if is_syntax_valid(
                 self.output_instance,
                 lexer_output,
             ):
                 print_parse_tree()
-
                 print("=" * 10 + " Symbol Table " + "=" * 10)
                 print(symbol_table)
 
                 if semantic_analysis(parse_tree_root):
-                    self.stageLbl.configure(text="Compiler Stage: Code Generation")
-                    self.output_instance.set_output("Semantic Analysis No Errors Found.\n")
+                    self.output_instance.set_output(
+                        "Semantic Analysis No Errors Found.\n"
+                    )
 
                     print("=" * 10 + " Symbol Table " + "=" * 10)
                     print(symbol_table)
@@ -162,13 +154,13 @@ class OutputFrame(tk.Frame):
         self.outputLabel = tk.Label(self, text="Output", font=("Arial", 14, "bold"))
         self.outputLabel.pack(anchor="w")
 
-        self.outputText = tk.Text(
+        self.outputText = tk.scrolledtext.ScrolledText(
             self,
             font=("Arial", 12),
             bd=2,
             relief="solid",
             state="disabled",
-            height=15,
+            height=10,
         )
         self.outputText.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
@@ -194,7 +186,7 @@ class TokenTableFrame(tk.Frame):
         )
         self.lexicLbl.pack(anchor="w")
 
-        self.tokenText = tk.Text(
+        self.tokenText = tk.scrolledtext.ScrolledText(
             self,
             font=("Arial", 12),
             bd=2,
