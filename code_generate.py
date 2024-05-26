@@ -98,6 +98,12 @@ class OutputWindow(tk.Toplevel):
     def submit_input(self):
         self.custom_input.submit_input()
 
+    def clear_output(self):
+        self.output_text.configure(state="normal")
+        self.output_text.delete("1.0", tk.END)
+        self.output_text.configure(state="disabled")
+
+
 
 def to_python_code(node: ParseTreeNode, stmt="") -> str:
 
@@ -324,6 +330,9 @@ def to_python_code(node: ParseTreeNode, stmt="") -> str:
         elif node.kind == "break":
             stmt += indent * node.level + "break\n"
 
+        elif node.kind == "clear":
+            stmt += indent * node.level + "clear()\n"
+
     elif node.symbol == "<function>":
         func_name = node.children[0].symbol[1:]
         func_params = to_python_code(node.children[1])
@@ -407,7 +416,13 @@ def generate(self, output_instance):
 
     def run_code():
         try:
-            exec(python_code, {"input": output_window.custom_input.get_input})
+            exec(
+                python_code,
+                {
+                    "clear": output_window.clear_output,
+                    "input": output_window.custom_input.get_input,
+                },
+            )
         except Exception as e:
             output_instance.set_output(f"\nError: {str(e)}")
         finally:
