@@ -1,4 +1,5 @@
 import grammar as g
+import redef
 from var import add_parse_tree_node, parse_tree_root, ParseTreeNode
 
 errors: list[list[str]] = []
@@ -7,6 +8,7 @@ index: int = 0
 tokens: list[str] = []
 lexemes: list[str] = []
 output: object = None
+assign_node = None
 
 
 def is_syntax_valid(output_instance: object, lexer_output: object) -> bool:
@@ -189,7 +191,7 @@ def _program(node: classmethod) -> None:
 
 # #2,#3: <global> -> floral <constant> <insert-variable>; <global> | EPSILON
 def _global(node: classmethod) -> None:
-    var_node = add_parse_tree_node(node, "<variable>")
+    var_node = add_parse_tree_node(node, "<statement>")
     var_node.properties["global"] = True
 
     if _is_match(True, "floral"):
@@ -271,6 +273,7 @@ def _statement(node: classmethod) -> None:
         stmt_node.kind = "if"
         stmt_node.set_line_number(line_number)
         leaf_node = add_parse_tree_node(stmt_node, "leaf")
+        leaf_body_node = add_parse_tree_node(leaf_node, "<body>")
 
         if _is_match(False, "("):
             pass
@@ -286,7 +289,7 @@ def _statement(node: classmethod) -> None:
             pass
 
         if _is_match(False, "<statement>"):
-            _statement(leaf_node)
+            _statement(leaf_body_node)
 
         if _is_match(False, ")"):
             pass
@@ -439,19 +442,19 @@ def _common_type(node: classmethod) -> None:
     global index
 
     if _is_match(True, "tint"):
-        node.set_type("int")
+        node.set_type("tint")
 
     elif _is_match(True, "flora"):
-        node.set_type("float")
+        node.set_type("flora")
 
     elif _is_match(True, "chard"):
-        node.set_type("char")
+        node.set_type("chard")
 
     elif _is_match(True, "string"):
         node.set_type("string")
 
     elif _is_match(True, "bloom"):
-        node.set_type("bool")
+        node.set_type("bloom")
     else:
         errors.append((lexemes[index], "Syntax Error: Expecting <common-type>"))
 
@@ -525,21 +528,21 @@ def _insert_operation(node: classmethod) -> None:
 def _data(node: classmethod) -> None:
     global index, lexemes
 
-    if _is_match(True, "tint literal", node):
+    if _is_match(True, redef.TINT_LIT, node):
         if _is_match(True, "<operate-number>", node):
             _operate_number(node)
 
-    elif _is_match(True, "flora literal", node):
+    elif _is_match(True, redef.FLORA_LIT, node):
         if _is_match(True, "<operate-number>", node):
             _operate_number(node)
 
-    elif _is_match(True, "chard literal", node):
+    elif _is_match(True, redef.CHR_LIT, node):
         pass
 
-    elif _is_match(True, "string literal", node):
+    elif _is_match(True, redef.STR_LIT, node):
         pass
 
-    elif _is_match(True, "bloom literal", node):
+    elif _is_match(True, redef.BL_LIT, node):
         pass
 
     elif _is_match(True, "#", node):
@@ -553,7 +556,7 @@ def _data(node: classmethod) -> None:
         if _is_match(True, "<start-end-step>"):
             _start_end_step(node)
 
-        if tokens[index] == "string literal" and _is_match(True, "<concatenate>"):
+        if tokens[index] == redef.STR_LIT and _is_match(True, "<concatenate>"):
             _concatenate(node)
 
         if _is_match(True, "<operate-number>"):
@@ -696,7 +699,7 @@ def _operator(node: classmethod) -> None:
 def _tint(node: classmethod) -> None:
     global index
 
-    if _is_match(True, "tint literal", node):
+    if _is_match(True, redef.TINT_LIT, node):
         pass
 
     elif _is_match(True, "lent", node):
@@ -739,7 +742,7 @@ def _tint(node: classmethod) -> None:
 def _flora(node: classmethod) -> None:
     global index
 
-    if _is_match(True, "flora literal", node):
+    if _is_match(True, redef.FLORA_LIT, node):
         pass
 
     elif _is_match(True, "flora", node):
@@ -932,12 +935,12 @@ def _indexing(node: classmethod) -> None:
 # #88-89: <typecast> -> (<all-type-value>)<concatenate><operate-number><operate-logic>
 def _typecast(node: ParseTreeNode) -> None:
 
-    if _is_match(True, "(", node):
+    if _is_match(True, "("):
 
         if _is_match(True, "<all-type-value>"):
             _all_type_value(node)
 
-        if _is_match(False, ")", node):
+        if _is_match(False, ")"):
             pass
 
         if _is_match(True, "<concatenate>"):
@@ -954,10 +957,10 @@ def _typecast(node: ParseTreeNode) -> None:
 def _insert_index(node: classmethod) -> None:
     global index
 
-    if _is_match(True, "tint literal", node):
+    if _is_match(True, redef.TINT_LIT, node):
         pass
 
-    elif _is_match(True, "string literal", node):
+    elif _is_match(True, redef.STR_LIT, node):
         pass
 
     else:
@@ -1031,17 +1034,16 @@ def _sequence(node: classmethod) -> None:
             _dirt(node)
 
         if _is_match(False, "<open>"):
-            add_parse_tree_node(node, lexemes[index])
             _open(node)
 
         if _is_match(True, "<dirt>") and _is_exist(":"):
             _dirt(node)
 
         if _is_match(True, "<insert-sqnc>"):
-            _insert_sqnc(node)
+            child_node = add_parse_tree_node(node, "<sqnc>")
+            _insert_sqnc(child_node)
 
         if _is_match(False, "<close>"):
-            add_parse_tree_node(node, lexemes[index])
             _close(node)
 
     elif _is_match(True, "<supply-dirt>"):
@@ -1086,10 +1088,10 @@ def _sequence(node: classmethod) -> None:
 def _open(node: classmethod) -> None:
     global index
 
-    if _is_match(True, "["):
+    if _is_match(True, "[", node):
         pass
 
-    elif _is_match(True, "{"):
+    elif _is_match(True, "{", node):
         pass
 
     else:
@@ -1099,7 +1101,7 @@ def _open(node: classmethod) -> None:
 # #104-#105: <dirt> -> 'string literal' : | EPSILON
 def _dirt(node: classmethod) -> None:
 
-    if _is_match(True, "string literal", node):
+    if _is_match(True, redef.STR_LIT, node):
 
         if _is_match(False, ":", node):
             pass
@@ -1109,10 +1111,10 @@ def _dirt(node: classmethod) -> None:
 def _close(node: classmethod) -> None:
     global index
 
-    if _is_match(True, "]"):
+    if _is_match(True, "]", node):
         pass
 
-    elif _is_match(True, "}"):
+    elif _is_match(True, "}", node):
         pass
 
     else:
@@ -1151,9 +1153,10 @@ def _insert_sqnc(node: classmethod) -> None:
 
     elif _is_match(True, "<open>"):
         _open(node)
+        child_node = add_parse_tree_node(node, "<sqnc>")
 
         if _is_match(True, "<insert-sqnc>"):
-            _insert_sqnc(node)
+            _insert_sqnc(child_node)
 
         if _is_match(True, "<close>"):
             _close(node)
@@ -1169,7 +1172,7 @@ def _insert_sqnc(node: classmethod) -> None:
 # #114-#115: <next-sqnc> -> , <insert-next-sqnc> | EPSILON
 def _next_sqnc(node: classmethod) -> None:
 
-    if _is_match(True, ","):
+    if _is_match(True, ",", node):
         if _is_match(False, "<insert-next-sqnc>"):
             _insert_next_sqnc(node)
 
@@ -1244,8 +1247,8 @@ def _close_end(node: classmethod) -> None:
 
     elif _is_match(True, ":", node):
 
-        if _is_match(True, "<insert-data>"):
-            _insert_data(node)
+        if _is_match(False, redef.TINT_LIT, node):
+            pass
 
         if _is_match(False, "]", node):
             pass
@@ -1298,7 +1301,7 @@ def _all_type_value(node: classmethod) -> None:
         if _is_match(False, "("):
             pass
 
-        if _is_match(False, "string literal", node):
+        if _is_match(False, redef.STR_LIT, node):
             pass
 
         if _is_match(False, ")"):
@@ -1322,13 +1325,13 @@ def _i_o_statement(node: classmethod) -> None:
             if _is_match(False, "("):
                 pass
 
-            if _is_match(False, "string literal", node):
+            if _is_match(False, redef.STR_LIT, node):
                 pass
 
             if _is_match(False, ")"):
                 pass
 
-    elif _is_match(True, "mint", node):
+    elif _is_match(True, "mint"):
 
         if _is_match(False, "("):
             pass
@@ -1348,7 +1351,7 @@ def _i_o_statement(node: classmethod) -> None:
 # <sqnc-type> # = |
 # # <insert-func> <indexing> <start-end-step> <more-id> <assignment-op>
 def _insert_inpetal(node: classmethod) -> None:
-    global index
+    global index, assign_node
 
     if _is_match(True, "<common-type>"):
         _common_type(node)
@@ -1368,7 +1371,10 @@ def _insert_inpetal(node: classmethod) -> None:
         if _is_match(False, "="):
             pass
 
-    elif _is_match(False, "#", node):
+    elif _is_match(True, "#"):
+        assign_node = add_parse_tree_node(node, lexemes[index - 2] + lexemes[index - 1])
+        print(assign_node)
+
         if _is_match(True, "<insert-func>"):
             _insert_func(node)
 
@@ -1416,6 +1422,7 @@ def _eleaf(node: classmethod) -> None:
     if _is_match(True, "eleaf"):
         eleaf_node = add_parse_tree_node(node, "eleaf")
         eleaf_node.set_kind("elif")
+        eleaf_body_node = add_parse_tree_node(eleaf_node, "<body>")
 
         if _is_match(False, "("):
             pass
@@ -1431,7 +1438,7 @@ def _eleaf(node: classmethod) -> None:
             pass
 
         if _is_match(True, "<statement>"):
-            _statement(eleaf_node)
+            _statement(eleaf_body_node)
 
         if _is_match(False, ")"):
             pass
@@ -1453,8 +1460,10 @@ def _else(node: classmethod) -> None:
         if _is_match(False, "("):
             pass
 
+        moss_body = add_parse_tree_node(moss_node, "<body>")
+
         if _is_match(True, "<statement>"):
-            _statement(moss_node)
+            _statement(moss_body)
 
         if _is_match(False, ")"):
             pass
@@ -1465,16 +1474,16 @@ def _else(node: classmethod) -> None:
 
 # #142-#143: <assignment> -> <insert-inpetal> <all-type-value> | <assign> <insert-assign>
 def _assignment(node: classmethod) -> None:
-    global index
+    global index, assign_node
 
     if _is_match(True, "<insert-inpetal>"):
         _insert_inpetal(node)
 
         if _is_match(True, "<all-type-value>"):
-            _all_type_value(node)
+            _all_type_value(assign_node)
 
             if _is_match(True, "<more-value>"):
-                _more_value(node)
+                _more_value(assign_node)
 
     elif _is_match(True, "<assign>"):
         _assign(node)
@@ -1584,6 +1593,7 @@ def _iterative(node: classmethod) -> None:
     elif _is_match(True, "willow"):
         willow_node = add_parse_tree_node(node, "willow")
         willow_node.kind = "while"
+        willow_body_node = add_parse_tree_node(willow_node, "<body>")
 
         if _is_match(False, "("):
             pass
@@ -1599,7 +1609,7 @@ def _iterative(node: classmethod) -> None:
             pass
 
         if _is_match(True, "<statement>"):
-            _statement(willow_node)
+            _statement(willow_body_node)
 
         if _is_match(False, ")"):
             pass
@@ -1617,6 +1627,8 @@ def _iterative(node: classmethod) -> None:
 def _insert_fern(node: classmethod) -> None:
     global index
 
+    fern_body_node = add_parse_tree_node(node, "<body>")
+
     if _is_match(True, "tint"):
         child_node = add_parse_tree_node(node, "<condition>")
         add_parse_tree_node(child_node, "tint")
@@ -1627,16 +1639,16 @@ def _insert_fern(node: classmethod) -> None:
         if _is_match(False, "=", child_node):
             pass
 
-        if _is_match(False, "tint literal", child_node):
+        if _is_match(False, redef.TINT_LIT, child_node):
             pass
 
-        if _is_match(False, ";", child_node):
+        if _is_match(False, ";"):
             pass
 
         if _is_match(False, "<condition>"):
             _condition(child_node)
 
-        if _is_match(False, ";", child_node):
+        if _is_match(False, ";"):
             pass
 
         if _is_match(False, "#", child_node):
@@ -1645,10 +1657,10 @@ def _insert_fern(node: classmethod) -> None:
         if _is_match(False, "<assignment-op>"):
             _assignment_op(child_node)
 
-        if _is_match(False, "tint literal", child_node):
+        if _is_match(False, redef.TINT_LIT, child_node):
             pass
 
-        if _is_match(False, ";", child_node):
+        if _is_match(False, ";"):
             pass
 
         if _is_match(False, ")"):
@@ -1658,7 +1670,7 @@ def _insert_fern(node: classmethod) -> None:
             pass
 
         if _is_match(False, "<statement>"):
-            _statement(node)
+            _statement(fern_body_node)
 
         if _is_match(False, ")"):
             pass
@@ -1681,8 +1693,8 @@ def _insert_fern(node: classmethod) -> None:
         if _is_match(False, "("):
             pass
 
-        if _is_match(False, "<statement>", node):
-            _statement(node)
+        if _is_match(False, "<statement>"):
+            _statement(fern_body_node)
 
         if _is_match(False, ")"):
             pass
@@ -1966,7 +1978,7 @@ def _parameter(node: classmethod) -> None:
         _undefined_param(node)
 
     elif _is_match(True, "<common-type>"):
-        var_node = add_parse_tree_node(node, "<variable>")
+        var_node = add_parse_tree_node(node, "<statement>")
 
         _common_type(var_node)
         child_node = add_parse_tree_node(var_node, lexemes[index] + lexemes[index + 1])

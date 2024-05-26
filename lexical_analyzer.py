@@ -2120,7 +2120,7 @@ def tokenize(input_string):
 
                 if line[char_index] not in rd.DELIMtf:
                     errors.append(
-                        error_unknown.id(
+                        error_unknown.delim(
                             char_index,
                             line_number,
                             tmp_word,

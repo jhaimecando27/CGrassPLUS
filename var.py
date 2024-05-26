@@ -2,12 +2,22 @@ symbol_table: dict = {}
 
 
 class ParseTreeNode:
-    def __init__(self, symbol: str, level=0, con_level=0, itr_level=0):
+    def __init__(
+        self,
+        symbol: str,
+        level=0,
+        leaf_level=0,
+        eleaf_level=0,
+        fern_level=0,
+        willow_level=0,
+    ):
         self.symbol = symbol
         self.level = level
         self.children = []
-        self.con_level = con_level
-        self.itr_level = itr_level
+        self.leaf_level = leaf_level
+        self.eleaf_level = eleaf_level
+        self.fern_level = fern_level
+        self.willow_level = willow_level
 
         self.kind = None
         self.type = None
@@ -16,27 +26,39 @@ class ParseTreeNode:
 
     def add_child(self, child):
         child.level = self.level
-        if self.symbol in [
-            "garden",
+        if child.symbol in [
             "<statement>",
-            "<function>",
-            "tree",
+            "branch",
+            "tree"
         ] and self.symbol in [
-            "garden",
-            "<statement>",
-            "<function>",
-            "<body>",
             "tree",
+            "branch",
+            "garden",
+            "<body>",
+            "<function>",
+            "leaf",
+            "eleaf",
+            "fern",
+            "willow",
         ]:
             child.level += 1
-        child.con_level = self.con_level
-        child.itr_level = self.itr_level
 
-        if child.symbol in ["leaf", "eleaf", "moss"]:
-            child.con_level += 1
+        child.leaf_level = self.leaf_level
+        child.eleaf_level = self.eleaf_level
+        child.fern_level = self.fern_level
+        child.willow_level = self.willow_level
 
-        if child.symbol in ["fern", "willow"]:
-            child.itr_level += 1
+        if child.symbol == "leaf":
+            child.leaf_level += 1
+
+        if child.symbol == "eleaf":
+            child.leaf_level += 1
+
+        if child.symbol == "fern":
+            child.fern_level += 1
+
+        if child.symbol == "willow":
+            child.willow_level += 1
 
         self.children.append(child)
 
@@ -57,8 +79,12 @@ class ParseTreeNode:
 
     def __str__(self):
         output: str = ""
-        output += "" if self.con_level == 0 else f" (Con Level: {self.con_level})"
-        output += "" if self.itr_level == 0 else f" (Itr Level: {self.itr_level})"
+        output += "" if self.leaf_level == 0 else f" (Leaf Level: {self.leaf_level})"
+        output += "" if self.eleaf_level == 0 else f" (Eleaf Level: {self.eleaf_level})"
+        output += "" if self.fern_level == 0 else f" (Fern Level: {self.fern_level})"
+        output += (
+            "" if self.willow_level == 0 else f" (Willow Level: {self.willow_level})"
+        )
         output += "" if self.kind is None else f" (kind: {self.kind})"
         output += "" if self.type is None else f" (type: {self.type})"
         output += f" (level: {self.level})"
