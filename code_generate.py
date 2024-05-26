@@ -154,7 +154,11 @@ def to_python_code(node: ParseTreeNode, stmt="") -> str:
                     if val.symbol in ["<sqnc>", "<index>", "<argument>"]:
                         tmp_val += to_python_code(val)
                         continue
-                    tmp_val += val.symbol[1:] if val.kind == redef.ID else val.symbol
+
+                    if val.symbol == "lent":
+                        tmp_val += "len(" + val.children[0].symbol + ")"
+                    else:
+                        tmp_val += val.symbol[1:] if val.kind == redef.ID else val.symbol
                 var_val = tmp_val
 
                 # Add the type to the variable if any

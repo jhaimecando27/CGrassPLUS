@@ -566,15 +566,16 @@ def _data(node: classmethod) -> None:
         if _is_match(True, "<operate-logic>"):
             _operate_logic(node)
 
-    elif _is_match(True, "lent", node):
+    elif _is_match(True, "lent"):
+        data = add_parse_tree_node(node, "lent")
 
-        if _is_match(False, "(", node):
+        if _is_match(False, "("):
             pass
 
         if _is_match(True, "<all-type-value>"):
-            _all_type_value(node)
+            _all_type_value(data)
 
-        if _is_match(False, ")", node):
+        if _is_match(False, ")"):
             pass
 
         if _is_match(True, "<operate-number>"):
