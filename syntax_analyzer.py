@@ -1375,19 +1375,18 @@ def _insert_inpetal(node: classmethod) -> None:
 
     elif _is_match(True, "#"):
         assign_node = add_parse_tree_node(node, lexemes[index - 2] + lexemes[index - 1])
-        print(assign_node)
 
         if _is_match(True, "<insert-func>"):
-            _insert_func(node)
+            _insert_func(assign_node)
 
         if _is_match(True, "<indexing>"):
-            _indexing(node)
+            _indexing(assign_node)
 
         if _is_match(True, "<start-end-step>"):
-            _start_end_step(node)
+            _start_end_step(assign_node)
 
         if _is_match(True, "<more-id>"):
-            _more_id(node)
+            _more_id(assign_node)
 
         if _is_match(True, "<assignment-op>"):
             _assignment_op(node)
@@ -1906,7 +1905,8 @@ def _function(node: classmethod) -> None:
 
         param_table = []
         for param in child_node.children:
-            param_table.append(translate[param.type])
+            print(param)
+            param_table.append(translate[param.type] if param.type in translate else param.type)
 
         param_num = len(param_table)
 
@@ -2031,13 +2031,18 @@ def _parameter(node: classmethod) -> None:
             _next_parameter(node)
 
     elif _is_match(True, "<sqnc-type>"):
-        _sqnc_type(node)
+        var_node = add_parse_tree_node(node, "<statement>")
 
-        if _is_match(False, "#", node):
+        _sqnc_type(var_node)
+
+        child_node = add_parse_tree_node(var_node, lexemes[index] + lexemes[index + 1])
+        if _is_match(False, "#"):
             pass
 
+        var_node.set_kind(tokens[index - 1])
+
         if _is_match(True, "<sqnc-value>"):
-            _sqnc_value(node)
+            _sqnc_value(child_node)
 
         if _is_match(True, "<next-parameter>"):
             _next_parameter(node)
