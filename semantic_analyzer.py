@@ -272,6 +272,18 @@ def semantic_analysis(node: ParseTreeNode, local_table={}) -> bool:
             else:
 
                 for data in node.children:
+
+                    # Undefined Variable
+                    if data.kind == redef.ID:
+                        if (
+                            data.symbol[1:] not in local_table
+                            and data.symbol[1:] not in symbol_table
+                        ):
+                            errors.append(
+                                f"Semantic Error: Undefined variable {data.symbol} at line {node.line_number}.\n"
+                            )
+                            return False
+
                     if data.symbol in ["<sqnc>", "<index>"]:
                         # <sqnc> node
                         if data.symbol == "<sqnc>":
@@ -281,7 +293,7 @@ def semantic_analysis(node: ParseTreeNode, local_table={}) -> bool:
                                     # Using Undefined variable
                                     if (
                                         sqnc_val.symbol[1:] not in local_table
-                                        and val.symbol[1:] not in symbol_table
+                                        and sqnc_val.symbol[1:] not in symbol_table
                                     ):
                                         errors.append(
                                             f"Semantic Error: Undefined variable {sqnc_val.symbol} at line {node.line_number}.\n"
