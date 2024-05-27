@@ -173,7 +173,7 @@ def to_python_code(node: ParseTreeNode, stmt="") -> str:
                         continue
 
                     if val.symbol == "lent":
-                        tmp_val += "len(" + val.children[0].symbol + ")"
+                        tmp_val += "len(" + val.children[0].symbol[1:] + ")"
                     elif val.symbol in translate_symbol:
                         tmp_val += translate_symbol[val.symbol]
                     else:
@@ -316,7 +316,7 @@ def to_python_code(node: ParseTreeNode, stmt="") -> str:
 
                     tmp_con += val.symbol[1:] if val.kind == redef.ID else val.symbol
 
-                iter_con = f"while {iter_v1} {iter_op} {iter_v2}:\n"
+                iter_con = f"while {tmp_con}:\n"
                 stmt += indent * node.level + iter_con
                 stmt += iter_body
 
