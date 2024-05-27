@@ -18,6 +18,13 @@ translate = {
     "willow": "while",
 }
 
+translate_symbol = {
+    "=/": " or ",
+    "=&": " and ",
+    "true": "True",
+    "false": "False",
+}
+
 string = ""
 indent = "    "
 
@@ -157,6 +164,8 @@ def to_python_code(node: ParseTreeNode, stmt="") -> str:
 
                     if val.symbol == "lent":
                         tmp_val += "len(" + val.children[0].symbol + ")"
+                    elif val.symbol in translate_symbol:
+                        tmp_val += translate_symbol[val.symbol]
                     else:
                         tmp_val += val.symbol[1:] if val.kind == redef.ID else val.symbol
                 var_val = tmp_val
