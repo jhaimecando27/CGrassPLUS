@@ -182,6 +182,13 @@ def semantic_analysis(node: ParseTreeNode, local_table={}) -> bool:
                                     )
                                     return False
 
+                            # Single Variable Only
+                            if arg_val.symbol in arith_ops:
+                                errors.append(
+                                    f"Semantic Error: Invalid argument for function {var_name} at line {node.line_number}.\n"
+                                )
+                                return False
+
                         # Invalid number of arguments
                         if (
                             len(val.children)
