@@ -355,7 +355,7 @@ def tokenize(input_string):
                                 char_index += 1
                                 tmp_word += "e"
                                 if line[char_index] in rd.DELIM3:
-                                    tokens.append((rd.BL, tmp_word))
+                                    tokens.append((rd.BL_LIT, tmp_word))
                                     continue
                                 else:
                                     # Finish whole word if error
@@ -1019,7 +1019,7 @@ def tokenize(input_string):
                             char_index += 1
                             tmp_word += "e"
                             if line[char_index] in rd.DELIMb:
-                                tokens.append((rd.BL, tmp_word))
+                                tokens.append((rd.BL_LIT, tmp_word))
                                 continue
                             else:
                                 # Finish whole word if error
