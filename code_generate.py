@@ -21,6 +21,7 @@ translate = {
 translate_symbol = {
     "=/": " or ",
     "=&": " and ",
+    "at": " in ",
     "true": "True",
     "false": "False",
 }
@@ -155,9 +156,18 @@ def to_python_code(node: ParseTreeNode, stmt="") -> str:
                     prev_var_node = var_node
                     continue
 
+                # var_name have index
+                var_have_index = False
+                if var_node.children[0].symbol == "<index>":
+                    var_name += to_python_code(var_node.children[0])
+                    var_have_index = True
+                var_nodes = (
+                    var_node.children[1:] if var_have_index else var_node.children
+                )
+
                 # Set the value of the variable if any
                 tmp_val = ""
-                for val in var_node.children:
+                for val in var_nodes:
                     if val.symbol in ["<sqnc>", "<index>", "<argument>"]:
                         tmp_val += to_python_code(val)
                         continue
@@ -167,7 +177,9 @@ def to_python_code(node: ParseTreeNode, stmt="") -> str:
                     elif val.symbol in translate_symbol:
                         tmp_val += translate_symbol[val.symbol]
                     else:
-                        tmp_val += val.symbol[1:] if val.kind == redef.ID else val.symbol
+                        tmp_val += (
+                            val.symbol[1:] if val.kind == redef.ID else val.symbol
+                        )
                 var_val = tmp_val
 
                 # Add the type to the variable if any
@@ -225,12 +237,14 @@ def to_python_code(node: ParseTreeNode, stmt="") -> str:
                     # Get the condition
                     tmp_con = ""
                     for val in if_con.children:
-                        if val.symbol == "<sqnc>":
+                        if val.symbol in ["<sqnc>", "<index>"]:
                             tmp_con += to_python_code(val)
                             continue
-                        elif val.symbol == "<index>":
-                            tmp_con += to_python_code(val)
+
+                        if val.symbol in translate_symbol:
+                            tmp_con += translate_symbol[val.symbol]
                             continue
+
                         tmp_con += (
                             val.symbol[1:] if val.kind == redef.ID else val.symbol
                         )
@@ -290,17 +304,17 @@ def to_python_code(node: ParseTreeNode, stmt="") -> str:
                         + f"{iter_v1_name} {iter_con.properties['assignment-op']} {iter_step}\n"
                     )
             else:
-                iter_v1 = (
-                    iter_con.children[0].symbol[1:]
-                    if iter_con.children[0].kind == redef.ID
-                    else iter_con.children[0].symbol
-                )
-                iter_op = iter_con.children[1].symbol
-                iter_v2 = (
-                    iter_con.children[2].symbol[1:]
-                    if iter_con.children[2].kind == redef.ID
-                    else iter_con.children[2].symbol
-                )
+                tmp_con = ""
+                for val in iter_con.children:
+                    if val.symbol in ["<sqnc>", "<index>"]:
+                        tmp_con += to_python_code(val)
+                        continue
+
+                    if val.symbol in translate_symbol:
+                        tmp_con += translate_symbol[val.symbol]
+                        continue
+
+                    tmp_con += val.symbol[1:] if val.kind == redef.ID else val.symbol
 
                 iter_con = f"while {iter_v1} {iter_op} {iter_v2}:\n"
                 stmt += indent * node.level + iter_con
